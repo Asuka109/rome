@@ -1,0 +1,38 @@
+name: connector_proxy
+type: custom
+description: |
+  Proxy a raw HTTP request to a connected toolkit's native provider API and
+  return the response. Connector holds the connection's credential and injects it
+  into the outbound call, so you write against the provider's own REST/GraphQL
+  surface (e.g. https://api.linear.app/graphql, https://slack.com/api/...) — the
+  full API, without ever handling the token.
+
+  Shaped like a common HTTP client: pass the owning toolkit slug, the relative
+  `path` (beginning with `/`, e.g. `/graphql`, `/api/chat.postMessage`), the HTTP
+  method, and optionally `body` (JSON), `query` (an object of query-string params,
+  { name: value }), and `headers` ({ name: value }). Rome prepends the toolkit's
+  API host, so you supply only the path — omit `host` for the common single-host
+  toolkits (Rome fills in their default host). Supply `host` only for the hard
+  cases: a toolkit with no fixed host (Supabase's `<project-ref>.supabase.co`), or
+  to reach a non-default host (Dropbox content `content.dropboxapi.com`, GitHub
+  uploads `uploads.github.com`). The resolved host must be the toolkit's own API
+  domain (the credential is never forwarded off-provider); any other host is
+  refused.
+
+  Pass any dynamic or step-sourced QUERY value via `query` rather than
+  string-building it into the path — interpolating an untrusted value into the
+  query string is query-param injection; `query` is escaped for you. (For a
+  dynamic PATH segment, which `query` can't carry, encodeURIComponent it before
+  interpolating.) Requires being signed in (connector_login) and the toolkit
+  connected (connector_connect) first. On a 2xx response, returns { status, data,
+  headers } as `data`.
+
+  Fails closed: not signed in, toolkit not connected, or a non-2xx
+  provider response all come back as an action error, so a rejected call never
+  reads as success.
+
+entry: ./index.ts
+complexity: simple
+speed: moderate
+reliability: medium
+sideEffects: write

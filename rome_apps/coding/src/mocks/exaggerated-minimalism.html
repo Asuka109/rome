@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FORMLESS — Design Studio</title>
+<style>
+  /* ============================================================
+     EXAGGERATED MINIMALISM
+     Bold minimalism · oversized typography · high contrast
+     Black / White / single vibrant accent · extreme negative space
+     ============================================================ */
+  :root {
+    /* Color — primary black/white, single accent only (extreme restraint) */
+    --color-primary: #000000;
+    --color-bg: #FFFFFF;
+    --color-ink: #000000;
+    --color-paper: #FFFFFF;
+    --accent: #FF3B00;          /* single vibrant accent */
+    --hairline: rgba(0,0,0,0.12);
+    --muted: rgba(0,0,0,0.46);
+
+    /* Typography scale — oversized, weight 900, tight tracking */
+    --type-giant: clamp(3rem, 13vw, 12rem);
+    --type-display: clamp(2.4rem, 8vw, 7rem);
+    --type-h2: clamp(1.8rem, 4.5vw, 3.5rem);
+    --type-lead: clamp(1.05rem, 1.8vw, 1.5rem);
+    --type-body: clamp(0.95rem, 1.1vw, 1.05rem);
+    --type-label: 0.72rem;
+    --type-weight-black: 900;
+    --type-weight-med: 500;
+    --tracking-tight: -0.05em;
+    --tracking-label: 0.22em;
+
+    /* Spacing — massive whitespace */
+    --spacing-huge: clamp(4rem, 10vw, 8rem);
+    --spacing-xl: clamp(2.5rem, 6vw, 5rem);
+    --spacing-lg: 2rem;
+    --spacing-md: 1.25rem;
+    --spacing-sm: 0.75rem;
+
+    /* Radius — minimal, mostly square */
+    --radius-pill: 999px;
+    --radius-sm: 2px;
+
+    /* Shadow — restrained, used sparingly */
+    --shadow-lift: 0 24px 60px -28px rgba(0,0,0,0.45);
+
+    /* Motion */
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --dur: 0.55s;
+    --dur-fast: 0.25s;
+
+    --maxw: 1280px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI", system-ui, sans-serif;
+    font-size: var(--type-body);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  ::selection { background: var(--accent); color: var(--color-paper); }
+
+  a { color: inherit; text-decoration: none; }
+
+  .shell {
+    max-width: var(--maxw);
+    margin-inline: auto;
+    padding-inline: clamp(1.25rem, 5vw, 4rem);
+  }
+
+  .label {
+    font-size: var(--type-label);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .accent { color: var(--accent); }
+
+  /* ---------------- Header / Nav ---------------- */
+  header.site {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    padding-block: 1.1rem;
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-weight: var(--type-weight-black);
+    letter-spacing: var(--tracking-tight);
+    font-size: 1.25rem;
+  }
+  .brand svg { display: block; }
+  .brand .dot { color: var(--accent); }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: clamp(1rem, 2.5vw, 2.4rem);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .nav-links a {
+    font-size: var(--type-label);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    font-weight: 600;
+    position: relative;
+    padding-block: 0.25rem;
+  }
+  .nav-links a::after {
+    content: "";
+    position: absolute;
+    left: 0; bottom: -2px;
+    width: 100%; height: 2px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--dur-fast) var(--ease);
+  }
+  .nav-links a:hover::after,
+  .nav-links a:focus-visible::after { transform: scaleX(1); }
+
+  .btn {
+    --bg: var(--color-ink);
+    --fg: var(--color-paper);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    background: var(--bg);
+    color: var(--fg);
+    border: 2px solid var(--color-ink);
+    border-radius: var(--radius-pill);
+    padding: 0.7rem 1.4rem;
+    font-size: var(--type-label);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background var(--dur-fast) var(--ease),
+                color var(--dur-fast) var(--ease),
+                transform var(--dur-fast) var(--ease);
+  }
+  .btn svg { transition: transform var(--dur-fast) var(--ease); }
+  .btn:hover { background: var(--accent); border-color: var(--accent); color: var(--color-paper); }
+  .btn:hover svg { transform: translateX(4px); }
+  .btn:active { transform: translateY(1px); }
+  .btn:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 3px;
+  }
+  .btn.ghost {
+    --bg: transparent;
+    --fg: var(--color-ink);
+  }
+  .btn.ghost:hover { background: var(--color-ink); color: var(--color-paper); border-color: var(--color-ink); }
+
+  .nav-cta { display: inline-flex; }
+
+  /* ---------------- Hero ---------------- */
+  .hero {
+    padding-top: var(--spacing-huge);
+    padding-bottom: var(--spacing-xl);
+  }
+  .hero .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    color: var(--muted);
+    margin-bottom: var(--spacing-lg);
+  }
+  .hero .eyebrow .rule {
+    height: 1px;
+    flex: 0 0 64px;
+    background: var(--color-ink);
+  }
+  .giant {
+    font-size: var(--type-giant);
+    font-weight: var(--type-weight-black);
+    letter-spacing: var(--tracking-tight);
+    line-height: 0.86;
+    margin: 0;
+    text-transform: uppercase;
+  }
+  .giant .line { display: block; overflow: hidden; }
+  .giant .line span {
+    display: inline-block;
+    transform: translateY(105%);
+    animation: rise var(--dur) var(--ease) forwards;
+  }
+  .giant .line:nth-child(2) span { animation-delay: 0.08s; }
+  .giant .line:nth-child(3) span { animation-delay: 0.16s; }
+  .giant .outline {
+    color: var(--color-bg);
+    -webkit-text-stroke: 2px var(--color-ink);
+    text-stroke: 2px var(--color-ink);
+  }
+  @keyframes rise { to { transform: translateY(0); } }
+
+  .hero-foot {
+    margin-top: var(--spacing-xl);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg);
+    align-items: end;
+  }
+  @media (min-width: 760px) {
+    .hero-foot { grid-template-columns: 1.4fr 1fr; }
+  }
+  .hero-lead {
+    font-size: var(--type-lead);
+    line-height: 1.45;
+    max-width: 34ch;
+    font-weight: var(--type-weight-med);
+  }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); justify-content: flex-start; }
+  @media (min-width: 760px) { .hero-actions { justify-content: flex-end; } }
+
+  /* Marquee strip */
+  .strip {
+    border-block: 1px solid var(--hairline);
+    overflow: hidden;
+    margin-top: var(--spacing-xl);
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+  .marquee {
+    display: flex;
+    gap: 3rem;
+    width: max-content;
+    padding-block: 0.9rem;
+    animation: scroll 26s linear infinite;
+    will-change: transform;
+  }
+  .marquee span {
+    font-weight: var(--type-weight-black);
+    letter-spacing: var(--tracking-tight);
+    text-transform: uppercase;
+    font-size: clamp(1.2rem, 3vw, 2.2rem);
+    display: inline-flex;
+    align-items: center;
+    gap: 3rem;
+  }
+  .marquee span::after {
+    content: "";
+    width: 10px; height: 10px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: inline-block;
+  }
+  @keyframes scroll { to { transform: translateX(-50%); } }
+
+  /* ---------------- Work / Cards ---------------- */
+  .section { padding-block: var(--spacing-huge); }
+  .section-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+    margin-bottom: var(--spacing-xl);
+  }
+  .section-head h2 {
+    font-size: var(--type-h2);
+    font-weight: var(--type-weight-black);
+    letter-spacing: var(--tracking-tight);
+    line-height: 0.95;
+    text-transform: uppercase;
+    margin: 0;
+    max-width: 16ch;
+  }
+  .section-head .meta { color: var(--muted); text-align: right; }
+
+  .work-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(1.5rem, 4vw, 3.5rem);
+  }
+  @media (min-width: 760px) {
+    .work-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  .work-card {
+    display: block;
+    border: 1px solid var(--hairline);
+    background: var(--color-bg);
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .work-card:hover,
+  .work-card:focus-visible {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-lift);
+    outline: none;
+  }
+  .work-card:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+  .work-visual {
+    aspect-ratio: 4 / 3;
+    width: 100%;
+    display: block;
+    background: var(--color-ink);
+    overflow: hidden;
+  }
+  .work-visual svg { width: 100%; height: 100%; display: block; }
+  .work-body {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-md) var(--spacing-lg);
+  }
+  .work-body h3 {
+    font-size: clamp(1.3rem, 3vw, 2rem);
+    font-weight: var(--type-weight-black);
+    letter-spacing: var(--tracking-tight);
+    text-transform: uppercase;
+    margin: 0;
+    line-height: 1;
+  }
+  .work-body .tags { color: var(--muted); font-size: var(--type-label); letter-spacing: 0.08em; text-transform: uppercase; text-align: right; }
+  .idx { font-size: var(--type-label); color: var(--muted); letter-spacing: var(--tracking-label); }
+
+  /* ---------------- Stats ---------------- */
+  .stats {
+    border-block: 1px solid var(--hairline);
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0;
+  }
+  @media (min-width: 760px) {
+    .stats-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+  .stat {
+    padding: var(--spacing-xl) var(--spacing-md);
+    border-right: 1px solid var(--hairline);
+  }
+  .stat:last-child { border-right: 0; }
+  @media (max-width: 759px) {
+    .stat:nth-child(2n) { border-right: 0; }
+    .stat:nth-child(-n+2) { border-bottom: 1px solid var(--hairline); }
+  }
+  .stat .num {
+    font-size: clamp(2.6rem, 8vw, 5.5rem);
+    font-weight: var(--type-weight-black);
+    letter-spacing: var(--tracking-tight);
+    line-height: 0.9;
+    display: block;
+  }
+  .stat .num .accent { color: var(--accent); }
+  .stat .cap { color: var(--muted); margin-top: 0.6rem; }
+
+  /* ---------------- Services list ---------------- */
+  .services { list-style: none; margin: 0; padding: 0; }
+  .service-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    padding-block: clamp(1.4rem, 3vw, 2.4rem);
+    border-top: 1px solid var(--hairline);
+    cursor: pointer;
+    transition: padding-inline var(--dur) var(--ease), background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  }
+  .service-row:last-child { border-bottom: 1px solid var(--hairline); }
+  .service-row:hover,
+  .service-row:focus-within {
+    background: var(--color-ink);
+    color: var(--color-paper);
+    padding-inline: clamp(0.5rem, 2vw, 1.5rem);
+  }
+  .service-row:focus-within { outline: 3px solid var(--accent); outline-offset: -3px; }
+  .service-row h3 {
+    margin: 0;
+    font-size: clamp(1.6rem, 5vw, 3.5rem);
+    font-weight: var(--type-weight-black);
+    letter-spacing: var(--tracking-tight);
+    text-transform: uppercase;
+    line-height: 1;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .service-row .num { font-size: var(--type-label); letter-spacing: var(--tracking-label); opacity: 0.6; flex: 0 0 auto; }
+  .service-row .arrow { flex: 0 0 auto; transition: transform var(--dur-fast) var(--ease); }
+  .service-row:hover .arrow,
+  .service-row:focus-within .arrow { transform: translate(6px, -6px); color: var(--accent); }
+
+  /* ---------------- CTA block ---------------- */
+  .cta {
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+  .cta .shell { padding-block: var(--spacing-huge); text-align: center; }
+  .cta h2 {
+    font-size: var(--type-display);
+    font-weight: var(--type-weight-black);
+    letter-spacing: var(--tracking-tight);
+    line-height: 0.9;
+    text-transform: uppercase;
+    margin: 0 auto var(--spacing-xl);
+    max-width: 14ch;
+  }
+  .cta h2 .accent { color: var(--accent); }
+  .cta .btn {
+    --bg: var(--accent);
+    --fg: var(--color-paper);
+    border-color: var(--accent);
+    font-size: 0.8rem;
+    padding: 1rem 2rem;
+  }
+  .cta .btn:hover { --bg: var(--color-paper); color: var(--color-ink); border-color: var(--color-paper); }
+  .cta .btn:focus-visible { outline-color: var(--color-paper); }
+
+  /* ---------------- Footer ---------------- */
+  footer.site {
+    border-top: 1px solid var(--hairline);
+  }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg);
+    padding-block: var(--spacing-xl);
+  }
+  @media (min-width: 760px) {
+    .footer-grid { grid-template-columns: 2fr 1fr 1fr; }
+  }
+  .footer-grid h2 {
+    font-size: clamp(2rem, 6vw, 4rem);
+    font-weight: var(--type-weight-black);
+    letter-spacing: var(--tracking-tight);
+    text-transform: uppercase;
+    margin: 0;
+    line-height: 0.9;
+  }
+  .footer-grid .col-title { color: var(--muted); margin-bottom: var(--spacing-md); }
+  .footer-grid ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+  .footer-grid li a { position: relative; }
+  .footer-grid li a:hover, .footer-grid li a:focus-visible { color: var(--accent); }
+  .footer-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+    padding-block: var(--spacing-md);
+    border-top: 1px solid var(--hairline);
+    color: var(--muted);
+    font-size: var(--type-label);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .skip {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    background: var(--color-ink);
+    color: var(--color-paper);
+    padding: 0.6rem 1rem;
+    z-index: 100;
+  }
+  .skip:focus { left: 1rem; top: 1rem; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+    .giant .line span { transform: none; }
+    .marquee { animation: none; }
+  }
+</style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="site">
+    <div class="shell">
+      <nav class="nav" aria-label="Primary">
+        <a class="brand" href="#" aria-label="Formless, home">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <rect x="1" y="1" width="20" height="20" stroke="currentColor" stroke-width="2"/>
+            <path d="M6 16 L16 6" stroke="currentColor" stroke-width="2"/>
+          </svg>
+          FORMLESS<span class="dot">.</span>
+        </a>
+        <ul class="nav-links">
+          <li><a href="#work">Work</a></li>
+          <li><a href="#studio">Studio</a></li>
+          <li><a href="#services">Services</a></li>
+        </ul>
+        <a class="btn nav-cta" href="#contact">
+          Start a project
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M2 12 L12 2 M5 2 H12 V9" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <!-- HERO -->
+    <section class="hero shell" aria-labelledby="hero-title">
+      <p class="eyebrow label"><span class="rule" aria-hidden="true"></span>Independent design studio — Est. 2018</p>
+      <h1 class="giant" id="hero-title">
+        <span class="line"><span>We make</span></span>
+        <span class="line"><span class="outline">brands</span></span>
+        <span class="line"><span>impossible<span class="accent">.</span></span></span>
+      </h1>
+      <div class="hero-foot">
+        <p class="hero-lead">A small studio for fashion, architecture, and luxury labels who refuse to look like everyone else. Bold type. Empty space. Nothing extra.</p>
+        <div class="hero-actions">
+          <a class="btn" href="#work">
+            View work
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M2 7 H12 M8 3 L12 7 L8 11" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </a>
+          <a class="btn ghost" href="#contact">Book a call</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- MARQUEE -->
+    <div class="strip" aria-hidden="true">
+      <div class="marquee">
+        <span>Brand Identity</span><span>Editorial</span><span>Art Direction</span><span>Type Design</span>
+        <span>Brand Identity</span><span>Editorial</span><span>Art Direction</span><span>Type Design</span>
+      </div>
+    </div>
+
+    <!-- WORK -->
+    <section class="section shell" id="work" aria-labelledby="work-title">
+      <div class="section-head">
+        <h2 id="work-title">Selected work</h2>
+        <p class="meta label">2023 — 2026<br/>12 projects</p>
+      </div>
+      <div class="work-grid">
+
+        <a class="work-card" href="#" aria-label="MONO, fashion label identity">
+          <div class="work-visual">
+            <svg viewBox="0 0 400 300" role="img" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
+              <rect width="400" height="300" fill="#000"/>
+              <text x="50%" y="54%" text-anchor="middle" fill="#fff" font-family="Helvetica, Arial" font-weight="900" font-size="140" letter-spacing="-6">M</text>
+              <circle cx="320" cy="70" r="26" fill="#FF3B00"/>
+            </svg>
+          </div>
+          <div class="work-body">
+            <h3>Mono</h3>
+            <p class="tags">Fashion<br/>Identity</p>
+          </div>
+        </a>
+
+        <a class="work-card" href="#" aria-label="Vault, architecture studio rebrand">
+          <div class="work-visual">
+            <svg viewBox="0 0 400 300" role="img" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
+              <rect width="400" height="300" fill="#000"/>
+              <g stroke="#fff" stroke-width="3" fill="none">
+                <path d="M60 240 V120 A140 120 0 0 1 340 120 V240"/>
+                <line x1="200" y1="40" x2="200" y2="240"/>
+              </g>
+              <rect x="184" y="200" width="32" height="6" fill="#FF3B00"/>
+            </svg>
+          </div>
+          <div class="work-body">
+            <h3>Vault</h3>
+            <p class="tags">Architecture<br/>Rebrand</p>
+          </div>
+        </a>
+
+        <a class="work-card" href="#" aria-label="Halo, luxury fragrance launch">
+          <div class="work-visual">
+            <svg viewBox="0 0 400 300" role="img" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
+              <rect width="400" height="300" fill="#000"/>
+              <circle cx="200" cy="150" r="90" fill="none" stroke="#fff" stroke-width="3"/>
+              <circle cx="200" cy="150" r="46" fill="#FF3B00"/>
+            </svg>
+          </div>
+          <div class="work-body">
+            <h3>Halo</h3>
+            <p class="tags">Fragrance<br/>Launch</p>
+          </div>
+        </a>
+
+        <a class="work-card" href="#" aria-label="Press, editorial magazine system">
+          <div class="work-visual">
+            <svg viewBox="0 0 400 300" role="img" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
+              <rect width="400" height="300" fill="#000"/>
+              <g fill="#fff">
+                <rect x="60" y="70" width="160" height="14"/>
+                <rect x="60" y="100" width="120" height="14"/>
+                <rect x="60" y="150" width="280" height="6"/>
+                <rect x="60" y="168" width="280" height="6"/>
+                <rect x="60" y="186" width="200" height="6"/>
+              </g>
+              <rect x="270" y="64" width="70" height="70" fill="#FF3B00"/>
+            </svg>
+          </div>
+          <div class="work-body">
+            <h3>Press</h3>
+            <p class="tags">Editorial<br/>System</p>
+          </div>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- STATS -->
+    <section class="stats" id="studio" aria-label="Studio by the numbers">
+      <div class="shell">
+        <div class="stats-grid">
+          <div class="stat">
+            <span class="num">12<span class="accent">+</span></span>
+            <p class="cap">Years in practice</p>
+          </div>
+          <div class="stat">
+            <span class="num">40<span class="accent">+</span></span>
+            <p class="cap">Brands shaped</p>
+          </div>
+          <div class="stat">
+            <span class="num">9</span>
+            <p class="cap">Design awards</p>
+          </div>
+          <div class="stat">
+            <span class="num">4</span>
+            <p class="cap">People, no more</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SERVICES -->
+    <section class="section shell" id="services" aria-labelledby="services-title">
+      <div class="section-head">
+        <h2 id="services-title">What we do</h2>
+        <p class="meta label">Capabilities<br/>4 disciplines</p>
+      </div>
+      <ul class="services">
+        <li><a class="service-row" href="#contact">
+          <span class="num">01</span>
+          <h3>Brand Identity</h3>
+          <svg class="arrow" width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M6 22 L22 6 M9 6 H22 V19" stroke="currentColor" stroke-width="2.5"/></svg>
+        </a></li>
+        <li><a class="service-row" href="#contact">
+          <span class="num">02</span>
+          <h3>Art Direction</h3>
+          <svg class="arrow" width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M6 22 L22 6 M9 6 H22 V19" stroke="currentColor" stroke-width="2.5"/></svg>
+        </a></li>
+        <li><a class="service-row" href="#contact">
+          <span class="num">03</span>
+          <h3>Editorial Design</h3>
+          <svg class="arrow" width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M6 22 L22 6 M9 6 H22 V19" stroke="currentColor" stroke-width="2.5"/></svg>
+        </a></li>
+        <li><a class="service-row" href="#contact">
+          <span class="num">04</span>
+          <h3>Type &amp; Motion</h3>
+          <svg class="arrow" width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M6 22 L22 6 M9 6 H22 V19" stroke="currentColor" stroke-width="2.5"/></svg>
+        </a></li>
+      </ul>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta" id="contact" aria-labelledby="cta-title">
+      <div class="shell">
+        <h2 id="cta-title">Let's build something loud<span class="accent">.</span></h2>
+        <a class="btn" href="mailto:studio@formless.co">
+          studio@formless.co
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M2 13 L13 2 M6 2 H13 V9" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </a>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site">
+    <div class="shell">
+      <div class="footer-grid">
+        <div>
+          <p class="col-title label">The studio</p>
+          <h2>Formless<span class="accent">.</span></h2>
+        </div>
+        <nav aria-label="Footer navigation">
+          <p class="col-title label">Index</p>
+          <ul>
+            <li><a href="#work">Work</a></li>
+            <li><a href="#studio">Studio</a></li>
+            <li><a href="#services">Services</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ul>
+        </nav>
+        <div>
+          <p class="col-title label">Elsewhere</p>
+          <ul>
+            <li><a href="#">Instagram</a></li>
+            <li><a href="#">Behance</a></li>
+            <li><a href="#">LinkedIn</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bar">
+        <span>&copy; 2026 Formless Studio</span>
+        <span>Berlin — New York</span>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

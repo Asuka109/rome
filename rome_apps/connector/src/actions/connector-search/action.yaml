@@ -1,0 +1,14 @@
+name: connector_search
+type: custom
+description: |
+  Search Composio's tool catalog by capability ("create a github issue",
+  "send a slack message", "run a supabase query", "list neon branches") and
+  return the matching tools — slug, description, owning toolkit, and input
+  schema. Use this to discover the exact slug a workflow or agent step should
+  run; never invent slugs. Optionally scope the search to one toolkit (e.g.
+  github, supabase, neon) and cap the result count.
+entry: ./index.ts
+complexity: simple
+speed: fast
+reliability: medium
+sideEffects: read-only

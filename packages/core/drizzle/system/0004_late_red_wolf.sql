@@ -1,0 +1,1 @@
+ALTER TABLE `approvals` ADD `execution_error` text;

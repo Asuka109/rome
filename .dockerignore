@@ -1,0 +1,54 @@
+# Dependencies (rebuilt in Docker)
+node_modules/
+**/node_modules/
+.pnpm-store/
+
+# Build output
+packages/web/.next/
+packages/web/dist/
+dist/
+
+# Git
+.git/
+.gitignore
+.docker/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Tests
+**/*.test.ts
+**/*.integration.test.ts
+**/*.e2e.test.ts
+packages/core/src/test/
+coverage/
+
+# Dev configs
+.eslintrc*
+eslint.config.*
+.prettierrc*
+vitest.config.*
+drizzle.*.config.ts
+
+# IDE & tools
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project-specific excludes
+scratch/
+.omx/
+.claude/
+.github/
+AGENTS.md
+CLAUDE.md
+DEVELOPMENT.md
+VISION.md
+
+# Unused apps
+packages/cdp-client/
+packages/pantheon-cli/
+packages/desktop/

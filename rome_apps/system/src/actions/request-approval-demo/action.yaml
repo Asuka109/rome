@@ -1,0 +1,8 @@
+name: request_approval_demo
+type: system
+description: Test fixture for the approval flow. No side effects — renders a generic approval card with the supplied title/summary, and on approval returns a confirmation echo. Use this when the guardian asks you to demonstrate, test, or exercise the approval gate end-to-end.
+complexity: simple
+speed: fast
+reliability: high
+sideEffects: read-only
+requiresApproval: true

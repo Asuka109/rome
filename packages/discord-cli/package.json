@@ -1,0 +1,27 @@
+{
+  "name": "@rome/discord-cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "discord": "./bin/discord.js"
+  },
+  "files": [
+    "bin",
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "../../scripts/test-env.sh vitest run"
+  },
+  "dependencies": {
+    "@rome/api-types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "25.2.3",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.1"
+  }
+}

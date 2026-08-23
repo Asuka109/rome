@@ -1,0 +1,22 @@
+{
+  "name": "@rome/app-system",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "rome build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@rome-os/app-runtime": "latest",
+    "@rome-os/app-web-sdk": "latest",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "better-sqlite3": "^12.6.2",
+    "drizzle-orm": "^0.45.1"
+  }
+}

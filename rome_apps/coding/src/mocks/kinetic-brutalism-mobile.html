@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FREQ — Kinetic Brutalism Mobile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #09090B;
+    --fg: #FAFAFA;
+    --muted: #27272A;
+    --muted-fg: #A1A1AA;
+    --accent: #DFE104;
+    --accent-fg: #000000;
+    --border: #3F3F46;
+    --radius: 0px;
+    --border-width: 2px;
+    --shadow: none;
+    --marquee-speed: 5000ms;
+    --press-duration: 100ms;
+    --font: 'Space Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
+
+    /* Type scale (mobile-first, fluid) */
+    --fs-hero: clamp(56px, 22vw, 84px);
+    --fs-section: clamp(34px, 11vw, 46px);
+    --fs-card: clamp(24px, 7vw, 30px);
+    --fs-body: clamp(16px, 4.6vw, 19px);
+    --fs-label: 12px;
+
+    /* Spacing */
+    --sp-1: 6px;
+    --sp-2: 12px;
+    --sp-3: 18px;
+    --sp-4: 24px;
+    --sp-5: 36px;
+    --sp-6: 56px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { background: #000; }
+
+  body {
+    font-family: var(--font);
+    color: var(--fg);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    /* desktop frame backdrop */
+    background:
+      repeating-linear-gradient(45deg, #050505 0 22px, #0b0b0b 22px 44px);
+  }
+
+  /* Phone frame column */
+  .phone {
+    width: 100%;
+    max-width: 420px;
+    min-height: 100vh;
+    background: var(--bg);
+    border-left: var(--border-width) solid var(--border);
+    border-right: var(--border-width) solid var(--border);
+    position: relative;
+    overflow-x: hidden;
+    overflow-y: visible;
+  }
+
+  /* ---------- Sticky header ---------- */
+  header.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: var(--bg);
+    border-bottom: var(--border-width) solid var(--fg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--sp-3) var(--sp-4);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+    font-size: 22px;
+  }
+  .brand .mark {
+    width: 30px; height: 30px;
+    background: var(--accent);
+    display: grid; place-items: center;
+  }
+  .brand .mark svg { width: 20px; height: 20px; display: block; }
+
+  .icon-btn {
+    width: 44px; height: 44px;
+    background: var(--bg);
+    border: var(--border-width) solid var(--border);
+    color: var(--fg);
+    display: grid; place-items: center;
+    cursor: pointer;
+    transition: background var(--press-duration) linear, color var(--press-duration) linear, border-color var(--press-duration) linear;
+  }
+  .icon-btn svg { width: 22px; height: 22px; }
+  .icon-btn:hover { border-color: var(--fg); }
+  .icon-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .icon-btn:active { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); transform: scale(0.95); }
+
+  /* ---------- Marquee ---------- */
+  .marquee {
+    border-bottom: var(--border-width) solid var(--border);
+    background: var(--accent);
+    color: var(--accent-fg);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .marquee.inverse { background: var(--bg); color: var(--fg); border-top: var(--border-width) solid var(--border); }
+  .marquee__track {
+    display: inline-flex;
+    will-change: transform;
+    animation: scrollX var(--marquee-speed) linear infinite;
+  }
+  .marquee.inverse .marquee__track {
+    animation-direction: reverse;
+    animation-duration: 6500ms;
+  }
+  .marquee__item {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+    font-size: 20px;
+    padding: 8px 18px;
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .marquee__item .dot { width: 9px; height: 9px; background: currentColor; display: inline-block; }
+  @keyframes scrollX {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    padding: var(--sp-5) var(--sp-4) var(--sp-4);
+    border-bottom: var(--border-width) solid var(--border);
+    overflow: hidden;
+  }
+  .hero__eyebrow {
+    font-size: var(--fs-label);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--muted-fg);
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+  }
+  .hero__title {
+    font-size: var(--fs-hero);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: -2px;
+    line-height: 0.92;
+    margin-top: var(--sp-3);
+    will-change: transform, opacity;
+  }
+  .hero__title em {
+    font-style: normal;
+    color: var(--accent);
+    display: inline-block;
+  }
+  .hero__meta {
+    display: flex;
+    gap: var(--sp-2);
+    margin-top: var(--sp-4);
+    flex-wrap: wrap;
+  }
+  .chip {
+    font-size: var(--fs-label);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 600;
+    padding: 7px 12px;
+    border: var(--border-width) solid var(--border);
+    color: var(--muted-fg);
+  }
+  .chip.live {
+    background: var(--accent);
+    color: var(--accent-fg);
+    border-color: var(--accent);
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .chip.live .pulse {
+    width: 8px; height: 8px; background: var(--accent-fg);
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .btn {
+    margin-top: var(--sp-4);
+    width: 100%;
+    background: var(--accent);
+    color: var(--accent-fg);
+    border: var(--border-width) solid var(--accent);
+    font-family: var(--font);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0;
+    font-size: var(--fs-body);
+    padding: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background var(--press-duration) linear, color var(--press-duration) linear, transform var(--press-duration) linear;
+  }
+  .btn svg { width: 22px; height: 22px; }
+  .btn:hover { background: var(--bg); color: var(--accent); }
+  .btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .btn:active { transform: scale(0.97); background: var(--fg); color: #000; border-color: var(--fg); }
+
+  /* ---------- Section header (sticky push) ---------- */
+  .sec-head {
+    position: sticky;
+    top: 71px;
+    z-index: 30;
+    background: var(--bg);
+    border-bottom: var(--border-width) solid var(--border);
+    padding: var(--sp-3) var(--sp-4);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .sec-head h2 {
+    font-size: var(--fs-section);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: -1.5px;
+    line-height: 1;
+  }
+  .sec-head .count {
+    font-size: var(--fs-label);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--muted-fg);
+    font-weight: 600;
+  }
+
+  /* ---------- Track cards ---------- */
+  .tracklist { list-style: none; }
+  .track {
+    border-bottom: var(--border-width) solid var(--border);
+    padding: var(--sp-3) var(--sp-4);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: var(--sp-3);
+    cursor: pointer;
+    background: var(--bg);
+    color: var(--fg);
+    transition: background var(--press-duration) linear, color var(--press-duration) linear;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .track:focus-visible { outline: 3px solid var(--accent); outline-offset: -5px; }
+  .track:hover { background: var(--muted); }
+  /* flood inversion on press */
+  .track:active,
+  .track.flood {
+    background: var(--accent);
+    color: var(--accent-fg);
+  }
+  .track:active .track__sub,
+  .track.flood .track__sub { color: var(--accent-fg); }
+  .track:active .track__num,
+  .track.flood .track__num { color: var(--accent-fg); }
+
+  .track__num {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -1px;
+    color: var(--muted-fg);
+    width: 38px;
+    transition: color var(--press-duration) linear;
+  }
+  .track__body { min-width: 0; }
+  .track__title {
+    font-size: var(--fs-card);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .track__sub {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--muted-fg);
+    margin-top: 6px;
+    font-weight: 500;
+    transition: color var(--press-duration) linear;
+  }
+  .track__play {
+    width: 44px; height: 44px;
+    border: var(--border-width) solid currentColor;
+    display: grid; place-items: center;
+    flex: none;
+  }
+  .track__play svg { width: 20px; height: 20px; }
+
+  /* ---------- Stats / drop panel ---------- */
+  .panel {
+    padding: var(--sp-4);
+    border-bottom: var(--border-width) solid var(--border);
+    background: var(--accent);
+    color: var(--accent-fg);
+  }
+  .panel h3 {
+    font-size: var(--fs-section);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: -1.5px;
+    line-height: 0.95;
+  }
+  .panel p {
+    font-size: var(--fs-body);
+    line-height: 1.3;
+    margin-top: var(--sp-2);
+    max-width: 30ch;
+    font-weight: 500;
+  }
+  .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-top: var(--sp-4);
+    border: var(--border-width) solid var(--accent-fg);
+  }
+  .stat {
+    padding: var(--sp-3);
+    border-right: var(--border-width) solid var(--accent-fg);
+    border-bottom: var(--border-width) solid var(--accent-fg);
+  }
+  .stat:nth-child(2n) { border-right: 0; }
+  .stat:nth-last-child(-n+2) { border-bottom: 0; }
+  .stat__num {
+    font-size: clamp(30px, 11vw, 42px);
+    font-weight: 700;
+    letter-spacing: -2px;
+    line-height: 1;
+  }
+  .stat__label {
+    font-size: var(--fs-label);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 600;
+    margin-top: var(--sp-1);
+  }
+
+  /* ---------- Bottom nav ---------- */
+  nav.tabbar {
+    position: sticky;
+    bottom: 0;
+    z-index: 40;
+    background: var(--bg);
+    border-top: var(--border-width) solid var(--fg);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .tab {
+    background: var(--bg);
+    border: 0;
+    border-right: var(--border-width) solid var(--border);
+    color: var(--muted-fg);
+    font-family: var(--font);
+    padding: 12px 4px calc(12px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+    transition: background var(--press-duration) linear, color var(--press-duration) linear;
+  }
+  .tab:last-child { border-right: 0; }
+  .tab svg { width: 24px; height: 24px; }
+  .tab:hover { color: var(--fg); }
+  .tab:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+  .tab[aria-current="page"] { background: var(--accent); color: var(--accent-fg); }
+  .tab:active { background: var(--fg); color: #000; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marquee__track { animation: none; }
+    .chip.live .pulse { animation: none; }
+    .hero__title { transform: none !important; opacity: 1 !important; }
+    * { transition-duration: 1ms !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="phone">
+
+    <header class="topbar">
+      <div class="brand">
+        <span class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="square">
+            <path d="M2 14 L7 6 L12 18 L17 4 L22 12"/>
+          </svg>
+        </span>
+        FREQ
+      </div>
+      <button class="icon-btn" aria-label="Search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+          <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5"/>
+        </svg>
+      </button>
+    </header>
+
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee__track">
+        <span class="marquee__item">NEW DROP FRIDAY<span class="dot"></span>VOL.04<span class="dot"></span>SUBSONIC SESSIONS<span class="dot"></span></span>
+        <span class="marquee__item">NEW DROP FRIDAY<span class="dot"></span>VOL.04<span class="dot"></span>SUBSONIC SESSIONS<span class="dot"></span></span>
+      </div>
+    </div>
+
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero__eyebrow"><span>Featured Mix</span><span>030 / 052</span></div>
+        <h1 class="hero__title" id="hero-title">CONCRETE<br><em>FREQUENCY</em></h1>
+        <div class="hero__meta">
+          <span class="chip live"><span class="pulse"></span>Live · 2.4K</span>
+          <span class="chip">72 MIN</span>
+          <span class="chip">UNDERGROUND</span>
+        </div>
+        <button class="btn">
+          Play full set
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4 L20 12 L6 20 Z"/></svg>
+        </button>
+      </section>
+
+      <div class="sec-head">
+        <h2>TRACKS</h2>
+        <span class="count">12 cuts</span>
+      </div>
+
+      <ul class="tracklist">
+        <li class="track" tabindex="0" role="button" aria-label="Play Acid Reign by Null District">
+          <span class="track__num">01</span>
+          <div class="track__body">
+            <div class="track__title">ACID REIGN</div>
+            <div class="track__sub">Null District · 4:12</div>
+          </div>
+          <span class="track__play" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5 L19 12 L7 19 Z"/></svg>
+          </span>
+        </li>
+        <li class="track" tabindex="0" role="button" aria-label="Play Static Bloom by Greyscale">
+          <span class="track__num">02</span>
+          <div class="track__body">
+            <div class="track__title">STATIC BLOOM</div>
+            <div class="track__sub">Greyscale · 3:48</div>
+          </div>
+          <span class="track__play" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5 L19 12 L7 19 Z"/></svg>
+          </span>
+        </li>
+        <li class="track" tabindex="0" role="button" aria-label="Play Brutal Cathedral by VHS Saint">
+          <span class="track__num">03</span>
+          <div class="track__body">
+            <div class="track__title">BRUTAL CATHEDRAL</div>
+            <div class="track__sub">VHS Saint · 6:02</div>
+          </div>
+          <span class="track__play" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5 L19 12 L7 19 Z"/></svg>
+          </span>
+        </li>
+        <li class="track" tabindex="0" role="button" aria-label="Play Concrete Heart by Loop Theory">
+          <span class="track__num">04</span>
+          <div class="track__body">
+            <div class="track__title">CONCRETE HEART</div>
+            <div class="track__sub">Loop Theory · 5:21</div>
+          </div>
+          <span class="track__play" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5 L19 12 L7 19 Z"/></svg>
+          </span>
+        </li>
+      </ul>
+
+      <section class="panel" aria-labelledby="drop-title">
+        <h3 id="drop-title">VOL.04 DROP</h3>
+        <p>Limited cassette + 24-bit download. 300 numbered copies. Members get first access.</p>
+        <div class="stats" role="list">
+          <div class="stat" role="listitem">
+            <div class="stat__num">300</div>
+            <div class="stat__label">Pressed</div>
+          </div>
+          <div class="stat" role="listitem">
+            <div class="stat__num">61</div>
+            <div class="stat__label">Left</div>
+          </div>
+          <div class="stat" role="listitem">
+            <div class="stat__num">£28</div>
+            <div class="stat__label">Price</div>
+          </div>
+          <div class="stat" role="listitem">
+            <div class="stat__num">02D</div>
+            <div class="stat__label">Until live</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="marquee inverse" aria-hidden="true">
+        <div class="marquee__track">
+          <span class="marquee__item">RESERVE NOW<span class="dot"></span>NO REPRESS<span class="dot"></span>SHIP WORLDWIDE<span class="dot"></span></span>
+          <span class="marquee__item">RESERVE NOW<span class="dot"></span>NO REPRESS<span class="dot"></span>SHIP WORLDWIDE<span class="dot"></span></span>
+        </div>
+      </div>
+    </main>
+
+    <nav class="tabbar" aria-label="Primary">
+      <button class="tab" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"><path d="M3 11 L12 3 L21 11 V21 H3 Z"/></svg>
+        Home
+      </button>
+      <button class="tab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"><path d="M4 6 H20 M4 12 H20 M4 18 H14"/></svg>
+        Library
+      </button>
+      <button class="tab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"><path d="M9 18 V5 L20 3 V16"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>
+        Drops
+      </button>
+      <button class="tab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"><circle cx="12" cy="8" r="4"/><path d="M4 21 c0-5 4-7 8-7 s8 2 8 7"/></svg>
+        You
+      </button>
+    </nav>
+
+  </div>
+
+<script>
+  // Hero parallax: scale 1.0->1.3 + fade on scroll within the phone column.
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var hero = document.getElementById('hero-title');
+    if (!hero || reduce) return;
+    var ticking = false;
+    function update() {
+      var y = window.scrollY || document.documentElement.scrollTop;
+      var p = Math.min(Math.max(y / 320, 0), 1);
+      var scale = 1 + p * 0.3;
+      hero.style.transform = 'scale(' + scale.toFixed(3) + ')';
+      hero.style.transformOrigin = 'left top';
+      hero.style.opacity = (1 - p * 0.85).toFixed(3);
+      ticking = false;
+    }
+    window.addEventListener('scroll', function () {
+      if (!ticking) { window.requestAnimationFrame(update); ticking = true; }
+    }, { passive: true });
+  })();
+
+  // Card flood: keep brief flood after tap to mimic native press inversion.
+  document.querySelectorAll('.track').forEach(function (el) {
+    el.addEventListener('click', function () {
+      el.classList.add('flood');
+      setTimeout(function () { el.classList.remove('flood'); }, 220);
+    });
+    el.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); }
+    });
+  });
+</script>
+</body>
+</html>

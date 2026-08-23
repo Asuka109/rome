@@ -1,0 +1,16 @@
+name: connector_github_unsubscribe
+type: custom
+description: |
+  Remove Rome's GitHub webhook from a repository or organization — the teardown
+  for connector_github_subscribe. Pass exactly one of `repo` ('owner/name') or
+  `org`; no hook id needed. Lists the target's webhooks and deletes only the
+  one(s) pointing at this instance's relay mailbox URL or legacy direct instance
+  webhook URL, so hooks the guardian added by hand are never touched.
+  Idempotent: removing zero hooks (already gone) is success with `deleted: 0`.
+  Requires GitHub connected in Settings → Connections. Fails closed: not
+  connected or a GitHub API error all come back as an action error.
+entry: ./index.ts
+complexity: simple
+speed: moderate
+reliability: medium
+sideEffects: write

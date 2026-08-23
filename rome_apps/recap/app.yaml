@@ -1,0 +1,18 @@
+formatVersion: 1
+id: recap
+name: Recap
+icon: assets/icon.svg
+version: 0.1.1
+description: Spoken recaps for completed WebChat turns
+appRoot: dist
+
+web:
+  manifest: web/manifest.json
+  displayName: Recap
+  navLabel: Recap
+
+api:
+  entry: api/index
+
+hooks:
+  - hooks/agent-turn-finished

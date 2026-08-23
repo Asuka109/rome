@@ -1,0 +1,8 @@
+name: test-pinned
+description: Test agent pinned to the openai provider.
+tier: small
+provider: openai
+permissionMode: default
+tools: []
+systemPromptPrefix: |
+  You are a test agent pinned to a specific model provider.

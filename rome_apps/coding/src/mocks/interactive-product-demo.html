@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Flowdeck — See it in action</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;500;600;700&family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Brand + interface palette */
+    --brand: #5b5bf6;
+    --brand-600: #4a44e0;
+    --brand-700: #3a35c4;
+    --brand-soft: #eef0ff;
+    --demo-highlight: #ff7a45;      /* demo highlight for interactive elements */
+    --demo-glow: rgba(91, 91, 246, 0.45);
+    --accent-cyan: #18c2c2;
+
+    /* Surfaces */
+    --bg: #0c0e1a;
+    --bg-2: #11142a;
+    --surface: #181c38;
+    --surface-2: #1f2444;
+    --panel-line: rgba(255, 255, 255, 0.08);
+    --ink: #f4f5ff;
+    --ink-soft: #b6bbe0;
+    --ink-mute: #7e84b3;
+
+    /* Tokens from CSV Design System Variables */
+    --video-aspect-ratio: 16 / 9;
+    --overlay-bg: rgba(8, 9, 20, 0.72);
+    --step-indicator-size: 32px;
+    --play-button-size: 80px;
+    --transition-duration: 300ms;
+
+    /* Radius / shadow / spacing / type */
+    --r-sm: 8px;
+    --r-md: 14px;
+    --r-lg: 22px;
+    --r-pill: 999px;
+    --shadow-sm: 0 2px 10px rgba(0,0,0,0.25);
+    --shadow-md: 0 18px 44px rgba(7, 8, 22, 0.55);
+    --shadow-glow: 0 0 0 1px rgba(91,91,246,0.4), 0 24px 60px rgba(91,91,246,0.28);
+    --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+    --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 72px;
+    --font-head: 'Rubik', system-ui, sans-serif;
+    --font-body: 'Nunito Sans', system-ui, -apple-system, sans-serif;
+    --fs-eyebrow: 0.8rem;
+    --fs-body: 1rem;
+    --fs-lead: 1.18rem;
+    --fs-h3: 1.25rem;
+    --fs-h2: clamp(1.6rem, 3.4vw, 2.5rem);
+    --fs-h1: clamp(2.2rem, 5.6vw, 3.9rem);
+    --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: var(--font-body);
+    color: var(--ink);
+    background:
+      radial-gradient(1100px 540px at 78% -8%, rgba(91,91,246,0.22), transparent 60%),
+      radial-gradient(900px 500px at 8% 6%, rgba(24,194,194,0.14), transparent 55%),
+      var(--bg);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  h1, h2, h3 { font-family: var(--font-head); margin: 0; line-height: 1.08; letter-spacing: -0.01em; }
+  p { margin: 0; }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; border: none; }
+  :focus-visible {
+    outline: 3px solid var(--accent-cyan);
+    outline-offset: 3px;
+    border-radius: var(--r-sm);
+  }
+
+  .wrap { width: 100%; max-width: 1200px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px); }
+
+  /* ---------- Header ---------- */
+  header.site {
+    position: sticky; top: 0; z-index: 40;
+    backdrop-filter: blur(14px);
+    background: rgba(12, 14, 26, 0.72);
+    border-bottom: 1px solid var(--panel-line);
+  }
+  .nav { display: flex; align-items: center; gap: var(--sp-5); height: 68px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-head); font-weight: 700; font-size: 1.18rem; }
+  .brand .logo {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: linear-gradient(140deg, var(--brand), var(--accent-cyan));
+    display: grid; place-items: center; box-shadow: var(--shadow-glow);
+  }
+  .nav-links { display: none; gap: var(--sp-5); margin-left: var(--sp-4); }
+  .nav-links a { color: var(--ink-soft); font-weight: 600; font-size: 0.95rem; padding: 6px 4px; border-bottom: 2px solid transparent; transition: color var(--transition-duration) var(--ease), border-color var(--transition-duration) var(--ease); }
+  .nav-links a:hover { color: var(--ink); border-color: var(--brand); }
+  .nav-actions { margin-left: auto; display: flex; align-items: center; gap: var(--sp-3); }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    font-weight: 700; font-family: var(--font-head);
+    border-radius: var(--r-pill); padding: 11px 20px; font-size: 0.95rem;
+    transition: transform var(--transition-duration) var(--ease), background var(--transition-duration) var(--ease), box-shadow var(--transition-duration) var(--ease);
+  }
+  .btn-ghost { background: transparent; color: var(--ink-soft); border: 1px solid var(--panel-line); }
+  .btn-ghost:hover { color: var(--ink); border-color: var(--brand); }
+  .btn-primary { background: linear-gradient(135deg, var(--brand), var(--brand-600)); color: #fff; box-shadow: var(--shadow-glow); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 0 1px rgba(91,91,246,0.6), 0 28px 64px rgba(91,91,246,0.4); }
+  .btn-primary:active { transform: translateY(0); }
+
+  /* ---------- Hero ---------- */
+  .hero { padding-top: var(--sp-8); padding-bottom: var(--sp-7); text-align: center; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: var(--fs-eyebrow); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--brand); background: var(--brand-soft);
+    padding: 7px 14px; border-radius: var(--r-pill); margin-bottom: var(--sp-5);
+  }
+  .eyebrow .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--demo-highlight); box-shadow: 0 0 0 4px rgba(255,122,69,0.25); }
+  .hero h1 { font-size: var(--fs-h1); font-weight: 700; max-width: 16ch; margin-inline: auto; }
+  .hero h1 .grad { background: linear-gradient(110deg, var(--brand), var(--accent-cyan)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero .lead { font-size: var(--fs-lead); color: var(--ink-soft); max-width: 56ch; margin: var(--sp-5) auto var(--sp-6); }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: var(--sp-3); justify-content: center; }
+  .btn-lg { padding: 15px 28px; font-size: 1.02rem; }
+  .trust { margin-top: var(--sp-5); font-size: 0.85rem; color: var(--ink-mute); display: flex; flex-wrap: wrap; gap: 6px 18px; justify-content: center; align-items: center; }
+  .trust .stars { display: inline-flex; gap: 2px; color: var(--demo-highlight); }
+
+  /* ---------- Interactive Demo ---------- */
+  .demo-section { padding-bottom: var(--sp-8); }
+  .demo-shell {
+    display: grid; gap: var(--sp-5);
+    grid-template-columns: 1fr;
+    background: linear-gradient(180deg, var(--surface), var(--bg-2));
+    border: 1px solid var(--panel-line);
+    border-radius: var(--r-lg);
+    padding: clamp(14px, 2.4vw, 26px);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Step rail */
+  .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-3); }
+  .step {
+    display: grid; grid-template-columns: var(--step-indicator-size) 1fr; gap: var(--sp-3);
+    align-items: start; width: 100%; text-align: left;
+    background: var(--surface-2); border: 1px solid var(--panel-line);
+    border-radius: var(--r-md); padding: var(--sp-4);
+    color: var(--ink-soft);
+    transition: border-color var(--transition-duration) var(--ease), background var(--transition-duration) var(--ease), transform var(--transition-duration) var(--ease);
+  }
+  .step:hover { transform: translateX(3px); border-color: rgba(91,91,246,0.5); }
+  .step .num {
+    width: var(--step-indicator-size); height: var(--step-indicator-size);
+    border-radius: 50%; display: grid; place-items: center;
+    font-family: var(--font-head); font-weight: 700; font-size: 0.95rem;
+    background: var(--bg-2); color: var(--ink-mute);
+    border: 1px solid var(--panel-line);
+    transition: all var(--transition-duration) var(--ease);
+  }
+  .step .s-title { font-family: var(--font-head); font-weight: 600; color: var(--ink); font-size: 1rem; }
+  .step .s-desc { font-size: 0.9rem; margin-top: 2px; }
+  .step[aria-current="true"] {
+    background: linear-gradient(180deg, rgba(91,91,246,0.16), rgba(91,91,246,0.04));
+    border-color: var(--brand);
+  }
+  .step[aria-current="true"] .num { background: linear-gradient(135deg, var(--brand), var(--brand-600)); color: #fff; border-color: transparent; box-shadow: 0 0 0 4px var(--demo-glow); }
+  .step[aria-current="true"] .s-desc { color: var(--ink-soft); }
+
+  /* Stage / video region */
+  .stage { display: flex; flex-direction: column; gap: var(--sp-3); }
+  .stage-frame {
+    position: relative;
+    aspect-ratio: var(--video-aspect-ratio);
+    border-radius: var(--r-md);
+    overflow: hidden;
+    border: 1px solid var(--panel-line);
+    background: #0a0c18;
+    box-shadow: var(--shadow-sm);
+  }
+  .browser-bar {
+    position: absolute; inset: 0 0 auto 0; height: 34px; z-index: 5;
+    display: flex; align-items: center; gap: 6px; padding: 0 12px;
+    background: rgba(10,12,24,0.85); border-bottom: 1px solid var(--panel-line);
+  }
+  .browser-bar .tl { width: 10px; height: 10px; border-radius: 50%; }
+  .url { margin-left: 10px; flex: 1; height: 18px; border-radius: var(--r-pill); background: var(--surface-2); display: flex; align-items: center; padding: 0 10px; font-size: 0.7rem; color: var(--ink-mute); }
+
+  /* The "screens" inside the frame (CSS-built product UI mockups) */
+  .screen { position: absolute; inset: 34px 0 0 0; opacity: 0; transition: opacity 420ms var(--ease); padding: 16px; display: grid; gap: 12px; }
+  .screen.active { opacity: 1; }
+  .scr-row { display: flex; gap: 10px; align-items: center; }
+  .scr-card { background: var(--surface); border: 1px solid var(--panel-line); border-radius: var(--r-sm); padding: 12px; }
+  .scr-h { height: 10px; border-radius: var(--r-pill); background: var(--surface-2); }
+  .scr-h.brand { background: linear-gradient(90deg, var(--brand), var(--accent-cyan)); }
+  .scr-h.short { width: 38%; }
+  .scr-h.mid { width: 64%; }
+  .scr-pill { font-size: 0.72rem; font-weight: 700; padding: 4px 10px; border-radius: var(--r-pill); background: var(--brand-soft); color: var(--brand-700); font-family: var(--font-head); }
+  .scr-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .bars { display: flex; align-items: flex-end; gap: 8px; height: 92px; }
+  .bars span { flex: 1; border-radius: 6px 6px 0 0; background: linear-gradient(180deg, var(--brand), rgba(91,91,246,0.3)); }
+  .ring { width: 70px; height: 70px; border-radius: 50%; background: conic-gradient(var(--accent-cyan) 0 68%, var(--surface-2) 68% 100%); display: grid; place-items: center; }
+  .ring::after { content: "68%"; width: 48px; height: 48px; border-radius: 50%; background: var(--surface); display: grid; place-items: center; font-family: var(--font-head); font-weight: 700; font-size: 0.8rem; color: var(--ink); }
+
+  /* Hover-to-reveal hotspot */
+  .hotspot {
+    position: absolute; z-index: 6;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--demo-highlight);
+    display: grid; place-items: center; color: #fff; cursor: pointer;
+    box-shadow: 0 0 0 6px rgba(255,122,69,0.28);
+  }
+  .hotspot::before {
+    content: ""; position: absolute; inset: -8px; border-radius: 50%;
+    border: 2px solid var(--demo-highlight); animation: ping 2s var(--ease) infinite;
+  }
+  .hotspot .tip {
+    position: absolute; bottom: calc(100% + 12px); left: 50%; transform: translateX(-50%) translateY(6px);
+    width: max-content; max-width: 200px; opacity: 0; pointer-events: none;
+    background: var(--ink); color: var(--bg); font-size: 0.78rem; font-weight: 700; line-height: 1.3;
+    padding: 8px 11px; border-radius: var(--r-sm);
+    transition: opacity var(--transition-duration) var(--ease), transform var(--transition-duration) var(--ease);
+    font-family: var(--font-body);
+  }
+  .hotspot .tip::after { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 6px solid transparent; border-top-color: var(--ink); }
+  .hotspot:hover .tip, .hotspot:focus-visible .tip { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .hotspot.h1 { top: 30%; left: 22%; }
+  .hotspot.h2 { top: 56%; right: 16%; }
+
+  /* Play button overlay */
+  .play-overlay {
+    position: absolute; inset: 34px 0 0 0; z-index: 8;
+    display: grid; place-items: center;
+    background: var(--overlay-bg);
+    transition: opacity var(--transition-duration) var(--ease);
+  }
+  .play-overlay.hidden { opacity: 0; pointer-events: none; }
+  .play-btn {
+    width: var(--play-button-size); height: var(--play-button-size);
+    border-radius: 50%; background: linear-gradient(135deg, var(--brand), var(--brand-600));
+    color: #fff; display: grid; place-items: center;
+    box-shadow: var(--shadow-glow);
+    transition: transform var(--transition-duration) var(--ease);
+  }
+  .play-btn::after { content: ""; position: absolute; width: var(--play-button-size); height: var(--play-button-size); border-radius: 50%; border: 2px solid rgba(91,91,246,0.5); animation: ping 2.4s var(--ease) infinite; }
+  .play-btn:hover { transform: scale(1.08); }
+  .play-btn:active { transform: scale(0.97); }
+  .play-cap { position: absolute; bottom: 18px; left: 0; right: 0; text-align: center; font-size: 0.85rem; color: var(--ink-soft); font-weight: 600; }
+
+  /* Progress dots under stage */
+  .progress { display: flex; gap: 6px; justify-content: center; }
+  .progress .pdot { width: 8px; height: 8px; border-radius: 50%; background: var(--surface-2); transition: all var(--transition-duration) var(--ease); }
+  .progress .pdot.on { width: 22px; border-radius: var(--r-pill); background: linear-gradient(90deg, var(--brand), var(--accent-cyan)); }
+
+  .stage-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; }
+  .stage-meta { font-size: 0.85rem; color: var(--ink-mute); display: flex; align-items: center; gap: 8px; }
+  .live { display: inline-flex; align-items: center; gap: 6px; color: var(--accent-cyan); font-weight: 700; font-size: 0.8rem; }
+  .live .blip { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-cyan); box-shadow: 0 0 0 0 rgba(24,194,194,0.6); animation: blip 1.8s infinite; }
+
+  /* ---------- Feature strip ---------- */
+  .features { padding-bottom: var(--sp-8); }
+  .sec-head { text-align: center; max-width: 60ch; margin: 0 auto var(--sp-6); }
+  .sec-head h2 { font-size: var(--fs-h2); font-weight: 700; }
+  .sec-head p { color: var(--ink-soft); margin-top: var(--sp-3); font-size: var(--fs-lead); }
+  .feat-grid { display: grid; gap: var(--sp-4); grid-template-columns: 1fr; }
+  .feat {
+    background: var(--surface); border: 1px solid var(--panel-line); border-radius: var(--r-md);
+    padding: var(--sp-5); position: relative; overflow: hidden;
+    transition: transform var(--transition-duration) var(--ease), border-color var(--transition-duration) var(--ease);
+  }
+  .feat::after { content: ""; position: absolute; inset: 0; opacity: 0; background: radial-gradient(420px 200px at 50% -20%, rgba(91,91,246,0.18), transparent 70%); transition: opacity var(--transition-duration) var(--ease); }
+  .feat:hover { transform: translateY(-4px); border-color: rgba(91,91,246,0.45); }
+  .feat:hover::after { opacity: 1; }
+  .feat .ico { width: 44px; height: 44px; border-radius: 12px; background: var(--brand-soft); color: var(--brand-700); display: grid; place-items: center; margin-bottom: var(--sp-4); }
+  .feat h3 { font-size: var(--fs-h3); font-weight: 600; }
+  .feat p { color: var(--ink-soft); margin-top: 8px; font-size: 0.95rem; }
+  .feat .link { display: inline-flex; align-items: center; gap: 6px; margin-top: var(--sp-4); color: var(--brand); font-weight: 700; font-size: 0.9rem; font-family: var(--font-head); }
+  .feat .link svg { transition: transform var(--transition-duration) var(--ease); }
+  .feat:hover .link svg { transform: translateX(4px); }
+
+  /* ---------- Closing CTA ---------- */
+  .closer { padding-bottom: var(--sp-8); }
+  .closer-card {
+    background: linear-gradient(135deg, var(--brand-700), var(--brand));
+    border-radius: var(--r-lg); padding: clamp(28px, 5vw, 56px); text-align: center;
+    position: relative; overflow: hidden; box-shadow: var(--shadow-md);
+  }
+  .closer-card::before { content: ""; position: absolute; inset: 0; background: radial-gradient(500px 240px at 80% -10%, rgba(255,255,255,0.22), transparent 60%); }
+  .closer-card h2 { font-size: var(--fs-h2); font-weight: 700; position: relative; }
+  .closer-card p { color: rgba(255,255,255,0.85); margin: var(--sp-3) auto var(--sp-5); max-width: 50ch; position: relative; }
+  .btn-light { background: #fff; color: var(--brand-700); position: relative; }
+  .btn-light:hover { transform: translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,0.3); }
+
+  footer.site { border-top: 1px solid var(--panel-line); padding: var(--sp-6) 0; }
+  .foot { display: flex; flex-wrap: wrap; gap: var(--sp-4); align-items: center; justify-content: space-between; color: var(--ink-mute); font-size: 0.85rem; }
+  .foot-links { display: flex; gap: var(--sp-5); flex-wrap: wrap; }
+  .foot-links a:hover { color: var(--ink); }
+
+  /* Animations */
+  @keyframes ping { 0% { transform: scale(0.85); opacity: 0.8; } 80%, 100% { transform: scale(1.6); opacity: 0; } }
+  @keyframes blip { 0% { box-shadow: 0 0 0 0 rgba(24,194,194,0.5); } 70% { box-shadow: 0 0 0 8px rgba(24,194,194,0); } 100% { box-shadow: 0 0 0 0 rgba(24,194,194,0); } }
+  @keyframes floatBar { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(0.72); } }
+  .bars span { animation: floatBar 2.6s var(--ease) infinite; transform-origin: bottom; }
+  .bars span:nth-child(2){ animation-delay: .2s } .bars span:nth-child(3){ animation-delay: .4s }
+  .bars span:nth-child(4){ animation-delay: .6s } .bars span:nth-child(5){ animation-delay: .8s }
+
+  /* Responsive */
+  @media (min-width: 720px) {
+    .feat-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (min-width: 960px) {
+    .nav-links { display: flex; }
+    .demo-shell { grid-template-columns: 320px 1fr; align-items: start; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation: none !important; transition-duration: 0.001ms !important; }
+  }
+</style>
+</head>
+<body>
+  <header class="site">
+    <div class="wrap nav">
+      <a class="brand" href="#" aria-label="Flowdeck home">
+        <span class="logo" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7l8-4 8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4"/><path d="M4 17l8 4 8-4"/></svg>
+        </span>
+        Flowdeck
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#demo">Product</a>
+        <a href="#features">Features</a>
+        <a href="#">Pricing</a>
+        <a href="#">Docs</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="btn btn-ghost" href="#">Sign in</a>
+        <a class="btn btn-primary" href="#demo">Start free</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <span class="eyebrow"><span class="dot" aria-hidden="true"></span>Live interactive walkthrough</span>
+      <h1 id="hero-title">Ship workflows your team <span class="grad">actually feels</span> in seconds</h1>
+      <p class="lead">Flowdeck turns messy operations into guided, automated flows. Hover the demo, step through the build, and watch the dashboard come alive — no signup required.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary btn-lg" href="#demo">
+          Try the live demo
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+        </a>
+        <a class="btn btn-ghost btn-lg" href="#features">Browse features</a>
+      </div>
+      <p class="trust">
+        <span class="stars" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+        </span>
+        4.9 / 5 from 2,400+ teams · No credit card · 14-day Pro trial
+      </p>
+    </section>
+
+    <section class="demo-section wrap" id="demo" aria-labelledby="demo-title">
+      <h2 id="demo-title" class="visually-hidden" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Interactive product demo</h2>
+      <div class="demo-shell">
+        <ol class="steps" aria-label="Walkthrough steps">
+          <li>
+            <button class="step" type="button" data-step="0" aria-current="true">
+              <span class="num">1</span>
+              <span>
+                <span class="s-title">Connect your tools</span>
+                <span class="s-desc">Link Slack, Notion, and your CRM in one click.</span>
+              </span>
+            </button>
+          </li>
+          <li>
+            <button class="step" type="button" data-step="1">
+              <span class="num">2</span>
+              <span>
+                <span class="s-title">Build a flow</span>
+                <span class="s-desc">Drag triggers and actions onto a live canvas.</span>
+              </span>
+            </button>
+          </li>
+          <li>
+            <button class="step" type="button" data-step="2">
+              <span class="num">3</span>
+              <span>
+                <span class="s-title">Watch it run</span>
+                <span class="s-desc">Real-time metrics update as your team works.</span>
+              </span>
+            </button>
+          </li>
+        </ol>
+
+        <div class="stage">
+          <div class="stage-frame">
+            <div class="browser-bar" aria-hidden="true">
+              <span class="tl" style="background:#ff5f57"></span>
+              <span class="tl" style="background:#febc2e"></span>
+              <span class="tl" style="background:#28c840"></span>
+              <span class="url">app.flowdeck.io/workspace</span>
+            </div>
+
+            <!-- Screen 1: connect tools -->
+            <div class="screen active" data-screen="0" role="img" aria-label="Integrations screen showing connected tools">
+              <div class="scr-row" style="justify-content:space-between">
+                <span class="scr-pill">Integrations</span>
+                <span class="scr-h short" style="width:56px"></span>
+              </div>
+              <div class="scr-grid">
+                <div class="scr-card"><div class="scr-h brand" style="width:60%"></div><div class="scr-h" style="width:90%;margin-top:8px"></div></div>
+                <div class="scr-card"><div class="scr-h brand" style="width:50%"></div><div class="scr-h" style="width:80%;margin-top:8px"></div></div>
+                <div class="scr-card"><div class="scr-h brand" style="width:70%"></div><div class="scr-h" style="width:85%;margin-top:8px"></div></div>
+              </div>
+              <div class="scr-card"><div class="scr-h mid"></div><div class="scr-h" style="width:88%;margin-top:8px"></div></div>
+            </div>
+
+            <!-- Screen 2: build flow -->
+            <div class="screen" data-screen="1" role="img" aria-label="Flow builder canvas with nodes connected">
+              <div class="scr-row" style="justify-content:space-between">
+                <span class="scr-pill">Flow builder</span>
+                <span class="scr-h short" style="width:56px"></span>
+              </div>
+              <div class="scr-row" style="gap:14px;margin-top:6px;flex-wrap:wrap">
+                <div class="scr-card" style="flex:1;min-width:88px"><div class="scr-h brand short"></div><div class="scr-h" style="margin-top:8px"></div></div>
+                <svg width="26" height="14" viewBox="0 0 26 14" fill="none" stroke="var(--ink-mute)" stroke-width="2" aria-hidden="true"><path d="M1 7h20"/><path d="M16 2l6 5-6 5"/></svg>
+                <div class="scr-card" style="flex:1;min-width:88px"><div class="scr-h brand short"></div><div class="scr-h" style="margin-top:8px"></div></div>
+                <svg width="26" height="14" viewBox="0 0 26 14" fill="none" stroke="var(--ink-mute)" stroke-width="2" aria-hidden="true"><path d="M1 7h20"/><path d="M16 2l6 5-6 5"/></svg>
+                <div class="scr-card" style="flex:1;min-width:88px"><div class="scr-h brand short"></div><div class="scr-h" style="margin-top:8px"></div></div>
+              </div>
+              <div class="scr-card"><div class="scr-h mid"></div><div class="scr-h" style="width:70%;margin-top:8px"></div></div>
+            </div>
+
+            <!-- Screen 3: dashboard -->
+            <div class="screen" data-screen="2" role="img" aria-label="Live analytics dashboard with charts">
+              <div class="scr-row" style="justify-content:space-between">
+                <span class="scr-pill">Live results</span>
+                <span class="live"><span class="blip" aria-hidden="true"></span>Live</span>
+              </div>
+              <div class="scr-row" style="gap:14px;align-items:stretch">
+                <div class="scr-card" style="flex:2"><div class="bars"><span style="height:60%"></span><span style="height:90%"></span><span style="height:48%"></span><span style="height:74%"></span><span style="height:100%"></span></div></div>
+                <div class="scr-card" style="flex:1;display:grid;place-items:center"><div class="ring" aria-hidden="true"></div></div>
+              </div>
+            </div>
+
+            <!-- Hover-to-reveal hotspots -->
+            <button class="hotspot h1" type="button" aria-label="Highlight: automated triggers">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+              <span class="tip">Triggers fire automatically when data changes</span>
+            </button>
+            <button class="hotspot h2" type="button" aria-label="Highlight: real-time sync">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
+              <span class="tip">Everything syncs in real time across your team</span>
+            </button>
+
+            <!-- Play overlay -->
+            <div class="play-overlay" id="playOverlay">
+              <button class="play-btn" type="button" id="playBtn" aria-label="Play product walkthrough">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="7 4 20 12 7 20 7 4"/></svg>
+              </button>
+              <span class="play-cap">2 min walkthrough · No sound needed</span>
+            </div>
+          </div>
+
+          <div class="progress" id="progress" aria-hidden="true">
+            <span class="pdot on"></span><span class="pdot"></span><span class="pdot"></span>
+          </div>
+
+          <div class="stage-foot">
+            <span class="stage-meta">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              Step <strong id="stepLabel" style="color:var(--ink)">1</strong> of 3 · Auto-advances
+            </span>
+            <a class="btn btn-ghost" href="#" style="padding:9px 16px">
+              Open full demo
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="features wrap" id="features" aria-labelledby="feat-title">
+      <div class="sec-head">
+        <h2 id="feat-title">Everything you saw, ready to deploy</h2>
+        <p>Each step in the demo maps to a real capability your team can use today.</p>
+      </div>
+      <div class="feat-grid">
+        <article class="feat">
+          <span class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg></span>
+          <h3>100+ integrations</h3>
+          <p>Connect the stack you already run. OAuth in once and tokens refresh automatically.</p>
+          <a class="link" href="#">Explore connectors <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></a>
+        </article>
+        <article class="feat">
+          <span class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 17.5h7"/></svg></span>
+          <h3>Visual flow builder</h3>
+          <p>Drag triggers, branches, and actions onto a live canvas. No code, infinite logic.</p>
+          <a class="link" href="#">See the builder <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></a>
+        </article>
+        <article class="feat">
+          <span class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg></span>
+          <h3>Real-time analytics</h3>
+          <p>Dashboards update the instant a flow runs, so you spot wins and blockers live.</p>
+          <a class="link" href="#">View metrics <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></a>
+        </article>
+      </div>
+    </section>
+
+    <section class="closer wrap" aria-labelledby="cta-title">
+      <div class="closer-card">
+        <h2 id="cta-title">Stop reading about it. Run it.</h2>
+        <p>Spin up a real Flowdeck workspace in under a minute and connect your first tool free.</p>
+        <a class="btn btn-light btn-lg" href="#demo">
+          Launch my workspace
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site">
+    <div class="wrap foot">
+      <span>© 2026 Flowdeck Labs, Inc.</span>
+      <nav class="foot-links" aria-label="Footer">
+        <a href="#">Security</a>
+        <a href="#">Status</a>
+        <a href="#">Privacy</a>
+        <a href="#">Contact</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var steps = Array.prototype.slice.call(document.querySelectorAll('.step'));
+      var screens = Array.prototype.slice.call(document.querySelectorAll('.screen'));
+      var dots = Array.prototype.slice.call(document.querySelectorAll('#progress .pdot'));
+      var label = document.getElementById('stepLabel');
+      var overlay = document.getElementById('playOverlay');
+      var playBtn = document.getElementById('playBtn');
+      var current = 0, timer = null, playing = false;
+
+      function setStep(i) {
+        current = i;
+        steps.forEach(function (s, idx) { s.setAttribute('aria-current', idx === i ? 'true' : 'false'); });
+        screens.forEach(function (s, idx) { s.classList.toggle('active', idx === i); });
+        dots.forEach(function (d, idx) { d.classList.toggle('on', idx === i); });
+        if (label) label.textContent = String(i + 1);
+      }
+
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      function autoplay() {
+        if (reduce) return;
+        clearInterval(timer);
+        timer = setInterval(function () { setStep((current + 1) % steps.length); }, 3200);
+      }
+
+      steps.forEach(function (s) {
+        s.addEventListener('click', function () {
+          setStep(parseInt(s.getAttribute('data-step'), 10));
+          if (playing) autoplay();
+        });
+      });
+
+      playBtn.addEventListener('click', function () {
+        playing = true;
+        overlay.classList.add('hidden');
+        setStep(0);
+        autoplay();
+      });
+    })();
+  </script>
+</body>
+</html>

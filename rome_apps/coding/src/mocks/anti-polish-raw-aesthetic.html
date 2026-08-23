@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ruth Calder — Studio Sketchbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Caveat:wght@400;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Palette — from styles.csv */
+    --paper-bg: #FAFAF8;
+    --pencil-color: #4A4A4A;
+    --marker-black: #1A1A1A;
+    --kraft-brown: #C4A77D;
+
+    /* Derived tones */
+    --paper-shade: #EFEDE6;
+    --aged-paper: #F1EBDD;
+    --ink-blue: #2B3A55;
+    --tape: rgba(196, 167, 125, 0.45);
+    --wash-coral: rgba(225, 122, 95, 0.55);
+    --wash-sage: rgba(140, 162, 132, 0.5);
+
+    /* Typography scale */
+    --font-hand: 'Caveat', 'Comic Sans MS', cursive;
+    --font-mono: 'Space Mono', ui-monospace, 'Courier New', monospace;
+    --fs-xs: 0.72rem;
+    --fs-sm: 0.85rem;
+    --fs-base: 1rem;
+    --fs-lg: 1.35rem;
+    --fs-xl: 2rem;
+    --fs-2xl: clamp(2.6rem, 8vw, 5rem);
+
+    /* Spacing */
+    --sp-1: 0.5rem;
+    --sp-2: 0.9rem;
+    --sp-3: 1.5rem;
+    --sp-4: 2.4rem;
+    --sp-5: 4rem;
+
+    /* Radius (mostly hand-drawn so kept near 0) */
+    --r-rough: 2px 14px 4px 12px / 12px 3px 14px 4px;
+
+    /* Shadow — flat, slightly offset like real paper */
+    --shadow-paper: 3px 4px 0 rgba(26, 26, 26, 0.18);
+    --shadow-tape: 0 1px 0 rgba(0, 0, 0, 0.08);
+
+    /* Texture */
+    --texture-opacity: 0.3;
+
+    /* Motion — deliberately stepped / jittery, no smooth easing */
+    --t-snap: 80ms steps(2, end);
+    --rot: -1.5deg;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-mono);
+    background-color: var(--paper-bg);
+    color: var(--marker-black);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Paper grain + faint ruled-line texture overlay (CSS only) */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: var(--texture-opacity);
+    background-image:
+      repeating-linear-gradient(0deg, transparent 0 27px, rgba(43, 58, 85, 0.05) 27px 28px),
+      radial-gradient(circle at 20% 30%, rgba(0,0,0,0.04) 0 1px, transparent 1px),
+      radial-gradient(circle at 70% 60%, rgba(0,0,0,0.035) 0 1px, transparent 1px),
+      radial-gradient(circle at 40% 80%, rgba(0,0,0,0.03) 0 1px, transparent 1px);
+    background-size: 100% 28px, 7px 7px, 11px 11px, 9px 9px;
+    mix-blend-mode: multiply;
+  }
+
+  a { color: inherit; text-decoration: none; }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 clamp(1rem, 4vw, 2.5rem);
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ---------- Header / Nav ---------- */
+  header {
+    padding-top: var(--sp-3);
+    padding-bottom: var(--sp-2);
+  }
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    flex-wrap: wrap;
+    border-bottom: 3px solid var(--marker-black);
+    padding-bottom: var(--sp-2);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+  }
+  .brand .mark {
+    width: 42px;
+    height: 42px;
+    flex: none;
+  }
+  .brand .name {
+    font-family: var(--font-hand);
+    font-size: 1.9rem;
+    font-weight: 700;
+    line-height: 1;
+    transform: rotate(-2deg);
+  }
+  .brand .role {
+    font-size: var(--fs-xs);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--pencil-color);
+  }
+
+  nav.menu ul {
+    list-style: none;
+    display: flex;
+    gap: var(--sp-1);
+    margin: 0;
+    padding: 0;
+    flex-wrap: wrap;
+  }
+  nav.menu a {
+    font-family: var(--font-hand);
+    font-size: 1.3rem;
+    padding: 2px 10px;
+    border: 2px solid transparent;
+    transition: background-color var(--t-snap), color var(--t-snap), transform var(--t-snap);
+  }
+  nav.menu a:hover {
+    background: var(--marker-black);
+    color: var(--paper-bg);
+    transform: rotate(-2deg);
+  }
+  nav.menu a:focus-visible {
+    outline: 3px dashed var(--kraft-brown);
+    outline-offset: 2px;
+  }
+  nav.menu a[aria-current="page"] {
+    border-bottom: 3px solid var(--kraft-brown);
+  }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: var(--sp-4);
+    align-items: center;
+    padding: var(--sp-5) 0 var(--sp-4);
+  }
+  .hero .tape {
+    display: inline-block;
+    background: var(--tape);
+    color: var(--marker-black);
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    transform: rotate(-3deg);
+    box-shadow: var(--shadow-tape);
+    margin-bottom: var(--sp-2);
+  }
+  .hero h1 {
+    font-family: var(--font-hand);
+    font-weight: 700;
+    font-size: var(--fs-2xl);
+    line-height: 0.92;
+    margin: 0 0 var(--sp-2);
+    letter-spacing: -0.01em;
+  }
+  .hero h1 .scribble {
+    position: relative;
+    display: inline-block;
+  }
+  .hero h1 .scribble svg {
+    position: absolute;
+    left: -4%;
+    bottom: -0.35em;
+    width: 108%;
+    height: 0.5em;
+    overflow: visible;
+  }
+  .hero p.lede {
+    font-family: var(--font-mono);
+    font-size: var(--fs-base);
+    color: var(--pencil-color);
+    max-width: 46ch;
+    margin: 0 0 var(--sp-3);
+  }
+  .cta-row {
+    display: flex;
+    gap: var(--sp-2);
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .btn {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: var(--fs-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 12px 22px;
+    border: 2.5px solid var(--marker-black);
+    background: var(--marker-black);
+    color: var(--paper-bg);
+    cursor: pointer;
+    box-shadow: var(--shadow-paper);
+    transform: rotate(-1deg);
+    transition: transform var(--t-snap), box-shadow var(--t-snap), background-color var(--t-snap), color var(--t-snap);
+  }
+  .btn:hover {
+    transform: rotate(1deg) translate(-2px, -2px);
+    box-shadow: 6px 7px 0 rgba(26,26,26,0.22);
+  }
+  .btn:active {
+    transform: rotate(0deg) translate(2px, 3px);
+    box-shadow: 1px 1px 0 rgba(26,26,26,0.2);
+  }
+  .btn:focus-visible {
+    outline: 3px dashed var(--kraft-brown);
+    outline-offset: 3px;
+  }
+  .btn.ghost {
+    background: transparent;
+    color: var(--marker-black);
+  }
+  .btn.ghost:hover {
+    background: var(--kraft-brown);
+    color: var(--marker-black);
+  }
+
+  /* Hero polaroid / sketch panel */
+  .hero-art {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.12);
+    padding: 14px 14px 56px;
+    box-shadow: 5px 8px 0 rgba(26,26,26,0.16);
+    transform: rotate(2.5deg);
+  }
+  .hero-art::before {
+    content: "";
+    position: absolute;
+    top: -16px;
+    left: 50%;
+    width: 110px;
+    height: 34px;
+    transform: translateX(-50%) rotate(-4deg);
+    background: var(--tape);
+    box-shadow: var(--shadow-tape);
+  }
+  .hero-art .canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    background:
+      radial-gradient(ellipse 60% 50% at 30% 35%, var(--wash-coral), transparent 70%),
+      radial-gradient(ellipse 55% 45% at 70% 65%, var(--wash-sage), transparent 70%),
+      var(--aged-paper);
+  }
+  .hero-art .caption {
+    position: absolute;
+    bottom: 14px;
+    left: 16px;
+    right: 16px;
+    font-family: var(--font-hand);
+    font-size: 1.3rem;
+    color: var(--pencil-color);
+    transform: rotate(-1.5deg);
+  }
+
+  /* ---------- Section heading ---------- */
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-2);
+    margin: var(--sp-5) 0 var(--sp-3);
+    flex-wrap: wrap;
+  }
+  .sec-head h2 {
+    font-family: var(--font-hand);
+    font-size: clamp(2rem, 5vw, 2.8rem);
+    margin: 0;
+    transform: rotate(-1deg);
+  }
+  .sec-head .count {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--pencil-color);
+    border: 2px solid var(--pencil-color);
+    padding: 2px 9px;
+    transform: rotate(1.5deg);
+  }
+
+  /* ---------- Work grid ---------- */
+  .work-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: var(--sp-3);
+  }
+  .card {
+    background: #fff;
+    border: 2.5px solid var(--marker-black);
+    box-shadow: var(--shadow-paper);
+    padding: 0 0 var(--sp-2);
+    transform: rotate(var(--rot));
+    transition: transform var(--t-snap), box-shadow var(--t-snap);
+    display: flex;
+    flex-direction: column;
+  }
+  .card:nth-child(2n) { --rot: 1.2deg; }
+  .card:nth-child(3n) { --rot: -0.8deg; }
+  .card:hover {
+    transform: rotate(0deg) translate(-2px, -3px);
+    box-shadow: 6px 9px 0 rgba(26,26,26,0.22);
+  }
+  .card:focus-within {
+    outline: 3px dashed var(--kraft-brown);
+    outline-offset: 3px;
+  }
+  .card .thumb {
+    aspect-ratio: 5 / 4;
+    border-bottom: 2.5px solid var(--marker-black);
+    display: block;
+    width: 100%;
+  }
+  .card .body { padding: var(--sp-2) var(--sp-2) 0; }
+  .card h3 {
+    font-family: var(--font-hand);
+    font-size: 1.6rem;
+    margin: 0 0 4px;
+    line-height: 1;
+  }
+  .card .meta {
+    display: flex;
+    gap: var(--sp-1);
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .card .meta span {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--pencil-color);
+    border-bottom: 1.5px dotted var(--kraft-brown);
+  }
+  .card p {
+    font-size: var(--fs-sm);
+    color: var(--pencil-color);
+    margin: 0;
+  }
+  .card .stamp {
+    align-self: flex-start;
+    margin: var(--sp-1) var(--sp-2) 0;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--wash-coral);
+    border: 2px solid currentColor;
+    color: #b2503a;
+    padding: 2px 8px;
+    transform: rotate(-4deg);
+    opacity: 0.9;
+  }
+
+  /* ---------- Process / aside two-col ---------- */
+  .split {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: var(--sp-4);
+    align-items: start;
+    margin-bottom: var(--sp-4);
+  }
+  .notebook {
+    background: var(--aged-paper);
+    border: 2.5px solid var(--marker-black);
+    box-shadow: var(--shadow-paper);
+    padding: var(--sp-3);
+    position: relative;
+  }
+  .notebook ol {
+    list-style: none;
+    counter-reset: step;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--sp-2);
+  }
+  .notebook li {
+    counter-increment: step;
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: var(--sp-2);
+    align-items: start;
+  }
+  .notebook li::before {
+    content: counter(step);
+    font-family: var(--font-hand);
+    font-size: 1.8rem;
+    font-weight: 700;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border: 2.5px solid var(--marker-black);
+    border-radius: 50%;
+    background: #fff;
+    transform: rotate(-5deg);
+  }
+  .notebook li h4 {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: var(--fs-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 6px 0 2px;
+  }
+  .notebook li p {
+    margin: 0;
+    font-size: var(--fs-sm);
+    color: var(--pencil-color);
+  }
+
+  .aside-stack { display: grid; gap: var(--sp-3); }
+  .sticky-note {
+    background: #fff;
+    border: 2px solid var(--marker-black);
+    padding: var(--sp-3);
+    box-shadow: var(--shadow-paper);
+  }
+  .sticky-note.kraft { background: var(--kraft-brown); }
+  .sticky-note h3 {
+    font-family: var(--font-hand);
+    font-size: 1.7rem;
+    margin: 0 0 var(--sp-1);
+  }
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 7px 0;
+    border-bottom: 1.5px dashed rgba(26,26,26,0.35);
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-row b { font-size: var(--fs-lg); }
+
+  .availability {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+  }
+  .dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: #5a8a5a;
+    border: 2px solid var(--marker-black);
+    animation: blink 1.4s steps(2, end) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0.35; } }
+
+  /* ---------- Footer / contact ---------- */
+  footer {
+    border-top: 3px solid var(--marker-black);
+    margin-top: var(--sp-4);
+    padding: var(--sp-4) 0 var(--sp-5);
+  }
+  .foot-grid {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+  footer h2 {
+    font-family: var(--font-hand);
+    font-size: clamp(2.2rem, 6vw, 3.4rem);
+    margin: 0 0 var(--sp-1);
+    line-height: 0.95;
+  }
+  footer .links {
+    display: flex;
+    gap: var(--sp-2);
+    flex-wrap: wrap;
+  }
+  footer .links a {
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 2px solid var(--kraft-brown);
+    padding-bottom: 2px;
+    transition: color var(--t-snap), border-color var(--t-snap);
+  }
+  footer .links a:hover { color: var(--kraft-brown); border-color: var(--marker-black); }
+  footer .links a:focus-visible { outline: 3px dashed var(--kraft-brown); outline-offset: 3px; }
+  .signoff {
+    font-family: var(--font-hand);
+    font-size: 1.5rem;
+    color: var(--pencil-color);
+    transform: rotate(-2deg);
+    margin-top: var(--sp-3);
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 860px) {
+    .hero { grid-template-columns: 1fr; gap: var(--sp-3); }
+    .hero-art { max-width: 340px; }
+    .split { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) {
+    nav.menu ul { gap: 0; }
+    nav.menu a { font-size: 1.15rem; padding: 2px 7px; }
+    .topbar { gap: var(--sp-1); }
+  }
+
+  /* ---------- Reduced motion ---------- */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="topbar">
+        <div class="brand">
+          <!-- inline SVG hand-drawn ink-blot mark -->
+          <svg class="mark" viewBox="0 0 48 48" aria-hidden="true">
+            <path d="M24 4c6 2 5 9 11 11s9 8 6 14-11 3-13 9-12 7-16 2-1-12-6-16 1-13 7-15 5-7 11-5z"
+                  fill="#1A1A1A" />
+            <circle cx="20" cy="20" r="2.4" fill="#FAFAF8" />
+            <circle cx="30" cy="27" r="1.6" fill="#FAFAF8" />
+          </svg>
+          <div>
+            <div class="name">Ruth Calder</div>
+            <div class="role">Illustrator &amp; Risograph</div>
+          </div>
+        </div>
+        <nav class="menu" aria-label="Primary">
+          <ul>
+            <li><a href="#work" aria-current="page">Work</a></li>
+            <li><a href="#process">Process</a></li>
+            <li><a href="#studio">Studio</a></li>
+            <li><a href="#contact">Say&nbsp;Hi</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <!-- HERO -->
+      <section class="hero" aria-labelledby="hero-title">
+        <div>
+          <span class="tape">Open sketchbook — Spring '26</span>
+          <h1 id="hero-title">
+            Made by hand,<br />
+            <span class="scribble">left a little
+              <svg viewBox="0 0 200 20" aria-hidden="true" preserveAspectRatio="none">
+                <path d="M2 14 C40 4, 80 18, 120 9 S190 6, 198 13"
+                      fill="none" stroke="#C4A77D" stroke-width="5" stroke-linecap="round" />
+              </svg>
+            </span><br />
+            unfinished.
+          </h1>
+          <p class="lede">
+            I draw posters, zines and record sleeves the slow way — pencil first,
+            scanner second, smudges welcome. Nothing here is auto-aligned.
+          </p>
+          <div class="cta-row">
+            <a class="btn" href="#contact">Start a commission</a>
+            <a class="btn ghost" href="#work">Flip through work</a>
+          </div>
+        </div>
+
+        <figure class="hero-art" aria-label="Loose watercolour study pinned with tape">
+          <span class="canvas" role="img" aria-label="Coral and sage watercolour washes on aged paper"></span>
+          <figcaption class="caption">study no.41 — kept the coffee ring</figcaption>
+        </figure>
+      </section>
+
+      <!-- WORK -->
+      <section id="work" aria-labelledby="work-head">
+        <div class="sec-head">
+          <h2 id="work-head">Recent scraps</h2>
+          <span class="count">12 pieces · 2025–26</span>
+        </div>
+
+        <div class="work-grid">
+          <article class="card" tabindex="0">
+            <svg class="thumb" viewBox="0 0 200 160" aria-label="Risograph poster in coral and ink">
+              <rect width="200" height="160" fill="#F1EBDD" />
+              <path d="M0 120 Q50 90 100 115 T200 100 V160 H0Z" fill="rgba(225,122,95,0.55)" />
+              <circle cx="150" cy="50" r="34" fill="rgba(140,162,132,0.6)" />
+              <path d="M30 30 L80 110" stroke="#1A1A1A" stroke-width="3" stroke-linecap="round" fill="none"/>
+              <path d="M40 25 L90 105" stroke="#1A1A1A" stroke-width="3" stroke-linecap="round" fill="none"/>
+            </svg>
+            <div class="body">
+              <div class="meta"><span>Riso poster</span><span>2-colour</span></div>
+              <h3>Night Market</h3>
+              <p>A1 risograph run of 50, hand-numbered in the corner.</p>
+            </div>
+            <span class="stamp">Sold out</span>
+          </article>
+
+          <article class="card" tabindex="0">
+            <svg class="thumb" viewBox="0 0 200 160" aria-label="Sketchbook zine cover">
+              <rect width="200" height="160" fill="#FAFAF8" />
+              <rect x="22" y="18" width="156" height="124" fill="#fff" stroke="#1A1A1A" stroke-width="3"/>
+              <path d="M40 60 h120 M40 80 h100 M40 100 h130" stroke="#4A4A4A" stroke-width="2"/>
+              <path d="M55 40 q20 -12 40 0 t40 0" stroke="#C4A77D" stroke-width="4" fill="none" stroke-linecap="round"/>
+            </svg>
+            <div class="body">
+              <div class="meta"><span>Zine</span><span>32 pages</span></div>
+              <h3>Slow Mornings</h3>
+              <p>Diary comics drawn over one rainy fortnight in March.</p>
+            </div>
+          </article>
+
+          <article class="card" tabindex="0">
+            <svg class="thumb" viewBox="0 0 200 160" aria-label="Record sleeve illustration">
+              <rect width="200" height="160" fill="#1A1A1A" />
+              <circle cx="100" cy="80" r="58" fill="#F1EBDD"/>
+              <circle cx="100" cy="80" r="10" fill="#1A1A1A"/>
+              <path d="M60 80 a40 40 0 0 1 80 0" stroke="rgba(225,122,95,0.7)" stroke-width="4" fill="none"/>
+              <path d="M70 80 a30 30 0 0 0 60 0" stroke="rgba(140,162,132,0.7)" stroke-width="4" fill="none"/>
+            </svg>
+            <div class="body">
+              <div class="meta"><span>Sleeve</span><span>12" vinyl</span></div>
+              <h3>Driftwood EP</h3>
+              <p>Cover art and hand-lettered spine for a folk duo.</p>
+            </div>
+          </article>
+
+          <article class="card" tabindex="0">
+            <svg class="thumb" viewBox="0 0 200 160" aria-label="Loose ink botanical study">
+              <rect width="200" height="160" fill="#F1EBDD" />
+              <path d="M100 140 C100 90 60 80 70 40" stroke="#4A4A4A" stroke-width="3" fill="none"/>
+              <path d="M100 140 C100 100 140 90 130 50" stroke="#4A4A4A" stroke-width="3" fill="none"/>
+              <ellipse cx="70" cy="40" rx="16" ry="9" fill="rgba(140,162,132,0.7)" transform="rotate(-25 70 40)"/>
+              <ellipse cx="130" cy="50" rx="16" ry="9" fill="rgba(225,122,95,0.6)" transform="rotate(25 130 50)"/>
+            </svg>
+            <div class="body">
+              <div class="meta"><span>Study</span><span>Original</span></div>
+              <h3>Weeds, mostly</h3>
+              <p>Ink and gouache on found ledger paper. One of a kind.</p>
+            </div>
+            <span class="stamp">1 of 1</span>
+          </article>
+
+          <article class="card" tabindex="0">
+            <svg class="thumb" viewBox="0 0 200 160" aria-label="Hand-lettered logo sketches">
+              <rect width="200" height="160" fill="#fff" />
+              <path d="M20 70 q15 -30 30 0 t30 0" stroke="#1A1A1A" stroke-width="5" fill="none" stroke-linecap="round"/>
+              <path d="M95 95 c20 -20 50 -10 40 15" stroke="#C4A77D" stroke-width="5" fill="none" stroke-linecap="round"/>
+              <path d="M40 120 h120" stroke="#4A4A4A" stroke-width="2" stroke-dasharray="6 5"/>
+            </svg>
+            <div class="body">
+              <div class="meta"><span>Lettering</span><span>Brand</span></div>
+              <h3>Pilcrow Café</h3>
+              <p>Wonky brush wordmark for a neighbourhood coffee shop.</p>
+            </div>
+          </article>
+
+          <article class="card" tabindex="0">
+            <svg class="thumb" viewBox="0 0 200 160" aria-label="Collage of torn paper scraps">
+              <rect width="200" height="160" fill="#F1EBDD" />
+              <rect x="20" y="30" width="80" height="60" fill="rgba(196,167,125,0.7)" transform="rotate(-6 60 60)"/>
+              <rect x="90" y="60" width="80" height="70" fill="rgba(225,122,95,0.4)" transform="rotate(5 130 95)"/>
+              <path d="M30 110 l40 -10 30 20" stroke="#1A1A1A" stroke-width="3" fill="none"/>
+            </svg>
+            <div class="body">
+              <div class="meta"><span>Collage</span><span>Mixed</span></div>
+              <h3>Cut &amp; Keep</h3>
+              <p>Torn-paper editorial spread for an indie travel mag.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- PROCESS + ASIDE -->
+      <section id="process" class="split" aria-labelledby="process-head">
+        <div class="notebook">
+          <div class="sec-head" style="margin-top:0;">
+            <h2 id="process-head">How it gets made</h2>
+          </div>
+          <ol>
+            <li>
+              <div>
+                <h4>Pencil on the worst paper</h4>
+                <p>Thumbnails go straight into a battered A5 book. No undo, no grid.</p>
+              </div>
+            </li>
+            <li>
+              <div>
+                <h4>Ink, smudge, scan</h4>
+                <p>Brush pen over the lines, then flatbed-scanned at 600dpi with dust left in.</p>
+              </div>
+            </li>
+            <li>
+              <div>
+                <h4>Risograph or screen</h4>
+                <p>Two spot colours, deliberate mis-registration, a little ink starvation.</p>
+              </div>
+            </li>
+            <li>
+              <div>
+                <h4>Number &amp; send</h4>
+                <p>Hand-stamped, signed in pencil, wrapped in kraft and posted Tuesdays.</p>
+              </div>
+            </li>
+          </ol>
+        </div>
+
+        <div class="aside-stack">
+          <div class="sticky-note" id="studio">
+            <h3>From the studio</h3>
+            <div class="stat-row"><span>Editions printed</span><b>2,140</b></div>
+            <div class="stat-row"><span>Coffee rings (kept)</span><b>∞</b></div>
+            <div class="stat-row"><span>Avg. turnaround</span><b>3 wks</b></div>
+          </div>
+          <div class="sticky-note kraft">
+            <h3>Booking status</h3>
+            <p class="availability"><span class="dot" aria-hidden="true"></span> Taking 2 commissions for June.</p>
+            <p style="font-family:var(--font-mono);font-size:var(--fs-sm);margin:var(--sp-1) 0 0;">
+              Deposit holds your slot. Sketches shared every Friday.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer id="contact">
+      <div class="foot-grid">
+        <div>
+          <h2>Let's make<br />something rough.</h2>
+          <p style="font-family:var(--font-mono);font-size:var(--fs-sm);color:var(--pencil-color);max-width:42ch;">
+            Posters, covers, lettering, the odd mural. Tell me what it's for and roughly when.
+          </p>
+        </div>
+        <div class="links">
+          <a href="mailto:hi@ruthcalder.studio">hi@ruthcalder.studio</a>
+          <a href="#work">Instagram</a>
+          <a href="#work">Shop / Etsy</a>
+        </div>
+      </div>
+      <p class="signoff">— drawn, not generated. © 2026 Ruth Calder</p>
+    </footer>
+  </div>
+</body>
+</html>

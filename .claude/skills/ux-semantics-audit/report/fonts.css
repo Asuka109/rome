@@ -1,0 +1,68 @@
+/**
+ * The dashboard's three families, declared woff2-only and latin-only.
+ *
+ * The files are vendored in `fonts/` rather than pulled from a package: the
+ * report inlines fonts as data URIs, and every @fontsource stylesheet lists a
+ * woff fallback beside the woff2, which would embed both copies of every
+ * weight. Vendoring also keeps a dev-only document out of the dependency graph
+ * and the lockfile. `fonts/LICENSE` carries the OFL notice all three require.
+ *
+ * Family names must match the literals in globals.css (`--rome-font-*`), which
+ * is what the page reads through `font-sans` / `font-serif` / `font-mono`.
+ */
+
+@font-face {
+  font-family: "Funnel Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("./fonts/funnel-sans-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Funnel Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url("./fonts/funnel-sans-latin-500-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Funnel Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url("./fonts/funnel-sans-latin-600-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Petrona";
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url("./fonts/petrona-latin-500-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Petrona";
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url("./fonts/petrona-latin-600-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("./fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url("./fonts/ibm-plex-mono-latin-500-normal.woff2") format("woff2");
+}

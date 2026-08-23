@@ -1,0 +1,280 @@
+{
+  "builtinApps": "内置应用",
+  "header": {
+    "title": "应用",
+    "appStore": "应用商店",
+    "myAppsCount_one": "自建 {{count}}",
+    "myAppsCount_other": "自建 {{count}}",
+    "installedCount_one": "已安装 {{count}}",
+    "installedCount_other": "已安装 {{count}}",
+    "builtinCount_one": "内置 {{count}}",
+    "builtinCount_other": "内置 {{count}}",
+    "updatesCount_one": "{{count}} 项更新",
+    "updatesCount_other": "{{count}} 项更新"
+  },
+  "sections": {
+    "my": {
+      "title": "我的应用",
+      "newApp": "新建应用",
+      "newAppDraft": "帮我创建一个新应用,它可以"
+    },
+    "appstore": {
+      "title": "已安装应用",
+      "browse": "应用商店",
+      "browseStore": "浏览商店"
+    },
+    "builtin": {
+      "title": "内置应用"
+    }
+  },
+  "search": {
+    "placeholder": "搜索应用",
+    "ariaLabel": "搜索应用",
+    "clear": "清除搜索",
+    "resultsCount_one": "{{count}} 个结果",
+    "resultsCount_other": "{{count}} 个结果",
+    "noResults": "没有与“{{query}}”匹配的应用",
+    "noResultsHint": "换个关键词,或前往应用商店浏览。"
+  },
+  "builtinDescriptions": {
+    "projects": "智能体工作的目录",
+    "memory": "身份、日志和 Rome 认识的人",
+    "people": "守护者介绍过的联系人",
+    "routines": "定时与周期性的智能体任务",
+    "activity": "Rome 最近做了什么",
+    "store": "浏览并安装 Rome 应用",
+    "desktop": "内嵌浏览器界面",
+    "chat": "和你的智能体对话",
+    "settings": "档案、通道与集成"
+  },
+  "installedApps": "已安装应用",
+  "tabs": {
+    "installed": "已安装",
+    "store": "应用商店"
+  },
+  "pageTitle": {
+    "installed": "已安装应用",
+    "store": "应用商店"
+  },
+  "status": {
+    "active": "已启用",
+    "disabled": "已禁用",
+    "failed": "失败"
+  },
+  "phase": {
+    "installed": "已安装",
+    "installing": "安装中…",
+    "uninstalling": "卸载中…"
+  },
+  "placeholder": {
+    "failed": "启动失败",
+    "disabled": "已禁用",
+    "noFrontend": "无前端界面"
+  },
+  "toggle": {
+    "disabling": "正在禁用...",
+    "enabling": "正在启用...",
+    "disable": "禁用",
+    "enable": "启用"
+  },
+  "capabilities": {
+    "agents": "智能体",
+    "actions": "动作",
+    "skills": "技能",
+    "hooks": "钩子"
+  },
+  "detail": {
+    "back": "返回应用",
+    "notFound": "该应用未安装。",
+    "readme": "README",
+    "manage": "管理",
+    "open": "打开",
+    "change": "更改",
+    "update": "更新",
+    "updateBanner": "有新版本 v{{version}} 可用。",
+    "enabledTitle": "已启用",
+    "enabledHint": "关闭后将隐藏此应用,并停用其智能体、动作和钩子。",
+    "chatTitle": "通过对话更新",
+    "chatHint": "在此应用的源码项目中打开对话进行修改。",
+    "publishTitle": "发布到应用商店",
+    "publishHint": "将已安装的应用包(v{{version}})上传到 Rome 应用商店。",
+    "uninstallHint": "移除应用,数据会保留以便日后重装。",
+    "uninstallPurgeHint": "移除应用并清除其数据。此操作不可撤销。"
+  },
+  "installed": {
+    "loading": "正在加载应用...",
+    "openLabelAria": "在完整视图中打开 {{name}}",
+    "openFullTitle": "打开完整视图",
+    "openButton": "打开",
+    "upgradeButton": "升级 → v{{version}}",
+    "upgradeTitle": "将 {{name}} 升级到 v{{version}}",
+    "upgrading": "正在升级...",
+    "settingsTitle": "{{name}} 设置",
+    "settingsAria": "{{name}} 设置",
+    "uninstall": "卸载",
+    "uninstallPurge": "卸载并清除数据",
+    "installSuccess": "已安装 {{name}}。",
+    "uninstallSuccess": "已卸载 {{name}},数据已保留以便重装。",
+    "uninstallPurgeSuccess": "已卸载 {{name}} 并清除其数据。",
+    "moreActionsAria": "{{name}} 的更多操作",
+    "moreActionsWithUpdateAria": "{{name}} 的更多操作(可更新至 v{{version}})",
+    "closeActionsAria": "关闭操作",
+    "updateAvailable": "可更新至 v{{version}}",
+    "updateAll": "全部更新",
+    "updateAllUpdating": "正在更新...",
+    "updateAllSuccess_one": "已更新 {{count}} 个应用。",
+    "updateAllSuccess_other": "已更新 {{count}} 个应用。",
+    "updateAllPartial": "已更新 {{count}} 个应用中的 {{updated}} 个，{{failed}} 个失败。",
+    "openDetailsAria": "查看 {{name}} 的详情",
+    "publish": "发布",
+    "publishing": "正在发布…",
+    "remix": "Remix…",
+    "remixDialog": {
+      "title": "Remix {{name}}",
+      "description": "为 {{name}} v{{version}} 的副本填写一个新名称，接下来可以在聊天中补充修改需求。",
+      "nameLabel": "新应用名称",
+      "invalidName": "请使用 @ray/calendar 这样的名称，其中用户名应为小写。",
+      "confirm": "在聊天中继续",
+      "cancel": "取消"
+    },
+    "publishSuccess": "已将 {{name}} v{{version}} 发布到应用商店。",
+    "publishDialog": {
+      "title": "将 {{name}} 发布到应用商店?",
+      "description": "将把已安装的应用包(v{{version}})上传到 Rome 应用商店,并公开供安装。",
+      "confirm": "发布"
+    },
+    "uninstallDialog": {
+      "title": "卸载 {{name}}?",
+      "descriptionKeep": "应用将被卸载,但其数据库记录和数据目录会保留,以便日后重装时可以继续使用。",
+      "descriptionPurge": "应用将被卸载,其数据库记录和数据目录将一并清除。此操作不可撤销。",
+      "confirmKeep": "卸载",
+      "confirmPurge": "卸载并清除数据"
+    },
+    "togglePublicAria": "切换 {{name}} 的公开访问",
+    "public": "公开",
+    "private": "需要登录",
+    "access": "访问权限",
+    "accessPublic": "允许公开访问",
+    "accessPrivate": "仅限自己访问",
+    "accessDialog": {
+      "title": "{{name}} 的访问权限",
+      "description": "选择谁可以从公开的 Rome URL 打开此应用。",
+      "privateTitle": "私有",
+      "privateDescription": "只有守护者仪表盘会话可以使用此应用。",
+      "publicTitle": "公开",
+      "publicDescription": "任何拥有应用 URL 的人都可以打开并使用它。",
+      "cloudEmailTitle": "Rome Cloud 邮箱列表",
+      "cloudEmailDescription": "访客先用 Rome Cloud 登录，Rome 会在加载应用前检查邮箱。",
+      "emailLabel": "允许的 Rome Cloud 邮箱",
+      "emailPlaceholder": "ada@example.com",
+      "emailHelp": "按回车添加。粘贴列表时会按逗号、空格或换行自动拆分。",
+      "addEmail": "添加",
+      "removeEmail": "移除 {{email}}",
+      "emptyEmails": "请至少添加一个 Rome Cloud 邮箱。",
+      "invalidEmails": "这些邮箱格式不正确：{{emails}}",
+      "cancel": "取消",
+      "save": "保存访问权限",
+      "saving": "保存中..."
+    },
+    "pin": "固定到侧边栏",
+    "unpin": "从侧边栏移除",
+    "pinNoUi": "App 不含 UI",
+    "viewDetails": "查看详情",
+    "skillLoadFailed": "加载失败",
+    "chatWithAgentTitle": "与 {{agent}} 对话",
+    "chatWithAgentAria": "与 {{agent}} 对话",
+    "chatToUpdate": "通过对话更新",
+    "noCapabilities": "未声明{{label}}。",
+    "undoDisabled": "{{name}} 已禁用。",
+    "undo": "撤销",
+    "errors": {
+      "loadFailed": "加载应用失败",
+      "toggleEnableFailed": "启用 {{name}} 失败。",
+      "toggleDisableFailed": "禁用 {{name}} 失败。",
+      "appUpdateFailed": "应用更新失败。",
+      "appInstallFailed": "应用安装失败。",
+      "upgradeFailed": "升级 {{name}} 失败。",
+      "appUpgradeFailed": "应用升级失败。",
+      "uninstallFailed": "卸载 {{name}} 失败。",
+      "publishFailed": "发布 {{name}} 失败。",
+      "appUninstallFailed": "应用卸载失败。",
+      "publicAccessLoadFailed": "加载 {{name}} 的公开访问设置失败。",
+      "publicAccessUpdateFailed": "更新 {{name}} 的公开访问失败。",
+      "publicAccessFailed": "公开访问更新失败。"
+    }
+  },
+  "store": {
+    "loading": "正在加载商店列表...",
+    "retry": "重试",
+    "unavailable": "此 Rome 实例不可用应用商店。",
+    "empty": "尚无应用发布到 Rome Cloud。",
+    "installCountOne": "{{count}} 次安装",
+    "installCountOther": "{{count}} 次安装",
+    "errors": {
+      "loadFailed": "加载商店列表失败"
+    }
+  },
+  "listing": {
+    "back": "← 返回应用商店",
+    "loading": "正在加载详情...",
+    "retry": "重试",
+    "unavailable": "此 Rome 实例不可用应用商店。",
+    "installV": "安装 v{{version}}",
+    "installedV": "已安装 v{{version}}",
+    "updateToV": "更新到 v{{version}}",
+    "installing": "正在安装...",
+    "updatedAt": "更新于 {{date}}",
+    "about": "关于",
+    "homepage": "主页 ↗",
+    "repository": "代码仓库 ↗",
+    "versions": "版本",
+    "noLiveVersions": "暂无可用的发布版本。",
+    "installButton": "安装",
+    "installed": "已安装",
+    "revoked": "已撤回",
+    "errors": {
+      "loadFailed": "加载详情失败",
+      "installFailed": "安装应用失败"
+    }
+  },
+  "install": {
+    "loading": "加载应用信息中...",
+    "title": "安装此应用？",
+    "subtitle": "将在你的 Rome 上安装 <strong>{{name}}</strong>。",
+    "confirm": "安装 v{{version}}",
+    "installing": "安装中...",
+    "cancel": "取消",
+    "version": "版本",
+    "size": "大小",
+    "publisher": "发布者",
+    "checksum": "校验和",
+    "noLiveVersion": "该应用暂无可安装版本。",
+    "unavailable": "此 Rome 实例未配置应用商店。",
+    "errors": {
+      "loadFailed": "加载应用信息失败",
+      "installFailed": "安装应用失败",
+      "notFound": "应用商店中未找到该应用"
+    }
+  },
+  "embedded": {
+    "failedTitle": "加载应用失败",
+    "errors": {
+      "loadFailed": "加载应用清单失败"
+    }
+  },
+  "full": {
+    "failedTitle": "加载应用失败",
+    "errors": {
+      "loadFailed": "加载应用清单失败"
+    }
+  },
+  "accessGate": {
+    "title": "{{name}} 需要 Rome Cloud 访问权限",
+    "description": "请使用 Rome Cloud 登录后继续。",
+    "deniedDescription": "{{email}} 已登录，但不在此应用的访问列表中。",
+    "signIn": "使用 Rome Cloud 登录",
+    "signingIn": "正在打开 Rome Cloud...",
+    "startFailed": "无法启动 Rome Cloud 登录。",
+    "networkFailed": "启动 Rome Cloud 登录时出现网络错误。"
+  }
+}

@@ -1,0 +1,18 @@
+name: connector_event_schema
+type: custom
+description: |
+  Fetch one trigger's full config and payload JSON Schemas by slug, so you can
+  subscribe to it correctly and bind a routine to it. Returns the trigger's slug,
+  name, description, `config` (the schema of the settings connector_event_subscribe
+  needs), `payload` (the schema of the event it delivers — use it to write routine
+  filters and map fields into the routine's action), `eventName` (the exact event a
+  routine's event-bus trigger binds to), and `requiresWebhookEndpointSetup` (true
+  when the trigger won't deliver until a Composio webhook URL is registered with the
+  provider out-of-band, e.g. Slack, Notion). Find the slug with connector_event_search
+  first. Pass the owning toolkit slug (e.g. 'gmail') and the trigger slug (e.g.
+  'GMAIL_NEW_GMAIL_MESSAGE'). Requires being signed in to Composio (connector_login).
+entry: ./index.ts
+complexity: simple
+speed: fast
+reliability: medium
+sideEffects: read-only

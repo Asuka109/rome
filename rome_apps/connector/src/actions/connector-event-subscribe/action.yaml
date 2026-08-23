@@ -1,0 +1,19 @@
+name: connector_event_subscribe
+type: custom
+description: |
+  Subscribe to a connector trigger so its events flow onto Rome's event bus,
+  arming the upstream Composio subscription. Returns the `eventName` a routine's
+  event-bus trigger binds to and the `triggerInstanceId` (for later teardown).
+  This is the step that makes a connector event actually fire — creating a routine
+  on the eventName alone does nothing until you subscribe here. Requires being
+  signed in (connector_login) and the toolkit connected (connector_connect). Look
+  up the trigger's `config` schema with connector_event_schema first, then pass the
+  owning toolkit slug, the trigger slug, and `config` matching that schema (pass {}
+  when the trigger needs no config). Idempotent: re-subscribing the same trigger
+  returns the same instance. Fails closed: not signed in, unknown slug, or no
+  connected account for the toolkit all come back as an action error.
+entry: ./index.ts
+complexity: simple
+speed: moderate
+reliability: medium
+sideEffects: write

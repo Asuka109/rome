@@ -1,0 +1,12 @@
+{
+  "name": "rome-opencli-chatgpt",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test": "../../scripts/test-env.sh node --test chatgpt-memory.test.mjs"
+  },
+  "devDependencies": {
+    "@jackwener/opencli": "^1.8.6"
+  }
+}

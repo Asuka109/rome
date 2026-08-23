@@ -1,0 +1,10 @@
+name: test-explore
+description: Test read-only exploration agent.
+model: haiku
+permissionMode: bypassPermissions
+tools:
+  - Read
+  - Glob
+  - Grep
+systemPromptPrefix: |
+  You are a test exploration agent. Search and read files only.

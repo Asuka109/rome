@@ -1,0 +1,105 @@
+name: Package publish
+
+# Reusable workflow that builds and publishes Rome's @rome-os packages to npm.
+# release.yml is the single publish entrypoint:
+#
+#   - Automatic release publishes pass the JSON list of bumped paths after
+#     release-please cuts a release.
+#   - Manual hotfix/retry publishes pass a package selector from release.yml's
+#     workflow_dispatch form.
+#
+# In both cases the version published is whatever sits in the package.json
+# of the matched path on the caller ref. The workflow does NOT bump
+# versions — that is release-please's job (or a manual edit on main).
+
+on:
+  workflow_call:
+    inputs:
+      paths:
+        description: JSON array of package paths to publish (e.g. ["packages/app-runtime-sdk"])
+        required: false
+        type: string
+      package:
+        description: Which package to publish when paths is not provided.
+        required: false
+        type: string
+        default: all
+      dry_run:
+        description: If true, npm runs --dry-run (package + validate, no upload).
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  prepare:
+    name: Resolve publish targets
+    runs-on: ubuntu-latest
+    outputs:
+      paths: ${{ steps.compute.outputs.paths }}
+    steps:
+      - id: compute
+        env:
+          CALLER_PATHS: ${{ inputs.paths }}
+          PACKAGE: ${{ inputs.package }}
+        run: |
+          set -euo pipefail
+          if [ -n "${CALLER_PATHS:-}" ]; then
+            echo "paths=$CALLER_PATHS" >> "$GITHUB_OUTPUT"
+          elif [ "${PACKAGE:-}" = "all" ]; then
+            # Keep packages without an npm Trusted Publisher out of the default
+            # manual target. They remain explicitly selectable for dry runs,
+            # and automatic releases still receive exact paths from
+            # release-please.
+            echo 'paths=["packages/app-runtime-sdk","packages/app-web-sdk","packages/ui"]' >> "$GITHUB_OUTPUT"
+          elif [ -n "${PACKAGE:-}" ]; then
+            echo "paths=[\"$PACKAGE\"]" >> "$GITHUB_OUTPUT"
+          else
+            echo "No npm publish targets provided" >&2
+            exit 1
+          fi
+
+  publish:
+    name: Publish ${{ matrix.path }}
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        path: ${{ fromJSON(needs.prepare.outputs.paths) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm --dir "${{ matrix.path }}" run build
+
+      # pnpm 11 publishes natively, rewrites workspace protocol dependencies
+      # in the packed manifest, and supports npm OIDC Trusted Publisher auth.
+      # OIDC: the `id-token: write` job permission lets npm exchange the
+      # GitHub token for an npm publish credential via the Trusted
+      # Publisher mapping (no NPM_TOKEN).
+      # `--provenance` is intentionally NOT set: npm rejects provenance
+      # attestations from private source repositories (HTTP 422
+      # "Unsupported GitHub Actions source repository visibility:
+      # private"), and rome-internal is private. Re-enable if/when the
+      # repo goes public.
+      - name: Publish to npm
+        working-directory: ${{ matrix.path }}
+        run: pnpm publish --access public --no-git-checks${{ inputs.dry_run && ' --dry-run' || '' }}

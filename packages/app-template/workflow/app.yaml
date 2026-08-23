@@ -1,0 +1,32 @@
+formatVersion: 2
+id: __APP_ID__
+name: __APP_NAME__
+version: 0.1.0
+description: __APP_NAME__ — a workflow that composes actions in plain TypeScript control flow.
+icon: assets/icon.svg
+appRoot: dist
+includeSource: true
+
+# A minimal run page: trigger the workflow, show its result, and list recent
+# runs. A structure diagram and per-node progress are a separate, deferred surface.
+web:
+  manifest: web/manifest.json
+  displayName: __APP_NAME__
+  navLabel: __APP_NAME__
+
+api:
+  entry: api/index
+
+# Per-app SQLite DB (Drizzle ORM): the run-history table the run action writes a
+# row to per invocation. This is the ONE table the workflow shell owns — the
+# workflow code in definition.ts never touches a DB. Schema in src/db/schema.ts,
+# migrations shipped under src/db/migrations (regenerate with `pnpm db:generate`).
+db:
+  migrations: db/migrations
+  tablePrefix: __APP_TABLE_PREFIX__
+
+# One action runs the workflow and returns its result. Control flow is authored
+# inline in src/workflow/definition.ts and reaches reusable work (including
+# `system:summon`) via ctx.runAction — there are no per-step actions to register here.
+actions:
+  - actions/run

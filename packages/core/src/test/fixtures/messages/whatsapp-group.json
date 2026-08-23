@@ -1,0 +1,24 @@
+{
+  "id": "wa-msg-002",
+  "channel": "whatsapp",
+  "channelUserId": "wa-user-456@s.whatsapp.net",
+  "displayName": "WhatsApp Group Member",
+  "threadId": "group-id-001@g.us",
+  "threadName": "Test WA Group",
+  "threadType": "group",
+  "timestamp": "2026-01-15T13:00:00Z",
+  "text": "Hello from WhatsApp group chat",
+  "attachments": [],
+  "rawEvent": {
+    "key": {
+      "remoteJid": "group-id-001@g.us",
+      "fromMe": false,
+      "id": "GHIJKL789012",
+      "participant": "wa-user-456@s.whatsapp.net"
+    },
+    "message": {
+      "conversation": "Hello from WhatsApp group chat"
+    },
+    "messageTimestamp": 1736938800
+  }
+}

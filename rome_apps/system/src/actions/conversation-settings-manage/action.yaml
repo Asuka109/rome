@@ -1,0 +1,7 @@
+name: conversation_settings_manage
+type: system
+description: Manage Rome's provider-neutral behavior settings for a configurable conversation. Native threads have independent sessions but follow their parent settings; get returns the parent-derived effective values, while set/reset must target the parent reference returned by get or list.
+complexity: simple
+speed: fast
+reliability: high
+sideEffects: write

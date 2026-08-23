@@ -1,0 +1,123 @@
+{
+  "page": {
+    "title": "Rome",
+    "tagline": "Name your agent. Give it a brain. That's it.",
+    "enter": "Enter Rome",
+    "entering": "Entering...",
+    "enterRequiresAiHint": "Sign in to Claude or ChatGPT to enter Rome.",
+    "errors": {
+      "profileSaveFailed": "Couldn't save your profile.",
+      "networkError": "Network error. Please try again.",
+      "completeFailed": "Couldn't finish setup."
+    }
+  },
+  "steps": {
+    "account": "Account",
+    "profile": "Profile"
+  },
+  "done": {
+    "title": "You're all set",
+    "tagline": "Rome can manage your projects, remember what matters, automate routines, connect your tools, and more.",
+    "guideButton": "See what it can do",
+    "chatButton": "Start chatting"
+  },
+  "account": {
+    "tagline": "Set the login that locks this Rome to you. One account, one keeper.",
+    "username": "Username",
+    "password": "Password",
+    "passwordHint": "At least 8 characters.",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "submit": "Continue",
+    "submitting": "Continuing...",
+    "errorFallback": "Couldn't set up the account.",
+    "errorUsernameRequired": "Username is required.",
+    "errorPasswordTooShort": "Password must be at least 8 characters.",
+    "networkError": "Network error. Please try again."
+  },
+  "guardian": {
+    "nameLabel": "Your name",
+    "namePlaceholder": "e.g. Alex",
+    "nameHint": "What your agent calls you. You can change it later in Settings."
+  },
+  "agent": {
+    "nameLabel": "Agent name",
+    "namePlaceholder": "e.g. Atlas, Friday",
+    "nameHint": "You can rename your agent anytime from Settings.",
+    "reroll": "Random",
+    "rerollTitle": "Suggest a different name"
+  },
+  "ai": {
+    "title": "Connect a brain",
+    "pickOneHint": "Pick one"
+  },
+  "codexDeviceLogin": {
+    "title": "Sign in with a device code",
+    "cancel": "Cancel",
+    "steps": {
+      "enable": "Enable",
+      "copy": "Copy code"
+    },
+    "back": "Back",
+    "enable": {
+      "title": "Turn on device code sign-in",
+      "body": "In ChatGPT, open <settingsLink>Settings → Security</settingsLink> and turn on “Enable device code authorization for Codex.” You only need to do this once.",
+      "openSettings": "Go enable it",
+      "confirm": "I've done it",
+      "pointer": "Open this in ChatGPT settings",
+      "adminNotice": "On ChatGPT Team or Enterprise accounts, this is managed by the admin."
+    },
+    "copyCode": {
+      "title": "Copy your device code",
+      "body": "Copy your code and paste it on the verification page to finish."
+    },
+    "copy": "Copy code",
+    "copied": "Copied",
+    "preparing": "Generating a code…",
+    "retrying": "Generating a new device code…",
+    "openButton": "Open verification page",
+    "copyFirst": "Copy the code first",
+    "retry": "New code",
+    "connectedTitle": "Signed in to ChatGPT",
+    "connectedBody": "You're all set — this window will close automatically.",
+    "errors": {
+      "title": "Login could not complete",
+      "startFailed": "Could not start ChatGPT device login. Try again or use the browser flow."
+    }
+  },
+  "chatgptLogin": {
+    "title": "Sign in with ChatGPT",
+    "iframeTitle": "Rome server browser",
+    "stepIndicator": "Step {{current}} of {{total}}",
+    "cancel": "Cancel",
+    "preparingBrowser": "Opening browser…",
+    "starting": "Starting ChatGPT login…",
+    "retrying": "Retrying ChatGPT login…",
+    "privacyNote": "Your password goes to OpenAI directly. Rome does not see or store it.",
+    "steps": {
+      "login": {
+        "title": "Log in to ChatGPT",
+        "cta": "I've logged in",
+        "notice": {
+          "title": "Sign in to ChatGPT in the browser below",
+          "body": "Sign into ChatGPT in the browser below. Once you're done, click \"I've logged in\" to continue."
+        }
+      },
+      "authorize": {
+        "title": "Authorize ChatGPT",
+        "waiting": "Waiting for OpenAI…",
+        "retry": "Retry",
+        "back": "Back",
+        "notice": {
+          "title": "Authorize ChatGPT in the browser below",
+          "body": "If the page didn't open or something went wrong, hit Retry to relaunch it, or Back to return to the ChatGPT login."
+        }
+      }
+    },
+    "errors": {
+      "navigateFailed": "Could not open the server browser. Use the terminal flow instead.",
+      "codexStartFailed": "Could not start ChatGPT login. Use the terminal flow instead.",
+      "codexExitedWithoutAuth": "ChatGPT login closed before completing. Try again or use the terminal flow."
+    }
+  }
+}

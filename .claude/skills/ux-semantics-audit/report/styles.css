@@ -1,0 +1,28 @@
+/**
+ * The dashboard's stylesheet — tokens, control scale, base layers — so the
+ * report is styled by the product's own system rather than a copy of it.
+ *
+ * Two things here look odd and are both load-bearing:
+ *
+ * The path is relative, not the `@` alias the app uses. Rspack inlines CSS
+ * `@import` in its own parser, before `resolve.alias` is consulted, so an
+ * aliased stylesheet import simply fails to resolve.
+ *
+ * The `@source` opts this directory into Tailwind's scan, and it has to sit in
+ * the same file as the import above — a `@source` in a stylesheet that doesn't
+ * reach `@import "tailwindcss"` is processed in isolation and does nothing.
+ * Auto-detection walks out from the stylesheet's own project and would never
+ * reach a skill folder, so without it every utility used only by the report
+ * goes missing and the page renders with no layout.
+ *
+ * The app's sources are named for the same reason. Reproductions render real
+ * app components, so their classes have to be generated too — a class used
+ * only inside one of them (`border-muted-foreground/40`, the muted status dot)
+ * is otherwise dropped and that component renders subtly, silently wrong. The
+ * kit needs no entry: its own stylesheet carries `@source` directives.
+ */
+
+@import "../../../../packages/web/src/globals.css";
+
+@source "./";
+@source "../../../../packages/web/src";

@@ -1,0 +1,310 @@
+name: Desktop Build
+
+on:
+  push:
+    tags:
+      - "desktop-v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-mac:
+    name: Build macOS (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-15
+            # Renamed with the signing gate so artifacts built before it no
+            # longer resolve. Not a signing guarantee for new runs — a
+            # workflow_dispatch build is unsigned and uploads under it too;
+            # the publisher's desktop-v* push requirement closes that.
+            artifact: rome-desktop-mac-arm64-signed
+    env:
+      HAS_MAC_SIGNING_SECRETS: ${{ secrets.CSC_LINK != '' && secrets.CSC_KEY_PASSWORD != '' && secrets.APP_STORE_CONNECT_KEY_ID != '' && secrets.APP_STORE_CONNECT_ISSUER_ID != '' && secrets.APP_STORE_CONNECT_P8_CONTENT != '' }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          lfs: true
+          # The resolver walks the v* tags merged into HEAD, which needs commit
+          # history. fetch-tags alone is not enough.
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Resolve release version and runtime image
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Kept identical to docker-publish.yml. electron-updater cannot compare 01.2.3.
+          semver_re='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*)?$'
+
+          if [ "${GITHUB_REF_TYPE}" != "tag" ]; then
+            echo "Not a tag build — keeping package.json's version and the moving image tag."
+            exit 0
+          fi
+
+          case "${GITHUB_REF_NAME}" in
+            desktop-v*) candidate="${GITHUB_REF_NAME#desktop-v}" ;;
+            *) echo "::error::${GITHUB_REF_NAME} is not a desktop-v* tag"; exit 1 ;;
+          esac
+          if [[ ! "$candidate" =~ $semver_re ]]; then
+            echo "::error::${GITHUB_REF_NAME} does not carry a semver version"
+            exit 1
+          fi
+
+          # The feed has no prerelease channel, and the comparator needs plain triples.
+          case "$candidate" in
+            *-*) echo "::error::${GITHUB_REF_NAME} is a prerelease; the update feed has no channel for one"; exit 1 ;;
+          esac
+          app_version="$candidate"
+
+          # The triggering tag is itself in the list, so being the newest is the
+          # check. Rejected tags survive in the repo, hence the strict pattern.
+          # This comparator and the one below read 1.0.3-rc.1 as 1.0.3; the two
+          # prerelease refusals are what keep them fed plain triples.
+          highest="$(git tag --list 'desktop-v*' | sed -nE 's/^desktop-v((0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))$/\1/p' | sort -t. -k1,1n -k2,2n -k3,3n | tail -1)"
+          if [ "$highest" != "$app_version" ]; then
+            echo "::error::desktop tag ${app_version} is not the newest desktop release (${highest} exists)"
+            exit 1
+          fi
+
+          # One shared sequence: a release reuses the number of the image it pins,
+          # and takes the next free one when it ships without a new backend. Highest
+          # reachable, not graph-nearest — a merged backport sits closer but older.
+          image_version="$(git tag --list 'v[0-9]*' --merged HEAD | sed -nE 's/^v((0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))$/\1/p' | sort -t. -k1,1n -k2,2n -k3,3n | tail -1)"
+          if [ -z "$image_version" ]; then
+            echo "::error::No stable v* release tag is reachable from this commit"
+            exit 1
+          fi
+          image="yunfanye/rome:${image_version}"
+
+          # The desktop number is never below the image's.
+          if [ "$(printf '%s\n%s\n' "$app_version" "$image_version" | sort -t. -k1,1n -k2,2n -k3,3n | head -1)" != "$image_version" ]; then
+            echo "::error::desktop tag ${app_version} is below the image it pins (${image_version})"
+            exit 1
+          fi
+
+          # A v* tag is not evidence of a published image, and pinning an unpublished
+          # one ships an app that dies at its first pull. Never fall back to :latest.
+          # Over the registry API because macos-15 ships no Docker CLI; `|| code=000`
+          # keeps DNS and TLS failures on the message path under set -e.
+          repo="yunfanye/rome"
+          code="$(curl -sS -o token.json -w '%{http_code}' \
+            "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${repo}:pull")" || code=000
+          if [ "$code" != "200" ]; then
+            echo "::error::Docker Hub returned ${code} for the pull token — rerun, or authenticate the check"
+            exit 1
+          fi
+          token="$(jq -r .token token.json)"
+          code="$(curl -sS -o manifest.json -w '%{http_code}' \
+            -H "Authorization: Bearer ${token}" \
+            -H 'Accept: application/vnd.oci.image.index.v1+json' \
+            -H 'Accept: application/vnd.docker.distribution.manifest.list.v2+json' \
+            "https://registry-1.docker.io/v2/${repo}/manifests/${image_version}")" || code=000
+          case "$code" in
+            200) ;;
+            404) echo "::error::${image} is not published — resolve or republish it before tagging a desktop release"; exit 1 ;;
+            # Anonymous pulls are limited per IP, so this is not "not published".
+            429) echo "::error::Docker Hub rate-limited the manifest check for ${image} — rerun, or authenticate the check"; exit 1 ;;
+            401|403) echo "::error::Not authorised to read ${image}"; exit 1 ;;
+            *) echo "::error::Unexpected ${code} from the registry for ${image}"; exit 1 ;;
+          esac
+          # os and architecture together: the index also carries attestation entries.
+          if ! jq -e '.manifests[]? | select(.platform.os == "linux" and .platform.architecture == "arm64")' manifest.json >/dev/null; then
+            echo "::error::${image} has no linux/arm64 entry"
+            exit 1
+          fi
+
+          echo "Pinning ${app_version} to ${image}"
+          echo "app_version=${app_version}" >> "$GITHUB_OUTPUT"
+          echo "image=${image}" >> "$GITHUB_OUTPUT"
+
+      - name: Build desktop app
+        working-directory: packages/desktop
+        run: pnpm build
+        env:
+          ROME_DESKTOP_NATIVE_ARCH: ${{ matrix.arch }}
+          ROME_RUNTIME_IMAGE: ${{ steps.release.outputs.image }}
+
+      # The version gets cross-checked after packaging; the image is the point of
+      # the whole pipeline and had nothing. A misnamed env — ROME_DESKTOP_IMAGE is
+      # one word away and is the runtime override — bakes null and builds clean,
+      # shipping a pinned-looking app that follows :latest. Verified locally: the
+      # literal is present with the right name and absent with the wrong one.
+      - name: Verify the runtime image was baked in
+        if: ${{ steps.release.outputs.image }}
+        env:
+          IMAGE: ${{ steps.release.outputs.image }}
+        run: |
+          set -euo pipefail
+          if ! grep -qF "$IMAGE" packages/desktop/dist/main/index.js; then
+            echo "::error::${IMAGE} is not in the built bundle — the build-time define did not land"
+            exit 1
+          fi
+
+      - name: Check macOS signing identity
+        id: mac-signing
+        if: ${{ env.HAS_MAC_SIGNING_SECRETS == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cert_path="${RUNNER_TEMP}/mac-signing-certificate.p12"
+          case "${CSC_LINK}" in
+            file://*)
+              cert_path="${CSC_LINK#file://}"
+              ;;
+            /*)
+              cert_path="${CSC_LINK}"
+              ;;
+            *)
+              printf '%s' "${CSC_LINK}" | base64 --decode > "${cert_path}"
+              ;;
+          esac
+
+          subject="$(
+            openssl pkcs12 \
+              -in "${cert_path}" \
+              -nokeys \
+              -clcerts \
+              -passin "pass:${CSC_KEY_PASSWORD}" 2>/dev/null \
+              | openssl x509 -noout -subject -nameopt RFC2253 2>/dev/null \
+              || true
+          )"
+
+          if [[ "${subject}" == *"CN=Developer ID Application:"* ]]; then
+            echo "enabled=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "enabled=false" >> "${GITHUB_OUTPUT}"
+            echo "::warning::macOS signing secrets are present, but CSC_LINK is not a Developer ID Application certificate; building unsigned macOS artifacts."
+          fi
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+
+      # The step above degrades to unsigned rather than failing, and the publish
+      # workflow gates only on conclusion == success — so without this an
+      # unsigned build can reach the stable feed, where Gatekeeper blocks it for
+      # every user who accepts it. Fail at the source instead.
+      - name: Require signing for tagged builds
+        if: ${{ github.ref_type == 'tag' && steps.mac-signing.outputs.enabled != 'true' }}
+        run: |
+          echo "::error::Refusing to build a tagged release unsigned — Gatekeeper would block it for every user."
+          exit 1
+
+      - name: Package macOS app (unsigned)
+        if: ${{ env.HAS_MAC_SIGNING_SECRETS != 'true' || steps.mac-signing.outputs.enabled != 'true' }}
+        working-directory: packages/desktop
+        run: >
+          pnpm exec electron-builder --mac --${{ matrix.arch }} --publish never
+          ${{ steps.release.outputs.app_version && format('-c.extraMetadata.version={0}', steps.release.outputs.app_version) || '' }}
+        env:
+          # Avoid exporting empty CSC_LINK; electron-builder treats it as a file path and fails.
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Write App Store Connect API key
+        if: ${{ steps.mac-signing.outputs.enabled == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          key_path="${RUNNER_TEMP}/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
+          printf '%s' "${APP_STORE_CONNECT_P8_CONTENT}" | perl -pe 's/\\n/\n/g' > "${key_path}"
+          chmod 600 "${key_path}"
+          echo "APPLE_API_KEY=${key_path}" >> "${GITHUB_ENV}"
+        env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_P8_CONTENT: ${{ secrets.APP_STORE_CONNECT_P8_CONTENT }}
+
+      - name: Package macOS app (signed)
+        if: ${{ steps.mac-signing.outputs.enabled == 'true' }}
+        working-directory: packages/desktop
+        run: >
+          pnpm exec electron-builder --mac --${{ matrix.arch }} --publish never
+          -c.mac.forceCodeSigning=true
+          ${{ steps.release.outputs.app_version && format('-c.extraMetadata.version={0}', steps.release.outputs.app_version) || '' }}
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          CSC_NAME: Developer ID Application
+          APPLE_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+
+      - name: Verify macOS update artifacts
+        working-directory: packages/desktop
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          require_artifact() {
+            local label="$1"
+            shift
+            local files=("$@")
+            if [ "${#files[@]}" -eq 0 ]; then
+              echo "::error::Missing required ${label} artifact"
+              exit 1
+            fi
+          }
+
+          require_artifact "macOS DMG" release/*.dmg
+          require_artifact "macOS ZIP" release/*.zip
+          require_artifact "macOS blockmap" release/*.blockmap
+          require_artifact "macOS latest-mac.yml" release/latest-mac.yml
+
+          app="$(find release -maxdepth 2 -name 'Rome.app' -print -quit)"
+          if [ -z "$app" ]; then echo "::error::No Rome.app found in release/"; exit 1; fi
+
+          if [ "${SIGNING_ENABLED}" = "true" ]; then
+            codesign --verify --deep --strict --verbose=2 "$app"
+            spctl --assess --type execute --verbose "$app"
+            xcrun stapler validate "$app"
+          else
+            echo "Unsigned developer build — skipping signature checks."
+          fi
+
+          plist_version="$(defaults read "$(cd "$app" && pwd)/Contents/Info" CFBundleShortVersionString)"
+          yml_version="$(grep -m1 '^version:' release/latest-mac.yml | awk '{print $2}')"
+          echo "Info.plist=${plist_version}  latest-mac.yml=${yml_version}  expected=${EXPECTED_VERSION:-<unset>}"
+          if [ "$plist_version" != "$yml_version" ]; then
+            echo "::error::Info.plist and latest-mac.yml disagree on version"
+            exit 1
+          fi
+          # Against the tag too: both files are stamped from the same metadata, so
+          # they agree even when it is wrong. Only this catches stamping not applying.
+          if [ -n "${EXPECTED_VERSION:-}" ] && [ "$plist_version" != "$EXPECTED_VERSION" ]; then
+            echo "::error::Built version ${plist_version} does not match release tag ${EXPECTED_VERSION}"
+            exit 1
+          fi
+        env:
+          EXPECTED_VERSION: ${{ steps.release.outputs.app_version }}
+          SIGNING_ENABLED: ${{ steps.mac-signing.outputs.enabled }}
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            packages/desktop/release/*.dmg
+            packages/desktop/release/*.zip
+            packages/desktop/release/*.blockmap
+            packages/desktop/release/latest-mac.yml
+          if-no-files-found: error
+          retention-days: 30

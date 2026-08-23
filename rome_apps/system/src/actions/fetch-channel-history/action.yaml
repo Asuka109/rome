@@ -1,0 +1,13 @@
+name: fetch_channel_history
+type: system
+description: >
+  Fetch recent message history from a channel adapter.
+  Pass threadId to fetch a specific thread, or omit it to fetch all accessible
+  threads (supported by Discord: returns messages from all guild channels).
+  Returns a markdown-formatted summary grouped by thread. Pass
+  includeMessages=true to additionally receive a structured `messages` array
+  with per-message attachment metadata (url, fileName, mimeType, localPath).
+complexity: moderate
+speed: moderate
+reliability: high
+sideEffects: read-only

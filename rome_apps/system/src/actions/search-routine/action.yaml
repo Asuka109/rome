@@ -1,0 +1,7 @@
+name: search_routine
+type: system
+description: Find existing routines matching a free-text description (name, action or args — not schedule), so a routine can be identified before editing or deleting it. Each result carries its schedule for the caller to filter by time
+complexity: simple
+speed: fast
+reliability: high
+sideEffects: read-only

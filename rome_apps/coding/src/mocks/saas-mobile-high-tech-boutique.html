@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Northstar — Revenue Analytics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Calistoga&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Color — from Design System Variables */
+    --bg: #FAFAFA;
+    --fg: #0F172A;
+    --muted: #F1F5F9;
+    --accent: #0052FF;
+    --accent-sec: #4D7CFF;
+    --card: #FFFFFF;
+    --border: #E2E8F0;
+    --fg-soft: #475569;
+    --fg-faint: #94A3B8;
+    --success: #16A34A;
+    --success-soft: #DCFCE7;
+    --danger: #DC2626;
+
+    /* Radius */
+    --radius: 16px;
+    --radius-sm: 10px;
+    --radius-pill: 999px;
+
+    /* Shadow — iOS shadowOpacity 0.1 shadowRadius 10 offset y:4 */
+    --shadow-card: 0 4px 10px rgba(15, 23, 42, 0.10);
+    --shadow-soft: 0 1px 3px rgba(15, 23, 42, 0.06);
+    --shadow-fab: 0 8px 24px rgba(0, 82, 255, 0.35);
+    --shadow-press: 0 2px 6px rgba(0, 82, 255, 0.28);
+
+    /* Spacing scale */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 20px;
+    --sp-6: 24px;
+    --sp-8: 32px;
+
+    /* Typography */
+    --font-display: 'Calistoga', Georgia, serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+    --fs-hero: 38px;
+    --fs-h2: 24px;
+    --fs-h3: 18px;
+    --fs-body: 16px;
+    --fs-sm: 14px;
+    --fs-label: 12px;
+
+    /* Motion — spring mass:1 damping:15 stiffness:120 (approximated as overshoot easing) */
+    --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --dur: 360ms;
+    --dur-fast: 180ms;
+
+    --gradient: linear-gradient(135deg, var(--accent) 0%, var(--accent-sec) 100%);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: var(--font-body);
+    color: var(--fg);
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(0, 82, 255, 0.10), transparent 60%),
+      radial-gradient(900px 500px at 90% 20%, rgba(77, 124, 255, 0.08), transparent 60%),
+      #EEF2FB;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 40px 16px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 100%;
+    max-width: 390px;
+    background: var(--bg);
+    border-radius: 44px;
+    border: 10px solid #0B1220;
+    box-shadow:
+      0 30px 70px rgba(11, 18, 32, 0.35),
+      0 0 0 2px rgba(255, 255, 255, 0.5) inset;
+    overflow: hidden;
+    position: relative;
+    isolation: isolate;
+  }
+
+  /* Status bar */
+  .statusbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 26px 6px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--fg);
+    position: relative;
+    z-index: 5;
+  }
+  .statusbar .right { display: flex; gap: 7px; align-items: center; }
+  .notch {
+    position: absolute;
+    top: 10px; left: 50%; transform: translateX(-50%);
+    width: 108px; height: 26px;
+    background: #0B1220;
+    border-radius: 0 0 16px 16px;
+    z-index: 4;
+  }
+
+  /* Glassmorphism header / nav */
+  header.appbar {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    padding: 6px 20px 14px;
+    background: rgba(250, 250, 250, 0.72);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .brand { display: flex; align-items: center; gap: 11px; }
+  .brand .mark {
+    width: 38px; height: 38px;
+    border-radius: 12px;
+    background: var(--gradient);
+    display: grid; place-items: center;
+    box-shadow: var(--shadow-press);
+  }
+  .brand .name { font-weight: 600; font-size: 15px; line-height: 1.1; }
+  .brand .sub {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--fg-faint);
+  }
+  .avatar {
+    width: 38px; height: 38px;
+    border-radius: var(--radius-pill);
+    background: linear-gradient(135deg, #C7D2FE, #A5B4FC);
+    border: 2px solid var(--card);
+    box-shadow: var(--shadow-soft);
+    display: grid; place-items: center;
+    font-weight: 600; font-size: 13px; color: #312E81;
+  }
+
+  /* Scroll body */
+  .scroll {
+    padding: 20px 20px 110px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  /* Staggered entrance */
+  .enter { opacity: 0; transform: translateY(20px); animation: rise var(--dur) var(--ease) forwards; }
+  .enter.d1 { animation-delay: 60ms; }
+  .enter.d2 { animation-delay: 130ms; }
+  .enter.d3 { animation-delay: 200ms; }
+  .enter.d4 { animation-delay: 270ms; }
+  .enter.d5 { animation-delay: 340ms; }
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+
+  /* Section badge with pulse dot */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: var(--radius-pill);
+    background: rgba(0, 82, 255, 0.05);
+    border: 1px solid rgba(0, 82, 255, 0.20);
+    font-family: var(--font-mono);
+    font-size: var(--fs-label);
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    width: fit-content;
+  }
+  .pulse {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    position: relative;
+  }
+  .pulse::after {
+    content: "";
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 1.8s ease-out infinite;
+  }
+  @keyframes pulse {
+    0% { transform: scale(1); opacity: 0.6; }
+    100% { transform: scale(3.2); opacity: 0; }
+  }
+
+  /* Hero block */
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: var(--fs-hero);
+    line-height: 1.08;
+    letter-spacing: -0.5px;
+    margin-top: 12px;
+  }
+  .hero h1 .grad {
+    background: var(--gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hero p {
+    color: var(--fg-soft);
+    font-size: var(--fs-body);
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+
+  /* Card */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+    padding: var(--sp-6);
+  }
+
+  /* Hero balance card */
+  .balance {
+    background:
+      radial-gradient(420px 200px at 110% -20%, rgba(255,255,255,0.22), transparent 60%),
+      var(--gradient);
+    color: #fff;
+    border: none;
+    position: relative;
+    overflow: hidden;
+  }
+  .balance .label {
+    font-family: var(--font-mono);
+    font-size: var(--fs-label);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.78);
+  }
+  .balance .amount {
+    font-family: var(--font-display);
+    font-size: 40px;
+    line-height: 1;
+    margin: 10px 0 6px;
+    letter-spacing: -0.5px;
+  }
+  .balance .delta {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: var(--fs-sm); font-weight: 500;
+    color: #fff;
+    background: rgba(255,255,255,0.18);
+    padding: 4px 10px; border-radius: var(--radius-pill);
+  }
+  /* mini sparkline */
+  .spark { margin-top: 18px; width: 100%; height: 56px; display: block; }
+
+  /* Metric bento grid */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .metric .top {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .metric .ico {
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    background: var(--muted);
+    display: grid; place-items: center;
+    color: var(--accent);
+  }
+  .metric .val {
+    font-family: var(--font-display);
+    font-size: 26px;
+    margin-top: 14px;
+    line-height: 1;
+  }
+  .metric .cap {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--fg-faint);
+    margin-top: 6px;
+  }
+  .trend { font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 3px; }
+  .trend.up { color: var(--success); }
+  .trend.down { color: var(--danger); }
+
+  .card.metric { padding: 18px; }
+
+  /* Section heading row */
+  .row-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2px;
+  }
+  .row-head h2 {
+    font-family: var(--font-display);
+    font-size: var(--fs-h3);
+  }
+  .link {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+    text-decoration: none;
+    border: none; background: none; cursor: pointer;
+    padding: 6px; border-radius: 8px;
+    transition: background var(--dur-fast) var(--ease);
+  }
+  .link:hover { background: rgba(0,82,255,0.06); }
+  .link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Bar chart */
+  .chart .bars {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    align-items: end;
+    gap: 10px;
+    height: 120px;
+    margin-top: 18px;
+  }
+  .bar {
+    background: var(--muted);
+    border-radius: 8px 8px 4px 4px;
+    position: relative;
+    overflow: hidden;
+    min-height: 8px;
+  }
+  .bar .fill {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    background: var(--gradient);
+    border-radius: 8px 8px 4px 4px;
+    height: var(--h);
+    transform-origin: bottom;
+    animation: grow 700ms var(--spring) backwards;
+  }
+  .bar.active .fill { box-shadow: 0 0 0 2px rgba(0,82,255,0.25); }
+  @keyframes grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+  .chart .axis {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 10px; margin-top: 10px;
+  }
+  .chart .axis span {
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--fg-faint);
+  }
+
+  /* Transaction list */
+  .list { display: flex; flex-direction: column; gap: 2px; }
+  .tx {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 8px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background var(--dur-fast) var(--ease), transform var(--dur-fast) var(--spring);
+    min-height: 44px;
+    text-align: left;
+    border: none; background: none; width: 100%;
+    font-family: inherit; color: inherit;
+  }
+  .tx:hover { background: var(--muted); }
+  .tx:active { transform: scale(0.97); }
+  .tx:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .tx .ic {
+    width: 42px; height: 42px; flex: 0 0 42px;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    background: var(--muted);
+    color: var(--accent);
+  }
+  .tx .meta { flex: 1; min-width: 0; }
+  .tx .meta .t { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tx .meta .d {
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--fg-faint); letter-spacing: 0.5px; margin-top: 2px;
+  }
+  .tx .amt { font-family: var(--font-mono); font-weight: 500; font-size: 14px; white-space: nowrap; }
+  .tx .amt.pos { color: var(--success); }
+
+  /* Primary CTA button */
+  .btn {
+    appearance: none; border: none; cursor: pointer;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: var(--fs-body);
+    color: #fff;
+    height: 56px;
+    width: 100%;
+    border-radius: var(--radius);
+    background: var(--gradient);
+    box-shadow: var(--shadow-fab);
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    transition: transform var(--dur-fast) var(--spring), box-shadow var(--dur-fast) var(--ease), filter var(--dur-fast) var(--ease);
+  }
+  .btn:hover { filter: brightness(1.05); box-shadow: 0 10px 28px rgba(0,82,255,0.42); }
+  .btn:active { transform: scale(0.96); box-shadow: var(--shadow-press); }
+  .btn:focus-visible { outline: 3px solid rgba(0,82,255,0.4); outline-offset: 3px; }
+
+  /* Floating action button */
+  .fab {
+    position: absolute;
+    right: 22px; bottom: 92px;
+    z-index: 7;
+    width: 58px; height: 58px;
+    border-radius: 20px;
+    border: none; cursor: pointer;
+    background: var(--gradient);
+    box-shadow: var(--shadow-fab);
+    display: grid; place-items: center;
+    color: #fff;
+    animation: bob 3.4s ease-in-out infinite;
+    transition: transform var(--dur-fast) var(--spring);
+  }
+  .fab:hover { filter: brightness(1.06); }
+  .fab:active { transform: scale(0.92); }
+  .fab:focus-visible { outline: 3px solid rgba(255,255,255,0.8); outline-offset: 2px; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+
+  /* Glass bottom tab bar */
+  .tabbar {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    z-index: 6;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    background: rgba(250, 250, 250, 0.78);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border-top: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .tab {
+    border: none; background: none; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 6px 0; min-height: 44px;
+    color: var(--fg-faint);
+    font-family: var(--font-mono);
+    font-size: 10px; letter-spacing: 0.5px;
+    transition: color var(--dur-fast) var(--ease);
+  }
+  .tab svg { transition: transform var(--dur-fast) var(--spring); }
+  .tab:hover { color: var(--fg-soft); }
+  .tab:active svg { transform: scale(0.88); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+  .tab.active { color: var(--accent); }
+  .home-indicator {
+    position: absolute; bottom: 7px; left: 50%; transform: translateX(-50%);
+    width: 132px; height: 5px; border-radius: 3px;
+    background: rgba(15,23,42,0.28); z-index: 8;
+  }
+
+  @media (max-width: 420px) {
+    body { padding: 0; }
+    .phone { max-width: 100%; border-radius: 0; border-width: 0; min-height: 100vh; }
+    .notch { border-radius: 0 0 16px 16px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+    .enter { opacity: 1; transform: none; }
+    .bar .fill { transform: scaleY(1); }
+  }
+</style>
+</head>
+<body>
+  <div class="phone">
+    <div class="notch" aria-hidden="true"></div>
+
+    <div class="statusbar" aria-hidden="true">
+      <span>9:41</span>
+      <span class="right">
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="none"><path d="M1 8.5C1 8 1.4 7.6 1.9 7.6h.4c.5 0 .9.4.9.9v1.6c0 .5-.4.9-.9.9h-.4C1.4 11 1 10.6 1 10.1V8.5Zm4-2.3c0-.5.4-.9.9-.9h.4c.5 0 .9.4.9.9v3.9c0 .5-.4.9-.9.9h-.4c-.5 0-.9-.4-.9-.9V6.2Zm4-2.4c0-.5.4-.9.9-.9h.4c.5 0 .9.4.9.9v6.3c0 .5-.4.9-.9.9h-.4c-.5 0-.9-.4-.9-.9V3.8Zm4-2.4c0-.5.4-.9.9-.9h.4c.5 0 .9.4.9.9v8.7c0 .5-.4.9-.9.9h-.4c-.5 0-.9-.4-.9-.9V1.4Z" fill="#0F172A"/></svg>
+        <svg width="17" height="12" viewBox="0 0 17 12" fill="none"><path d="M8.5 2.7c2 0 3.9.8 5.3 2.1.2.2.5.2.7 0l.8-.8c.2-.2.2-.6 0-.8a10 10 0 0 0-13.6 0c-.2.2-.2.6 0 .8l.8.8c.2.2.5.2.7 0a7.6 7.6 0 0 1 5.3-2.1Zm0 3.2c1.1 0 2.1.4 2.9 1.2.2.2.5.2.7 0l.8-.8c.2-.2.2-.6 0-.8a6 6 0 0 0-8.8 0c-.2.2-.2.6 0 .8l.8.8c.2.2.5.2.7 0a4 4 0 0 1 2.9-1.2Zm0 3.1c.6 0 1.1.5 1.1 1.1S9.1 11 8.5 11s-1.1-.5-1.1-1.1.5-1.1 1.1-1.1Z" fill="#0F172A"/></svg>
+        <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="3" stroke="#0F172A" stroke-opacity="0.4"/><rect x="2.5" y="2.5" width="15" height="7" rx="1.5" fill="#0F172A"/><rect x="22.5" y="4" width="1.8" height="4" rx="0.9" fill="#0F172A" fill-opacity="0.4"/></svg>
+      </span>
+    </div>
+
+    <header class="appbar">
+      <div class="brand">
+        <span class="mark" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2 3 7v10l9 5 9-5V7l-9-5Z" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 12v9" stroke="#fff" stroke-width="1.8"/><path d="M3.5 7 12 12l8.5-5" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        </span>
+        <span>
+          <span class="name">Northstar</span><br />
+          <span class="sub">Acme Inc · Q2</span>
+        </span>
+      </div>
+      <nav aria-label="Account">
+        <button class="avatar" aria-label="Open profile menu">EC</button>
+      </nav>
+    </header>
+
+    <main class="scroll">
+      <section class="hero enter d1" aria-labelledby="hero-title">
+        <span class="badge"><span class="pulse" aria-hidden="true"></span>Live revenue</span>
+        <h1 id="hero-title">Good morning,<br /><span class="grad">your numbers are up.</span></h1>
+        <p>Net revenue for the current cycle, synced moments ago.</p>
+      </section>
+
+      <section class="card balance enter d2" aria-label="Account balance">
+        <span class="label">Net MRR · USD</span>
+        <div class="amount">$248,910</div>
+        <span class="delta">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="m6 14 6-6 6 6" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          +12.4% vs last cycle
+        </span>
+        <svg class="spark" viewBox="0 0 320 56" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#fff" stop-opacity="0.35"/>
+              <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M0 44 L40 40 L80 42 L120 30 L160 33 L200 20 L240 24 L280 12 L320 8" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M0 44 L40 40 L80 42 L120 30 L160 33 L200 20 L240 24 L280 12 L320 8 L320 56 L0 56 Z" fill="url(#sg)"/>
+        </svg>
+      </section>
+
+      <section class="grid-2 enter d3" aria-label="Key metrics">
+        <div class="card metric">
+          <div class="top">
+            <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" stroke="currentColor" stroke-width="1.8"/><path d="M4 21a8 8 0 0 1 16 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+            <span class="trend up">+8.1% ▲</span>
+          </div>
+          <div class="val">1,284</div>
+          <div class="cap">Active seats</div>
+        </div>
+        <div class="card metric">
+          <div class="top">
+            <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 17 9 11l4 4 8-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 7v5h-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span class="trend down">-1.3% ▼</span>
+          </div>
+          <div class="val">2.4%</div>
+          <div class="cap">Churn rate</div>
+        </div>
+      </section>
+
+      <section class="card chart enter d4" aria-label="Weekly revenue chart">
+        <div class="row-head">
+          <h2>This week</h2>
+          <button class="link">7D ›</button>
+        </div>
+        <div class="bars" role="img" aria-label="Bar chart of daily revenue, peaking on Friday">
+          <div class="bar"><span class="fill" style="--h:42%"></span></div>
+          <div class="bar"><span class="fill" style="--h:60%"></span></div>
+          <div class="bar"><span class="fill" style="--h:38%"></span></div>
+          <div class="bar"><span class="fill" style="--h:74%"></span></div>
+          <div class="bar active"><span class="fill" style="--h:96%"></span></div>
+          <div class="bar"><span class="fill" style="--h:68%"></span></div>
+          <div class="bar"><span class="fill" style="--h:54%"></span></div>
+        </div>
+        <div class="axis" aria-hidden="true">
+          <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+        </div>
+      </section>
+
+      <section class="enter d5" aria-labelledby="tx-head">
+        <div class="row-head" style="margin-bottom:10px">
+          <h2 id="tx-head">Recent activity</h2>
+          <button class="link">All ›</button>
+        </div>
+        <div class="list">
+          <button class="tx">
+            <span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 7h16v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7Z" stroke="currentColor" stroke-width="1.8"/><path d="M4 9h16" stroke="currentColor" stroke-width="1.8"/></svg></span>
+            <span class="meta">
+              <span class="t">Stripe payout</span>
+              <span class="d">PAID · 09:12</span>
+            </span>
+            <span class="amt pos">+$42,180</span>
+          </button>
+          <button class="tx">
+            <span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v8M9 11l3-3 3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span class="meta">
+              <span class="t">Enterprise upgrade — Vela Co</span>
+              <span class="d">SEATS +24 · 08:47</span>
+            </span>
+            <span class="amt pos">+$9,600</span>
+          </button>
+          <button class="tx">
+            <span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3v18M5 8l7-5 7 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span class="meta">
+              <span class="t">Infra cost — AWS</span>
+              <span class="d">USAGE · 06:30</span>
+            </span>
+            <span class="amt">-$1,204</span>
+          </button>
+        </div>
+      </section>
+
+      <button class="btn enter d5" aria-label="Generate financial report">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 3v5h5M9 13h6M9 17h6" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Generate report
+      </button>
+    </main>
+
+    <button class="fab" aria-label="New transaction">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>
+    </button>
+
+    <nav class="tabbar" aria-label="Primary">
+      <button class="tab active" aria-current="page">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 10.5 12 3l9 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 9.5V20h14V9.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Home
+      </button>
+      <button class="tab">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 19V9m5 10V5m5 14v-7m5 7V8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Insights
+      </button>
+      <button class="tab">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Search
+      </button>
+      <button class="tab">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M4 21a8 8 0 0 1 16 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Profile
+      </button>
+    </nav>
+    <div class="home-indicator" aria-hidden="true"></div>
+  </div>
+
+  <script>
+    // Subtle press feedback (haptic-style scale) for tab bar — non-essential progressive enhancement
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.querySelectorAll('.tab').forEach(function (t) {
+        t.addEventListener('click', function () {
+          document.querySelectorAll('.tab').forEach(function (x) { x.classList.remove('active'); x.removeAttribute('aria-current'); });
+          t.classList.add('active');
+          t.setAttribute('aria-current', 'page');
+        });
+      });
+    }
+  </script>
+</body>
+</html>

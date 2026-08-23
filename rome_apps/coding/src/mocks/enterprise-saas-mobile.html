@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Apex — Enterprise SaaS Mobile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Color tokens (from Design System Variables) */
+    --bg: #F8FAFC;
+    --surface: #FFFFFF;
+    --text: #0F172A;
+    --muted: #64748B;
+    --primary: #4F46E5;
+    --secondary: #7C3AED;
+    --success: #10B981;
+    --border: #E2E8F0;
+    --slate-50: #F8FAFC;
+    --slate-100: #F1F5F9;
+    --slate-200: #E2E8F0;
+
+    /* Gradient */
+    --gradient-primary: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+    --gradient-soft: linear-gradient(135deg, rgba(79,70,229,0.10) 0%, rgba(124,58,237,0.10) 100%);
+
+    /* Radius */
+    --radius-card: 16px;
+    --radius-pill: 999px;
+    --radius-input: 8px;
+    --radius-sm: 10px;
+
+    /* Shadow (colored, indigo-tinted) */
+    --shadow-card: 0 4px 16px rgba(79,70,229,0.08);
+    --shadow-card-hover: 0 8px 28px rgba(79,70,229,0.16);
+    --shadow-cta: 0 8px 22px rgba(79,70,229,0.32);
+    --shadow-nav: 0 -2px 18px rgba(15,23,42,0.06);
+
+    /* Spacing scale */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --screen-pad: 20px;
+
+    /* Typography */
+    --font: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --fs-title: 26px;
+    --fs-h2: 18px;
+    --fs-h3: 15px;
+    --fs-body: 14px;
+    --fs-sm: 12px;
+    --fs-xs: 11px;
+    --lh-title: 1.15;
+    --lh-body: 1.45;
+
+    /* Motion */
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --dur-fast: 120ms;
+    --dur: 220ms;
+    --dur-slow: 420ms;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: var(--font);
+    color: var(--text);
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(124,58,237,0.10), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(79,70,229,0.10), transparent 55%),
+      #EEF1F8;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    min-height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 28px 16px;
+  }
+
+  /* ---------- Phone frame ---------- */
+  .phone {
+    width: 100%;
+    max-width: 390px;
+    background: var(--bg);
+    border-radius: 44px;
+    box-shadow:
+      0 0 0 11px #11131c,
+      0 0 0 13px #2a2d3a,
+      0 40px 90px rgba(15,23,42,0.40);
+    overflow: hidden;
+    position: relative;
+    isolation: isolate;
+  }
+
+  .phone__notch {
+    position: absolute;
+    top: 9px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 26px;
+    background: #11131c;
+    border-radius: var(--radius-pill);
+    z-index: 60;
+  }
+
+  .screen {
+    height: 812px;
+    max-height: calc(100vh - 56px);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ---------- Status bar ---------- */
+  .statusbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px var(--screen-pad) 4px;
+    padding-top: max(14px, env(safe-area-inset-top));
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    color: var(--text);
+    flex: 0 0 auto;
+  }
+  .statusbar__icons { display: flex; align-items: center; gap: 6px; }
+
+  /* ---------- Header ---------- */
+  .header {
+    flex: 0 0 auto;
+    padding: 6px var(--screen-pad) 14px;
+    background: var(--bg);
+  }
+  .header__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+  .header__greeting { font-size: var(--fs-sm); color: var(--muted); font-weight: 600; }
+  .header__title {
+    font-size: var(--fs-title);
+    font-weight: 800;
+    line-height: var(--lh-title);
+    letter-spacing: -0.02em;
+    margin-top: 2px;
+  }
+  .avatar {
+    width: 44px; height: 44px;
+    border-radius: var(--radius-pill);
+    background: var(--gradient-primary);
+    color: #fff;
+    display: grid; place-items: center;
+    font-weight: 800; font-size: var(--fs-h3);
+    box-shadow: var(--shadow-card);
+    flex: 0 0 auto;
+    border: 2px solid #fff;
+  }
+  .icon-btn {
+    width: 44px; height: 44px;
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: grid; place-items: center;
+    color: var(--text);
+    cursor: pointer;
+    position: relative;
+    transition: transform var(--dur-fast) var(--ease-spring),
+                box-shadow var(--dur) var(--ease-out),
+                border-color var(--dur) var(--ease-out);
+  }
+  .icon-btn:hover { box-shadow: var(--shadow-card); border-color: #c7d2fe; }
+  .icon-btn:focus-visible { outline: 3px solid rgba(79,70,229,0.45); outline-offset: 2px; }
+  .icon-btn:active { transform: scale(0.94); }
+  .icon-btn .dot {
+    position: absolute; top: 9px; right: 10px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--secondary);
+    border: 2px solid var(--surface);
+  }
+
+  /* ---------- Scroll body ---------- */
+  .body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 0 var(--screen-pad) 120px;
+    scrollbar-width: none;
+  }
+  .body::-webkit-scrollbar { display: none; }
+
+  .section { margin-top: var(--space-6); }
+  .section__head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: var(--space-3);
+  }
+  .section__title { font-size: var(--fs-h2); font-weight: 700; letter-spacing: -0.01em; }
+  .link {
+    font-size: var(--fs-sm); font-weight: 700; color: var(--primary);
+    background: none; border: 0; cursor: pointer; padding: 6px 8px; border-radius: var(--radius-sm);
+    transition: background var(--dur) var(--ease-out);
+  }
+  .link:hover { background: var(--gradient-soft); }
+  .link:focus-visible { outline: 3px solid rgba(79,70,229,0.45); outline-offset: 1px; }
+
+  /* ---------- Balance / hero card ---------- */
+  .hero {
+    margin-top: var(--space-2);
+    background: var(--gradient-primary);
+    border-radius: var(--radius-card);
+    padding: var(--space-5);
+    color: #fff;
+    box-shadow: var(--shadow-cta);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::after {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(220px 160px at 90% -20%, rgba(255,255,255,0.22), transparent 60%),
+      radial-gradient(180px 140px at 8% 120%, rgba(255,255,255,0.12), transparent 60%);
+    pointer-events: none;
+  }
+  .hero__label { font-size: var(--fs-sm); font-weight: 600; opacity: 0.85; }
+  .hero__amount {
+    font-size: 34px; font-weight: 800; letter-spacing: -0.03em; margin-top: 4px;
+    line-height: 1.1;
+  }
+  .hero__row { display: flex; gap: var(--space-2); margin-top: var(--space-4); position: relative; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.16);
+    border: 1px solid rgba(255,255,255,0.22);
+    color: #fff; font-size: var(--fs-sm); font-weight: 600;
+    padding: 6px 12px; border-radius: var(--radius-pill);
+    backdrop-filter: blur(4px);
+  }
+  .chip svg { opacity: 0.95; }
+
+  /* ---------- Stat grid ---------- */
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); margin-top: var(--space-3); }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    padding: var(--space-4);
+    box-shadow: var(--shadow-card);
+    transition: transform var(--dur) var(--ease-spring), box-shadow var(--dur) var(--ease-out);
+  }
+  .stat:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-hover); }
+  .stat__ico {
+    width: 38px; height: 38px; border-radius: var(--radius-sm);
+    background: var(--gradient-soft); color: var(--primary);
+    display: grid; place-items: center; margin-bottom: 12px;
+  }
+  .stat__ico.green { background: rgba(16,185,129,0.12); color: var(--success); }
+  .stat__val { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+  .stat__lbl { font-size: var(--fs-sm); color: var(--muted); font-weight: 600; margin-top: 2px; }
+  .trend { display: inline-flex; align-items: center; gap: 3px; font-size: var(--fs-xs); font-weight: 700; margin-top: 8px; }
+  .trend.up { color: var(--success); }
+  .trend.down { color: #DC2626; }
+
+  /* ---------- Approval list cards ---------- */
+  .list { display: flex; flex-direction: column; gap: var(--space-3); }
+  .approval {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    padding: var(--space-4);
+    box-shadow: var(--shadow-card);
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    grid-template-rows: auto auto;
+    column-gap: var(--space-3);
+    row-gap: 10px;
+    align-items: center;
+    transition: transform var(--dur) var(--ease-spring), box-shadow var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out);
+    cursor: pointer;
+  }
+  .approval:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-hover); border-color: #c7d2fe; }
+  .approval:focus-visible { outline: 3px solid rgba(79,70,229,0.45); outline-offset: 2px; }
+  .approval:active { transform: scale(0.985); }
+  .approval__ico {
+    grid-row: 1; grid-column: 1;
+    width: 44px; height: 44px; border-radius: var(--radius-sm);
+    background: var(--gradient-soft); color: var(--primary);
+    display: grid; place-items: center; font-weight: 800; font-size: var(--fs-h3);
+  }
+  .approval__main { grid-row: 1; grid-column: 2; min-width: 0; }
+  .approval__title { font-size: var(--fs-h3); font-weight: 700; letter-spacing: -0.01em; }
+  .approval__meta { font-size: var(--fs-sm); color: var(--muted); font-weight: 500; margin-top: 2px; }
+  .approval__amt { grid-row: 1; grid-column: 3; font-size: var(--fs-h3); font-weight: 800; text-align: right; white-space: nowrap; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: var(--fs-xs); font-weight: 700; padding: 4px 9px; border-radius: var(--radius-pill);
+  }
+  .badge.pending { background: rgba(124,58,237,0.10); color: var(--secondary); }
+  .badge.review { background: rgba(79,70,229,0.10); color: var(--primary); }
+  .badge.ok { background: rgba(16,185,129,0.12); color: var(--success); }
+  .badge .pin { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .approval__foot {
+    grid-row: 2; grid-column: 1 / -1;
+    display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+    border-top: 1px solid var(--slate-100); padding-top: 10px;
+  }
+  .mini-actions { display: flex; gap: var(--space-2); }
+  .btn-mini {
+    font-family: inherit; font-size: var(--fs-sm); font-weight: 700;
+    padding: 8px 14px; border-radius: var(--radius-pill); cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    transition: transform var(--dur-fast) var(--ease-spring), background var(--dur) var(--ease-out), color var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out);
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .btn-mini:hover { border-color: #c7d2fe; background: var(--slate-50); }
+  .btn-mini:focus-visible { outline: 3px solid rgba(79,70,229,0.45); outline-offset: 2px; }
+  .btn-mini:active { transform: scale(0.95); }
+  .btn-mini.approve { background: var(--gradient-primary); color: #fff; border-color: transparent; box-shadow: 0 4px 12px rgba(79,70,229,0.28); }
+  .btn-mini.approve:hover { background: var(--gradient-primary); filter: brightness(1.05); }
+
+  /* ---------- Skeleton ---------- */
+  .skeleton {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    padding: var(--space-4);
+    box-shadow: var(--shadow-card);
+    display: flex; align-items: center; gap: var(--space-3);
+  }
+  .sk {
+    background: linear-gradient(100deg, #eef0f7 30%, rgba(79,70,229,0.10) 50%, #eef0f7 70%);
+    background-size: 200% 100%;
+    border-radius: 8px;
+    animation: pulse 1.4s var(--ease-out) infinite;
+  }
+  .sk--circle { width: 44px; height: 44px; border-radius: var(--radius-sm); flex: 0 0 auto; }
+  .sk--lines { flex: 1 1 auto; display: flex; flex-direction: column; gap: 8px; }
+  .sk--l1 { height: 12px; width: 60%; }
+  .sk--l2 { height: 10px; width: 85%; }
+  @keyframes pulse { 0% { background-position: 180% 0; } 100% { background-position: -20% 0; } }
+
+  /* ---------- Floating label input ---------- */
+  .field {
+    position: relative;
+    margin-top: var(--space-2);
+  }
+  .field input {
+    width: 100%;
+    font-family: inherit; font-size: var(--fs-body); font-weight: 600;
+    color: var(--text);
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-input);
+    padding: 22px 14px 8px;
+    transition: border-color var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out);
+  }
+  .field input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(79,70,229,0.14); }
+  .field label {
+    position: absolute; left: 14px; top: 15px;
+    font-size: var(--fs-body); color: var(--muted); font-weight: 600;
+    pointer-events: none;
+    transition: transform var(--dur) var(--ease-out), color var(--dur) var(--ease-out), font-size var(--dur) var(--ease-out);
+    transform-origin: left top;
+  }
+  .field input:focus + label,
+  .field input:not(:placeholder-shown) + label {
+    transform: translateY(-10px) scale(0.82);
+    color: var(--primary);
+  }
+
+  /* ---------- Bottom CTA ---------- */
+  .cta-wrap {
+    position: absolute;
+    left: 0; right: 0; bottom: 76px;
+    padding: 14px var(--screen-pad);
+    background: linear-gradient(to top, var(--bg) 62%, rgba(248,250,252,0));
+    z-index: 40;
+  }
+  .cta {
+    width: 100%;
+    font-family: inherit; font-size: var(--fs-h3); font-weight: 700;
+    color: #fff; border: 0; cursor: pointer;
+    background: var(--gradient-primary);
+    border-radius: var(--radius-pill);
+    padding: 16px;
+    box-shadow: var(--shadow-cta);
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: transform var(--dur-fast) var(--ease-spring), box-shadow var(--dur) var(--ease-out), filter var(--dur) var(--ease-out);
+  }
+  .cta:hover { filter: brightness(1.05); box-shadow: 0 12px 30px rgba(79,70,229,0.40); }
+  .cta:focus-visible { outline: 3px solid rgba(124,58,237,0.55); outline-offset: 3px; }
+  .cta:active { transform: scale(0.97); }
+
+  /* ---------- Bottom tab nav ---------- */
+  .tabbar {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    height: 76px;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    box-shadow: var(--shadow-nav);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    align-items: center;
+    z-index: 50;
+  }
+  .tab {
+    background: none; border: 0; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    color: var(--muted); font-family: inherit; font-size: 10px; font-weight: 700;
+    padding: 8px 0;
+    transition: color var(--dur) var(--ease-out);
+  }
+  .tab svg { transition: transform var(--dur) var(--ease-spring); }
+  .tab:hover { color: var(--text); }
+  .tab:focus-visible { outline: 3px solid rgba(79,70,229,0.45); outline-offset: -4px; border-radius: 12px; }
+  .tab:active svg { transform: scale(0.9); }
+  .tab[aria-current="page"] {
+    color: var(--primary);
+    background: linear-gradient(var(--secondary), var(--primary));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: var(--primary);
+  }
+  .tab[aria-current="page"] .tab__ico {
+    background: var(--gradient-primary);
+    color: #fff;
+    box-shadow: 0 5px 14px rgba(79,70,229,0.34);
+  }
+  .tab__ico {
+    width: 40px; height: 30px; border-radius: var(--radius-pill);
+    display: grid; place-items: center;
+    transition: background var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out);
+  }
+  .tab[aria-current="page"] .tab__lbl { color: var(--primary); }
+
+  /* ---------- Segmented control ---------- */
+  .segment {
+    display: flex; gap: 4px; padding: 4px; margin-top: var(--space-2);
+    background: var(--slate-100); border-radius: var(--radius-pill); border: 1px solid var(--border);
+  }
+  .seg {
+    flex: 1; font-family: inherit; font-size: var(--fs-sm); font-weight: 700;
+    color: var(--muted); background: none; border: 0; cursor: pointer;
+    padding: 9px 0; border-radius: var(--radius-pill);
+    transition: color var(--dur) var(--ease-out), background var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out);
+  }
+  .seg[aria-pressed="true"] { color: var(--text); background: var(--surface); box-shadow: 0 2px 8px rgba(15,23,42,0.08); }
+  .seg:focus-visible { outline: 3px solid rgba(79,70,229,0.45); outline-offset: 1px; }
+  .seg:active { transform: scale(0.97); }
+
+  @media (max-width: 420px) {
+    body { padding: 0; align-items: stretch; }
+    .phone { max-width: 100%; border-radius: 0; box-shadow: none; }
+    .phone__notch { display: none; }
+    .screen { height: 100vh; max-height: 100vh; }
+    .statusbar { padding-top: max(14px, env(safe-area-inset-top)); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+    .sk { background: #eef0f7; }
+  }
+</style>
+</head>
+<body>
+  <div class="phone">
+    <div class="phone__notch" aria-hidden="true"></div>
+    <div class="screen">
+
+      <!-- Status bar -->
+      <div class="statusbar" aria-hidden="true">
+        <span>9:41</span>
+        <span class="statusbar__icons">
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="4.5" width="3" height="7.5" rx="1"/><rect x="9" y="2" width="3" height="10" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 2.5C10 2.5 11.8 3.3 13.1 4.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M4 6.4C5.1 5.3 6.5 4.7 8 4.7C9.5 4.7 10.9 5.3 12 6.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="8" cy="9.4" r="1.4" fill="currentColor"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3" stroke="currentColor" opacity="0.4"/><rect x="2" y="2" width="15" height="8" rx="1.6" fill="currentColor"/><rect x="22" y="3.5" width="2" height="5" rx="1" fill="currentColor" opacity="0.5"/></svg>
+        </span>
+      </div>
+
+      <!-- Header -->
+      <header class="header">
+        <div class="header__top">
+          <div>
+            <div class="header__greeting">Good morning, Priya</div>
+            <h1 class="header__title">Approvals</h1>
+          </div>
+          <nav aria-label="Account" style="display:flex;gap:10px;align-items:center;">
+            <button class="icon-btn" aria-label="Notifications, 3 new">
+              <span class="dot" aria-hidden="true"></span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.7 21a2 2 0 0 1-3.4 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <span class="avatar" aria-label="Priya Sharma">PS</span>
+          </nav>
+        </div>
+      </header>
+
+      <!-- Scroll body -->
+      <main class="body">
+
+        <!-- Hero balance -->
+        <section aria-labelledby="hero-h">
+          <h2 id="hero-h" class="link" style="position:absolute;left:-9999px;">Pending budget</h2>
+          <div class="hero">
+            <div class="hero__label">Pending this cycle · Q2 Budget</div>
+            <div class="hero__amount">$48,920.50</div>
+            <div class="hero__row">
+              <span class="chip">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/></svg>
+                12 awaiting you
+              </span>
+              <span class="chip">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                86% on budget
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Stats -->
+        <section class="section" aria-labelledby="stats-h">
+          <h2 id="stats-h" style="position:absolute;left:-9999px;">Key metrics</h2>
+          <div class="stats">
+            <div class="stat">
+              <div class="stat__ico">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 17l5-5 4 3 7-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 7h4v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="stat__val">$124k</div>
+              <div class="stat__lbl">Approved (MTD)</div>
+              <div class="trend up">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M7 14l5-5 5 5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                8.2% vs last month
+              </div>
+            </div>
+            <div class="stat">
+              <div class="stat__ico green">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/></svg>
+              </div>
+              <div class="stat__val">2.4h</div>
+              <div class="stat__lbl">Avg. approval time</div>
+              <div class="trend up">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M17 10l-5 5-5-5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                31% faster
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Approval queue -->
+        <section class="section" aria-labelledby="queue-h">
+          <div class="section__head">
+            <h2 id="queue-h" class="section__title">Approval queue</h2>
+            <button class="link">View all</button>
+          </div>
+
+          <div class="segment" role="group" aria-label="Filter approvals">
+            <button class="seg" aria-pressed="true">All · 12</button>
+            <button class="seg" aria-pressed="false">Expenses</button>
+            <button class="seg" aria-pressed="false">Invoices</button>
+          </div>
+
+          <div class="list" style="margin-top:var(--space-3)">
+
+            <article class="approval" tabindex="0" aria-label="Acme Cloud Services invoice, $12,400, pending your approval">
+              <div class="approval__ico" aria-hidden="true">AC</div>
+              <div class="approval__main">
+                <div class="approval__title">Acme Cloud Services</div>
+                <div class="approval__meta">Invoice · Submitted by R. Patel · 2h ago</div>
+              </div>
+              <div class="approval__amt">$12,400</div>
+              <div class="approval__foot">
+                <span class="badge pending"><span class="pin" aria-hidden="true"></span>Pending</span>
+                <div class="mini-actions">
+                  <button class="btn-mini" aria-label="Decline Acme Cloud Services">Decline</button>
+                  <button class="btn-mini approve" aria-label="Approve Acme Cloud Services">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Approve
+                  </button>
+                </div>
+              </div>
+            </article>
+
+            <article class="approval" tabindex="0" aria-label="Travel reimbursement, $842.18, in review">
+              <div class="approval__ico" aria-hidden="true">TR</div>
+              <div class="approval__main">
+                <div class="approval__title">Q2 Sales Offsite — Travel</div>
+                <div class="approval__meta">Expense · Submitted by M. Cho · 5h ago</div>
+              </div>
+              <div class="approval__amt">$842.18</div>
+              <div class="approval__foot">
+                <span class="badge review"><span class="pin" aria-hidden="true"></span>In review</span>
+                <div class="mini-actions">
+                  <button class="btn-mini" aria-label="Decline travel reimbursement">Decline</button>
+                  <button class="btn-mini approve" aria-label="Approve travel reimbursement">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Approve
+                  </button>
+                </div>
+              </div>
+            </article>
+
+            <article class="approval" tabindex="0" aria-label="Figma Enterprise renewal, $9,990, approved">
+              <div class="approval__ico" aria-hidden="true">FE</div>
+              <div class="approval__main">
+                <div class="approval__title">Figma Enterprise — Renewal</div>
+                <div class="approval__meta">Subscription · Auto-routed · Yesterday</div>
+              </div>
+              <div class="approval__amt">$9,990</div>
+              <div class="approval__foot">
+                <span class="badge ok">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  Approved
+                </span>
+                <div class="mini-actions">
+                  <button class="btn-mini" aria-label="View receipt for Figma Enterprise">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+                    Receipt
+                  </button>
+                </div>
+              </div>
+            </article>
+
+            <!-- Skeleton loading placeholder -->
+            <div class="skeleton" aria-hidden="true">
+              <div class="sk sk--circle"></div>
+              <div class="sk--lines">
+                <div class="sk sk--l1"></div>
+                <div class="sk sk--l2"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Quick add field -->
+        <section class="section" aria-labelledby="quick-h">
+          <div class="section__head">
+            <h2 id="quick-h" class="section__title">Quick request</h2>
+          </div>
+          <div class="field">
+            <input id="ref" type="text" placeholder=" " autocomplete="off" />
+            <label for="ref">Reference or PO number</label>
+          </div>
+        </section>
+
+      </main>
+
+      <!-- Bottom CTA -->
+      <div class="cta-wrap">
+        <button class="cta" id="cta">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+          New approval request
+        </button>
+      </div>
+
+      <!-- Bottom tab nav -->
+      <nav class="tabbar" aria-label="Primary">
+        <button class="tab" aria-current="page" aria-label="Home">
+          <span class="tab__ico">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 10.5 12 3l9 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="tab__lbl">Home</span>
+        </button>
+        <button class="tab" aria-label="Reports">
+          <span class="tab__ico">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 20V10M12 20V4M18 20v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </span>
+          <span class="tab__lbl">Reports</span>
+        </button>
+        <button class="tab" aria-label="Team">
+          <span class="tab__ico">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16 5.2a3.2 3.2 0 0 1 0 5.6M17.5 14.2A5.5 5.5 0 0 1 20.5 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </span>
+          <span class="tab__lbl">Team</span>
+        </button>
+        <button class="tab" aria-label="Settings">
+          <span class="tab__ico">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.2A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 2.6 14H2.5a2 2 0 1 1 0-4h.2A1.6 1.6 0 0 0 4.6 7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 10 4.6h.1A1.6 1.6 0 0 0 11 2.5a2 2 0 1 1 4 0v.2A1.6 1.6 0 0 0 17 4.6a1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.6 1.6 0 0 0 21.4 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="tab__lbl">Settings</span>
+        </button>
+      </nav>
+
+    </div>
+  </div>
+
+  <script>
+    // Segmented control toggle (no framework)
+    document.querySelectorAll('.segment').forEach(function (group) {
+      group.addEventListener('click', function (e) {
+        var btn = e.target.closest('.seg');
+        if (!btn) return;
+        group.querySelectorAll('.seg').forEach(function (s) { s.setAttribute('aria-pressed', 'false'); });
+        btn.setAttribute('aria-pressed', 'true');
+      });
+    });
+
+    // Bottom tab selection
+    document.querySelectorAll('.tabbar .tab').forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        document.querySelectorAll('.tabbar .tab').forEach(function (t) { t.removeAttribute('aria-current'); });
+        tab.setAttribute('aria-current', 'page');
+      });
+    });
+  </script>
+</body>
+</html>

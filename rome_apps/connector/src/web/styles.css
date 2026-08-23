@@ -1,0 +1,5 @@
+/* Rome's design-token layer: Tailwind + the host theme vocabulary. Tokens are
+   inherited from the live host theme across the Shadow DOM boundary, so the app
+   tracks Rome's design language (including `.dark`) automatically. The full
+   token reference lives in @rome-os/app-web-sdk → src/runtime/styles.css. */
+@import "@rome-os/app-web-sdk/styles";

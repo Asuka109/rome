@@ -1,0 +1,54 @@
+appId: com.rome.desktop
+productName: Rome
+copyright: Copyright © 2026
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**/*
+  - src/renderer/**/*
+  - "!**/*.ts"
+  - "!**/*.map"
+extraMetadata:
+  main: dist/main/index.js
+asar: true
+asarUnpack:
+  - "native/**/*.node"
+extraResources:
+  - from: native/
+    to: native/
+    filter:
+      - "*.node"
+  - from: lima/
+    to: lima/
+    filter:
+      - "**/*"
+  - from: build/tray/
+    to: tray/
+    filter:
+      - "*.png"
+beforePack: build/beforePack.mjs
+afterPack: build/afterPack.mjs
+
+protocols:
+  - name: Rome
+    schemes:
+      - rome
+
+mac:
+  publish:
+    provider: generic
+    url: https://updates.romeos.io/desktop/stable/darwin/arm64
+  target:
+    - dmg
+    - zip
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  # Pre-signed by build/afterPack.mjs with Lima-specific entitlements; keep
+  # electron-builder's signing pass from overwriting that signature.
+  signIgnore:
+    - "lima/bin/limactl$"
+  category: public.app-category.productivity
+  extendInfo:
+    NSLocalNetworkUsageDescription: Rome needs local network access to reach the local Rome runtime container.

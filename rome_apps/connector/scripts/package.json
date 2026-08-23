@@ -1,0 +1,15 @@
+{
+  "name": "rome-connector-scripts",
+  "private": true,
+  "type": "module",
+  "description": "Standalone scripts invoked via `composio run -f`. Not part of the Rome workspace install graph.",
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "jsdom": "^29.1.1",
+    "turndown": "^7.2.4"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^21.1.7",
+    "@types/turndown": "^5.0.5"
+  }
+}

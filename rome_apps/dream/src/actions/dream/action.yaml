@@ -1,0 +1,8 @@
+name: dream
+type: custom
+description: Runs the dream agent to analyze recent conversations and update persistent memory. Auto-schedules itself as a daily recurring task on first run.
+entry: ./index.ts
+complexity: complex
+speed: slow
+reliability: high
+sideEffects: write

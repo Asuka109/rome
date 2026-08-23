@@ -1,0 +1,12 @@
+{
+  "name": "rome-opencli-twitter",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test": "../../scripts/test-env.sh node --test follow-network.test.mjs"
+  },
+  "devDependencies": {
+    "@jackwener/opencli": "^1.8.6"
+  }
+}

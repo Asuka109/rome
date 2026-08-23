@@ -1,0 +1,123 @@
+{
+  "page": {
+    "title": "Rome",
+    "tagline": "给智能体起个名字,挑一个大脑。就这样。",
+    "enter": "进入 Rome",
+    "entering": "进入中...",
+    "enterRequiresAiHint": "登录 Claude 或 ChatGPT 后即可进入 Rome。",
+    "errors": {
+      "profileSaveFailed": "保存个人资料失败。",
+      "networkError": "网络错误,请重试。",
+      "completeFailed": "完成设置失败。"
+    }
+  },
+  "steps": {
+    "account": "账号",
+    "profile": "资料"
+  },
+  "done": {
+    "title": "全部就绪",
+    "tagline": "Rome 可以帮你管理项目、记住重要的事、自动执行例程、连接你常用的服务，还有更多。",
+    "guideButton": "看看能做什么",
+    "chatButton": "进入对话"
+  },
+  "account": {
+    "tagline": "设置用于解锁这台 Rome 的账号。一台 Rome，一个守护者。",
+    "username": "用户名",
+    "password": "密码",
+    "passwordHint": "至少 8 个字符。",
+    "showPassword": "显示密码",
+    "hidePassword": "隐藏密码",
+    "submit": "继续",
+    "submitting": "继续中…",
+    "errorFallback": "设置账号失败。",
+    "errorUsernameRequired": "请填写用户名。",
+    "errorPasswordTooShort": "密码至少 8 个字符。",
+    "networkError": "网络错误,请重试。"
+  },
+  "guardian": {
+    "nameLabel": "你的名字",
+    "namePlaceholder": "例如:Alex",
+    "nameHint": "智能体对你的称呼。之后可以在「设置」里修改。"
+  },
+  "agent": {
+    "nameLabel": "智能体名称",
+    "namePlaceholder": "例如:Atlas、Friday",
+    "nameHint": "你之后可以在「设置」里随时重新命名。",
+    "reroll": "随机",
+    "rerollTitle": "换一个名字"
+  },
+  "ai": {
+    "title": "连接一个大脑",
+    "pickOneHint": "选一个即可"
+  },
+  "codexDeviceLogin": {
+    "title": "用设备码登录",
+    "cancel": "取消",
+    "steps": {
+      "enable": "开启",
+      "copy": "复制设备码"
+    },
+    "back": "上一步",
+    "enable": {
+      "title": "开启设备码登录",
+      "body": "在 ChatGPT 中打开「<settingsLink>设置 → 安全</settingsLink>」，开启「Enable device code authorization for Codex」。这一步只需做一次。",
+      "openSettings": "去开启",
+      "confirm": "我已经弄好了",
+      "pointer": "在 ChatGPT 设置里开启这个",
+      "adminNotice": "ChatGPT Team 或 Enterprise 账号下，此项由管理员管理。"
+    },
+    "copyCode": {
+      "title": "复制你的设备码",
+      "body": "复制设备码，到验证页面粘贴即可完成。"
+    },
+    "copy": "复制设备码",
+    "copied": "已复制",
+    "preparing": "正在生成设备码……",
+    "retrying": "正在生成新的设备码……",
+    "openButton": "打开验证页面",
+    "copyFirst": "请先复制设备码",
+    "retry": "换一个设备码",
+    "connectedTitle": "已登录 ChatGPT",
+    "connectedBody": "全部搞定，此窗口将自动关闭。",
+    "errors": {
+      "title": "登录未能完成",
+      "startFailed": "无法启动 ChatGPT 设备码登录。请重试或改用浏览器方式。"
+    }
+  },
+  "chatgptLogin": {
+    "title": "用 ChatGPT 登录",
+    "iframeTitle": "Rome 服务器浏览器",
+    "stepIndicator": "第 {{current}} 步 / 共 {{total}} 步",
+    "cancel": "取消",
+    "preparingBrowser": "正在打开浏览器……",
+    "starting": "正在启动 ChatGPT 登录……",
+    "retrying": "正在重试 ChatGPT 登录……",
+    "privacyNote": "你的密码直接发送给 OpenAI,Rome 不会读取或保存。",
+    "steps": {
+      "login": {
+        "title": "登录 ChatGPT",
+        "cta": "我已登录",
+        "notice": {
+          "title": "请先在下方浏览器里登录 ChatGPT",
+          "body": "请在下方浏览器中登录 ChatGPT。完成后点击「我已登录」继续下一步。"
+        }
+      },
+      "authorize": {
+        "title": "授权 ChatGPT",
+        "waiting": "等待 OpenAI 完成……",
+        "retry": "重试",
+        "back": "返回",
+        "notice": {
+          "title": "请在下方浏览器中授权 ChatGPT",
+          "body": "如果页面没打开或出了问题，可以点「重试」重新启动授权流程，或者点「返回」回到 ChatGPT 登录页。"
+        }
+      }
+    },
+    "errors": {
+      "navigateFailed": "无法打开服务器浏览器。请改用终端方式。",
+      "codexStartFailed": "无法启动 ChatGPT 登录。请改用终端方式。",
+      "codexExitedWithoutAuth": "ChatGPT 登录在完成前已关闭。请重试或改用终端方式。"
+    }
+  }
+}

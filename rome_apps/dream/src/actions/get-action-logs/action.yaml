@@ -1,0 +1,8 @@
+name: get_action_logs
+type: custom
+description: Fetch recent action execution logs from the database, formatted for analysis. Returns a markdown summary of what actions ran, their status, and any errors.
+entry: ./index.ts
+complexity: simple
+speed: fast
+reliability: high
+sideEffects: read-only

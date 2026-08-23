@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NOVASTAR — Y2K Music Player</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    /* Core Y2K palette (from CSV Primary/Secondary + Design System Variables) */
+    --neon-pink:#FF69B4;
+    --neon-cyan:#00FFFF;
+    --chrome-silver:#C0C0C0;
+    --neon-purple:#9400D3;
+    --hot-magenta:#FF2EC4;
+
+    /* Surfaces */
+    --bg-0:#0a0118;
+    --bg-1:#16052e;
+    --bg-2:#1f0940;
+    --panel:rgba(255,255,255,0.06);
+    --panel-border:rgba(255,255,255,0.18);
+    --ink:#f4ecff;
+    --ink-dim:#c8b5e8;
+
+    /* Gradients */
+    --metallic:linear-gradient(180deg,#ffffff 0%,#d6d6e6 22%,#9a9ab2 50%,#e8e8f4 72%,#7c7c94 100%);
+    --bubblegum:linear-gradient(135deg,var(--neon-pink),var(--neon-cyan));
+    --iridescent:linear-gradient(120deg,#ff69b4,#9400d3 30%,#00ffff 60%,#ff69b4 100%);
+    --glossy-gradient:linear-gradient(180deg,rgba(255,255,255,.85) 0%,rgba(255,255,255,0) 50%);
+
+    /* Radius / spacing / shadow */
+    --r-bubble:50%;
+    --r-lg:26px;
+    --r-md:16px;
+    --r-sm:10px;
+    --sp-1:6px; --sp-2:12px; --sp-3:18px; --sp-4:28px; --sp-5:44px;
+    --glow-blur:10px;
+    --shadow-chrome:0 8px 28px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.7);
+    --shadow-glow:0 0 var(--glow-blur) rgba(255,105,180,.7), 0 0 28px rgba(0,255,255,.4);
+
+    /* Type */
+    --font-display:'Orbitron',system-ui,sans-serif;
+    --font-body:'Rajdhani','Trebuchet MS',system-ui,sans-serif;
+    --fs-xl:clamp(2.1rem,6vw,4rem);
+    --fs-lg:clamp(1.4rem,3vw,2rem);
+    --fs-md:1.05rem;
+    --fs-sm:.85rem;
+
+    /* Motion */
+    --t-fast:140ms cubic-bezier(.2,.8,.2,1);
+    --t-med:300ms cubic-bezier(.2,.8,.2,1);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:var(--font-body);
+    color:var(--ink);
+    background:
+      radial-gradient(900px 600px at 12% -5%,rgba(255,105,180,.35),transparent 60%),
+      radial-gradient(800px 500px at 95% 10%,rgba(0,255,255,.25),transparent 55%),
+      radial-gradient(700px 700px at 50% 110%,rgba(148,0,211,.4),transparent 60%),
+      linear-gradient(170deg,var(--bg-0),var(--bg-1) 50%,var(--bg-2));
+    min-height:100vh;
+    overflow-x:hidden;
+    position:relative;
+  }
+  /* Starfield / sparkle texture overlay */
+  body::before{
+    content:"";
+    position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:
+      radial-gradient(2px 2px at 20% 30%,rgba(255,255,255,.9),transparent),
+      radial-gradient(1.5px 1.5px at 70% 65%,rgba(0,255,255,.9),transparent),
+      radial-gradient(2px 2px at 85% 20%,rgba(255,105,180,.9),transparent),
+      radial-gradient(1.5px 1.5px at 40% 80%,rgba(255,255,255,.8),transparent),
+      radial-gradient(1.5px 1.5px at 55% 15%,rgba(255,255,255,.7),transparent);
+    opacity:.7;
+    animation:twinkle 4s ease-in-out infinite alternate;
+  }
+  @keyframes twinkle{from{opacity:.35}to{opacity:.85}}
+
+  a{color:inherit;text-decoration:none}
+  .wrap{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:0 clamp(14px,3vw,32px)}
+
+  /* ---------- Header / Nav ---------- */
+  header{position:relative;z-index:5}
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);
+    padding:var(--sp-3) 0;flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:var(--sp-2)}
+  .brand .logo{
+    width:46px;height:46px;border-radius:14px;flex:0 0 auto;
+    background:var(--iridescent);background-size:200% 200%;
+    display:grid;place-items:center;box-shadow:var(--shadow-glow);
+    animation:irid 6s linear infinite;
+  }
+  @keyframes irid{to{background-position:200% 0}}
+  .brand .logo svg{width:26px;height:26px}
+  .brand h1{
+    font-family:var(--font-display);font-weight:900;font-size:1.35rem;letter-spacing:1px;
+    background:var(--metallic);-webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 1px 0 rgba(0,0,0,.5));
+  }
+  .brand small{display:block;font-size:.62rem;letter-spacing:3px;color:var(--neon-cyan);font-weight:700}
+
+  nav ul{display:flex;gap:var(--sp-1);list-style:none;flex-wrap:wrap}
+  nav a{
+    font-family:var(--font-display);font-weight:500;font-size:.78rem;letter-spacing:1px;
+    padding:9px 16px;border-radius:999px;color:var(--ink-dim);transition:var(--t-fast);
+    border:1px solid transparent;
+  }
+  nav a:hover{color:#fff;border-color:var(--panel-border);background:var(--panel)}
+  nav a.active{
+    color:#10001f;background:var(--metallic);box-shadow:var(--shadow-chrome);font-weight:700;
+  }
+  nav a:focus-visible{outline:3px solid var(--neon-cyan);outline-offset:2px}
+
+  .header-actions{display:flex;align-items:center;gap:var(--sp-2)}
+  .icon-btn{
+    width:44px;height:44px;border-radius:var(--r-bubble);border:1px solid var(--panel-border);
+    background:var(--panel);display:grid;place-items:center;cursor:pointer;color:var(--ink);
+    transition:var(--t-fast);
+  }
+  .icon-btn:hover{box-shadow:var(--shadow-glow);transform:translateY(-2px);border-color:var(--neon-pink)}
+  .icon-btn:active{transform:translateY(0) scale(.96)}
+  .icon-btn:focus-visible{outline:3px solid var(--neon-cyan);outline-offset:2px}
+  .icon-btn svg{width:20px;height:20px}
+  .avatar{
+    width:44px;height:44px;border-radius:var(--r-bubble);flex:0 0 auto;
+    background:var(--bubblegum);display:grid;place-items:center;font-family:var(--font-display);
+    font-weight:900;color:#10001f;box-shadow:var(--shadow-chrome);
+  }
+
+  /* ---------- Hero / Now Playing ---------- */
+  .hero{
+    display:grid;grid-template-columns:1.15fr .85fr;gap:clamp(18px,3vw,40px);
+    align-items:stretch;padding:var(--sp-4) 0 var(--sp-3);
+  }
+  .hero-copy{align-self:center}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:8px;font-family:var(--font-display);
+    font-weight:700;font-size:.7rem;letter-spacing:3px;color:var(--neon-cyan);
+    padding:7px 14px;border-radius:999px;border:1px solid rgba(0,255,255,.4);
+    background:rgba(0,255,255,.08);
+  }
+  .eyebrow svg{width:14px;height:14px}
+  .hero h2{
+    font-family:var(--font-display);font-weight:900;font-size:var(--fs-xl);line-height:1.02;
+    margin:var(--sp-3) 0 var(--sp-2);letter-spacing:.5px;
+    background:linear-gradient(95deg,#fff,var(--neon-pink) 45%,var(--neon-cyan));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 0 22px rgba(255,105,180,.25);
+  }
+  .hero p.lede{color:var(--ink-dim);font-size:1.1rem;max-width:46ch;line-height:1.5}
+
+  .cta-row{display:flex;gap:var(--sp-2);flex-wrap:wrap;margin-top:var(--sp-4)}
+  .btn{
+    position:relative;overflow:hidden;border:none;cursor:pointer;
+    font-family:var(--font-display);font-weight:700;letter-spacing:1px;font-size:.85rem;
+    padding:15px 28px;border-radius:999px;display:inline-flex;align-items:center;gap:10px;
+    transition:var(--t-fast);
+  }
+  .btn svg{width:18px;height:18px}
+  .btn::after{ /* glossy overlay */
+    content:"";position:absolute;inset:0;border-radius:inherit;
+    background:var(--glossy-gradient);pointer-events:none;
+  }
+  .btn-primary{
+    color:#1a0030;background:var(--bubblegum);box-shadow:var(--shadow-glow),var(--shadow-chrome);
+  }
+  .btn-primary:hover{transform:translateY(-3px);filter:saturate(1.3) brightness(1.06)}
+  .btn-primary:active{transform:translateY(0) scale(.97)}
+  .btn-primary:focus-visible{outline:3px solid #fff;outline-offset:3px}
+  .btn-ghost{
+    color:#10001f;background:var(--metallic);box-shadow:var(--shadow-chrome);
+  }
+  .btn-ghost:hover{transform:translateY(-3px)}
+  .btn-ghost:active{transform:translateY(0) scale(.97)}
+  .btn-ghost:focus-visible{outline:3px solid var(--neon-cyan);outline-offset:3px}
+
+  /* Now playing card */
+  .np-card{
+    position:relative;border-radius:var(--r-lg);padding:var(--sp-4);
+    background:var(--panel);border:1px solid var(--panel-border);
+    backdrop-filter:blur(14px);box-shadow:0 18px 50px rgba(0,0,0,.5);
+    display:flex;flex-direction:column;gap:var(--sp-3);overflow:hidden;
+  }
+  .np-card::before{ /* iridescent edge sheen */
+    content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;
+    background:var(--iridescent);background-size:300% 300%;
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;opacity:.7;
+    animation:irid 8s linear infinite;
+  }
+  .np-disc{
+    width:clamp(120px,38%,170px);aspect-ratio:1;border-radius:var(--r-bubble);margin:0 auto;
+    background:conic-gradient(from 0deg,#ff69b4,#9400d3,#00ffff,#ff69b4);
+    display:grid;place-items:center;position:relative;box-shadow:var(--shadow-glow);
+    animation:spin 8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .np-disc::after{content:"";position:absolute;inset:32%;border-radius:var(--r-bubble);
+    background:radial-gradient(circle at 40% 35%,#fff 0 8%,#2a2a3a 9% 100%);box-shadow:inset 0 0 8px #000}
+  .np-meta{text-align:center}
+  .np-meta .track{font-family:var(--font-display);font-weight:700;font-size:1.25rem;letter-spacing:.5px}
+  .np-meta .artist{color:var(--neon-cyan);font-weight:600;letter-spacing:1px}
+
+  .progress{display:flex;flex-direction:column;gap:6px}
+  .bar{height:8px;border-radius:999px;background:rgba(255,255,255,.14);overflow:hidden}
+  .bar>i{display:block;height:100%;width:42%;border-radius:999px;background:var(--bubblegum);box-shadow:0 0 10px var(--neon-pink)}
+  .times{display:flex;justify-content:space-between;font-size:.75rem;color:var(--ink-dim);font-variant-numeric:tabular-nums}
+
+  .controls{display:flex;align-items:center;justify-content:center;gap:var(--sp-2)}
+  .play{
+    width:64px;height:64px;border-radius:var(--r-bubble);border:none;cursor:pointer;
+    background:var(--metallic);box-shadow:var(--shadow-chrome);display:grid;place-items:center;
+    color:#10001f;transition:var(--t-fast);position:relative;overflow:hidden;
+  }
+  .play::after{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--glossy-gradient)}
+  .play svg{width:26px;height:26px;position:relative;z-index:1}
+  .play:hover{transform:scale(1.06);box-shadow:var(--shadow-chrome),var(--shadow-glow)}
+  .play:active{transform:scale(.95)}
+  .play:focus-visible{outline:3px solid var(--neon-cyan);outline-offset:3px}
+
+  /* ---------- Section ---------- */
+  .section-head{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2);
+    margin:var(--sp-5) 0 var(--sp-3);flex-wrap:wrap}
+  .section-head h3{font-family:var(--font-display);font-weight:700;font-size:var(--fs-lg);letter-spacing:1px}
+  .section-head h3 b{color:var(--neon-pink)}
+  .pill-link{font-family:var(--font-display);font-size:.72rem;letter-spacing:1px;color:var(--neon-cyan);
+    padding:8px 16px;border:1px solid rgba(0,255,255,.4);border-radius:999px;transition:var(--t-fast)}
+  .pill-link:hover{background:rgba(0,255,255,.12);box-shadow:0 0 14px rgba(0,255,255,.4)}
+  .pill-link:focus-visible{outline:3px solid var(--neon-cyan);outline-offset:2px}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:var(--sp-3)}
+  .card{
+    position:relative;border-radius:var(--r-md);padding:var(--sp-3);overflow:hidden;
+    background:var(--panel);border:1px solid var(--panel-border);backdrop-filter:blur(8px);
+    transition:var(--t-med);cursor:pointer;
+  }
+  .card:hover{transform:translateY(-6px);border-color:var(--neon-pink);box-shadow:var(--shadow-glow)}
+  .card:focus-visible{outline:3px solid var(--neon-cyan);outline-offset:3px}
+  .card .art{
+    width:100%;aspect-ratio:1;border-radius:var(--r-sm);margin-bottom:var(--sp-2);
+    display:grid;place-items:center;position:relative;box-shadow:inset 0 0 0 1px rgba(255,255,255,.15);
+  }
+  .card .art::after{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--glossy-gradient);opacity:.6}
+  .art.a1{background:linear-gradient(135deg,#ff69b4,#9400d3)}
+  .art.a2{background:linear-gradient(135deg,#00ffff,#7c3aed)}
+  .art.a3{background:linear-gradient(135deg,#ff2ec4,#00ffff)}
+  .art.a4{background:linear-gradient(135deg,#9400d3,#ff69b4)}
+  .art.a5{background:conic-gradient(from 45deg,#ff69b4,#00ffff,#9400d3,#ff69b4)}
+  .art.a6{background:linear-gradient(135deg,#00ffff,#ff69b4)}
+  .art svg{width:40%;height:40%;color:rgba(255,255,255,.9);position:relative;z-index:1;
+    filter:drop-shadow(0 2px 6px rgba(0,0,0,.4))}
+  .card h4{font-family:var(--font-display);font-weight:500;font-size:.95rem;letter-spacing:.3px}
+  .card .sub{color:var(--ink-dim);font-size:.82rem;display:flex;align-items:center;gap:6px;margin-top:3px}
+  .card .sub svg{width:13px;height:13px;color:var(--neon-cyan)}
+
+  /* ---------- Stats / Queue panel ---------- */
+  .lower{display:grid;grid-template-columns:1fr 1.1fr;gap:clamp(18px,3vw,32px);margin-top:var(--sp-5)}
+  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--sp-3)}
+  .stat{
+    border-radius:var(--r-md);padding:var(--sp-3);background:var(--panel);
+    border:1px solid var(--panel-border);position:relative;overflow:hidden;
+  }
+  .stat .k{font-family:var(--font-display);font-weight:900;font-size:1.9rem;
+    background:var(--metallic);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .stat .l{color:var(--ink-dim);font-size:.8rem;letter-spacing:1px;text-transform:uppercase}
+  .stat .spark{margin-top:8px;display:flex;align-items:flex-end;gap:3px;height:30px}
+  .stat .spark i{flex:1;background:var(--bubblegum);border-radius:3px 3px 0 0;opacity:.85}
+
+  .queue{border-radius:var(--r-lg);padding:var(--sp-3);background:var(--panel);border:1px solid var(--panel-border)}
+  .queue h3{font-family:var(--font-display);font-weight:700;font-size:1.05rem;letter-spacing:1px;
+    margin-bottom:var(--sp-2);display:flex;align-items:center;gap:8px}
+  .queue h3 svg{width:18px;height:18px;color:var(--neon-pink)}
+  .qrow{display:flex;align-items:center;gap:var(--sp-2);padding:10px;border-radius:var(--r-sm);transition:var(--t-fast)}
+  .qrow:hover{background:rgba(255,255,255,.06)}
+  .qrow .qart{width:42px;height:42px;border-radius:10px;flex:0 0 auto}
+  .qrow .qinfo{flex:1;min-width:0}
+  .qrow .qinfo b{font-weight:600;font-size:.95rem;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .qrow .qinfo span{color:var(--ink-dim);font-size:.78rem}
+  .qrow .qdur{font-size:.78rem;color:var(--ink-dim);font-variant-numeric:tabular-nums}
+  .qrow .qbadge{font-family:var(--font-display);font-size:.6rem;letter-spacing:1px;color:#10001f;
+    background:var(--neon-cyan);padding:3px 8px;border-radius:999px;font-weight:700}
+
+  footer{margin:var(--sp-5) 0 var(--sp-4);text-align:center;color:var(--ink-dim);font-size:.8rem;
+    border-top:1px solid var(--panel-border);padding-top:var(--sp-3)}
+  footer span{color:var(--neon-cyan)}
+
+  /* ---------- Responsive ---------- */
+  @media (max-width:860px){
+    .hero{grid-template-columns:1fr}
+    .lower{grid-template-columns:1fr}
+  }
+  @media (max-width:560px){
+    nav{order:3;width:100%}
+    nav ul{justify-content:center}
+    .stats{grid-template-columns:1fr 1fr}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="topbar">
+        <div class="brand">
+          <span class="logo" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#10001f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/></svg>
+          </span>
+          <div>
+            <h1>NOVASTAR</h1>
+            <small>SOUND·SYSTEM</small>
+          </div>
+        </div>
+        <nav aria-label="Primary">
+          <ul>
+            <li><a href="#" class="active" aria-current="page">Discover</a></li>
+            <li><a href="#radio">Radio</a></li>
+            <li><a href="#library">Library</a></li>
+            <li><a href="#charts">Charts</a></li>
+          </ul>
+        </nav>
+        <div class="header-actions">
+          <button class="icon-btn" aria-label="Search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          </button>
+          <button class="icon-btn" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+          </button>
+          <span class="avatar" aria-label="User profile: Mika">MK</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" aria-label="Now playing">
+        <div class="hero-copy">
+          <span class="eyebrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/></svg>
+            HYPERPOP MIX · LIVE
+          </span>
+          <h2>Crystal Frequencies</h2>
+          <p class="lede">Chrome-dipped beats and bubblegum synths, streaming straight from the year 2000. Tune your reality and let the future play itself.</p>
+          <div class="cta-row">
+            <button class="btn btn-primary">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              Play Mix
+            </button>
+            <button class="btn btn-ghost">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+              Add to Library
+            </button>
+          </div>
+        </div>
+
+        <article class="np-card" aria-label="Current track player">
+          <div class="np-disc" aria-hidden="true"></div>
+          <div class="np-meta">
+            <div class="track">Bubblegum 3000</div>
+            <div class="artist">CHROMA KIDZ</div>
+          </div>
+          <div class="progress">
+            <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="42" aria-label="Playback position"><i></i></div>
+            <div class="times"><span>1:48</span><span>4:12</span></div>
+          </div>
+          <div class="controls">
+            <button class="icon-btn" aria-label="Previous track">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5 9 12l11 7z"/></svg>
+            </button>
+            <button class="play" aria-label="Pause">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
+            </button>
+            <button class="icon-btn" aria-label="Next track">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5l11 7-11 7z"/></svg>
+            </button>
+            <button class="icon-btn" aria-label="Toggle favorite">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.5-1.5 3-3.3 3-5.5A4.5 4.5 0 0 0 12 5a4.5 4.5 0 0 0-10 3.5C2 13 12 21 12 21s4-3.3 7-7"/></svg>
+            </button>
+          </div>
+        </article>
+      </section>
+
+      <section id="charts" aria-label="Trending playlists">
+        <div class="section-head">
+          <h3>Trending <b>Now</b></h3>
+          <a href="#" class="pill-link">SEE ALL →</a>
+        </div>
+        <div class="grid">
+          <a href="#" class="card" aria-label="Play Neon Cascade by Glitterwave">
+            <span class="art a1" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
+            <h4>Neon Cascade</h4>
+            <div class="sub"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/></svg>Glitterwave · 1.2M</div>
+          </a>
+          <a href="#" class="card" aria-label="Play Chrome Hearts by Auroraz">
+            <span class="art a2" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
+            <h4>Chrome Hearts</h4>
+            <div class="sub"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/></svg>Auroraz · 880K</div>
+          </a>
+          <a href="#" class="card" aria-label="Play Holo Dreams by Plastik">
+            <span class="art a3" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
+            <h4>Holo Dreams</h4>
+            <div class="sub"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/></svg>Plastik · 2.4M</div>
+          </a>
+          <a href="#" class="card" aria-label="Play Cyber Lipgloss by Venus FM">
+            <span class="art a4" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
+            <h4>Cyber Lipgloss</h4>
+            <div class="sub"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/></svg>Venus FM · 640K</div>
+          </a>
+          <a href="#" class="card" aria-label="Play Iridescent by Star Patrol">
+            <span class="art a5" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
+            <h4>Iridescent</h4>
+            <div class="sub"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/></svg>Star Patrol · 3.1M</div>
+          </a>
+          <a href="#" class="card" aria-label="Play Y2K Forever by Mall Goth">
+            <span class="art a6" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
+            <h4>Y2K Forever</h4>
+            <div class="sub"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/></svg>Mall Goth · 540K</div>
+          </a>
+        </div>
+      </section>
+
+      <section id="library" class="lower" aria-label="Listening stats and queue">
+        <div class="stats" aria-label="Your stats this week">
+          <div class="stat">
+            <div class="k">128h</div>
+            <div class="l">Listened</div>
+            <div class="spark" aria-hidden="true">
+              <i style="height:40%"></i><i style="height:65%"></i><i style="height:50%"></i><i style="height:90%"></i><i style="height:70%"></i><i style="height:100%"></i><i style="height:80%"></i>
+            </div>
+          </div>
+          <div class="stat">
+            <div class="k">94</div>
+            <div class="l">Saved Tracks</div>
+            <div class="spark" aria-hidden="true">
+              <i style="height:55%"></i><i style="height:35%"></i><i style="height:80%"></i><i style="height:60%"></i><i style="height:95%"></i><i style="height:70%"></i><i style="height:85%"></i>
+            </div>
+          </div>
+          <div class="stat">
+            <div class="k">21</div>
+            <div class="l">Playlists</div>
+            <div class="spark" aria-hidden="true">
+              <i style="height:70%"></i><i style="height:50%"></i><i style="height:90%"></i><i style="height:45%"></i><i style="height:65%"></i><i style="height:100%"></i><i style="height:60%"></i>
+            </div>
+          </div>
+          <div class="stat">
+            <div class="k">#3</div>
+            <div class="l">Top Listener</div>
+            <div class="spark" aria-hidden="true">
+              <i style="height:30%"></i><i style="height:55%"></i><i style="height:70%"></i><i style="height:85%"></i><i style="height:95%"></i><i style="height:100%"></i><i style="height:75%"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="queue" aria-label="Up next queue">
+          <h3>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h13M3 12h13M3 18h9"/><path d="M16 12l5 3-5 3z"/></svg>
+            Up Next
+          </h3>
+          <div class="qrow">
+            <span class="qart art a3" aria-hidden="true" style="background:linear-gradient(135deg,#ff2ec4,#00ffff)"></span>
+            <div class="qinfo"><b>Plastic Paradise</b><span>Sugarcoat</span></div>
+            <span class="qbadge">NOW</span>
+            <span class="qdur">3:21</span>
+          </div>
+          <div class="qrow">
+            <span class="qart art a2" aria-hidden="true" style="background:linear-gradient(135deg,#00ffff,#7c3aed)"></span>
+            <div class="qinfo"><b>Liquid Metal Love</b><span>The Foils</span></div>
+            <span class="qdur">2:58</span>
+          </div>
+          <div class="qrow">
+            <span class="qart art a1" aria-hidden="true" style="background:linear-gradient(135deg,#ff69b4,#9400d3)"></span>
+            <div class="qinfo"><b>Disco Ball Tears</b><span>Vela Nine</span></div>
+            <span class="qdur">4:05</span>
+          </div>
+          <div class="qrow">
+            <span class="qart art a4" aria-hidden="true" style="background:linear-gradient(135deg,#9400d3,#ff69b4)"></span>
+            <div class="qinfo"><b>Holographic Heart</b><span>Mirrorball</span></div>
+            <span class="qdur">3:47</span>
+          </div>
+          <div class="qrow">
+            <span class="qart art a6" aria-hidden="true" style="background:linear-gradient(135deg,#00ffff,#ff69b4)"></span>
+            <div class="qinfo"><b>Glossy</b><span>Bubble Tech</span></div>
+            <span class="qdur">3:12</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>NOVASTAR Sound·System — streaming the <span>retro-future</span> since Y2K</p>
+    </footer>
+  </div>
+
+  <script>
+    // Lightweight play/pause toggle on the main transport button (progressive enhancement)
+    const playBtn = document.querySelector('.play');
+    if (playBtn) {
+      const playIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+      const pauseIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>';
+      let playing = true;
+      playBtn.addEventListener('click', () => {
+        playing = !playing;
+        playBtn.innerHTML = playing ? pauseIcon : playIcon;
+        playBtn.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+        document.querySelectorAll('.np-disc').forEach(d => {
+          d.style.animationPlayState = playing ? 'running' : 'paused';
+        });
+      });
+    }
+  </script>
+</body>
+</html>

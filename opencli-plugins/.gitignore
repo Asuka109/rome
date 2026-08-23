@@ -1,0 +1,3 @@
+# `opencli plugin install` runs npm install inside each plugin dir
+# (node_modules/ is already ignored repo-wide).
+*/package-lock.json

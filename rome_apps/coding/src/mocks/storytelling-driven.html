@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wildroot &mdash; The Story of How We Grow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* ---- Brand & emotional palette (per story chapter) ---- */
+    --brand-primary: #1f3d2b;        /* deep forest green */
+    --brand-ink: #14241a;
+    --paper: #f7f3ea;                /* warm paper */
+    --paper-2: #efe7d6;
+    --accent-dawn: #e8975a;          /* origin / warmth */
+    --accent-bloom: #d36b8f;         /* emotion / passion */
+    --accent-rise: #4f8fb0;          /* calm / growth */
+    --accent-gold: #d9a441;          /* success */
+    --timeline-color: var(--accent-gold);
+
+    /* ---- Typography ---- */
+    --narrative-font: 'Fraunces', Georgia, 'Times New Roman', serif;
+    --ui-font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --fs-overline: 0.78rem;
+    --fs-body: 1.0625rem;
+    --fs-lead: clamp(1.15rem, 1rem + 0.8vw, 1.5rem);
+    --fs-chapter: clamp(2rem, 1.2rem + 4vw, 4.5rem);
+    --fs-hero: clamp(2.6rem, 1.4rem + 6.5vw, 6.5rem);
+
+    /* ---- Shape / depth / motion ---- */
+    --radius-sm: 10px;
+    --radius: 18px;
+    --radius-lg: 30px;
+    --shadow-soft: 0 10px 30px -12px rgba(20,36,26,0.30);
+    --shadow-lift: 0 26px 60px -24px rgba(20,36,26,0.45);
+    --section-min-height: 100vh;
+    --chapter-spacing: 8rem;
+    --reveal-duration: 600ms;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --space: 1.5rem;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    font-family: var(--ui-font);
+    font-size: var(--fs-body);
+    line-height: 1.65;
+    color: var(--brand-ink);
+    background: var(--paper);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .wrap { width: min(1180px, 100% - 2.5rem); margin-inline: auto; }
+
+  h1, h2, h3 { font-family: var(--narrative-font); font-weight: 500; line-height: 1.05; margin: 0; letter-spacing: -0.01em; }
+  p { margin: 0 0 1.1rem; }
+  a { color: inherit; }
+
+  .overline {
+    font-family: var(--ui-font);
+    font-size: var(--fs-overline);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+  }
+  .overline svg { width: 16px; height: 16px; }
+
+  /* skip link */
+  .skip {
+    position: absolute; left: 1rem; top: -3rem;
+    background: var(--brand-primary); color: var(--paper);
+    padding: 0.6rem 1rem; border-radius: var(--radius-sm);
+    z-index: 200; transition: top 0.2s var(--ease);
+    text-decoration: none; font-weight: 600; font-size: 0.9rem;
+  }
+  .skip:focus-visible { top: 1rem; outline: 3px solid var(--accent-gold); }
+
+  /* ---- progress / chapter rail ---- */
+  .progress { position: fixed; inset: 0 0 auto 0; height: 4px; z-index: 90; background: transparent; }
+  .progress__bar { height: 100%; width: 0; background: linear-gradient(90deg, var(--accent-dawn), var(--accent-bloom), var(--accent-gold)); transition: width 120ms linear; }
+
+  /* ---- Header / Nav ---- */
+  header.site {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 80;
+    backdrop-filter: blur(10px);
+    background: color-mix(in srgb, var(--paper) 78%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--brand-ink) 10%, transparent);
+  }
+  .nav { display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 0; gap: 1rem; }
+  .brand { display: flex; align-items: center; gap: 0.65rem; font-family: var(--narrative-font); font-size: 1.35rem; font-weight: 600; letter-spacing: -0.02em; }
+  .brand .mark { width: 34px; height: 34px; flex: none; color: var(--brand-primary); }
+  .nav__links { display: flex; align-items: center; gap: 1.9rem; }
+  .nav__links a { text-decoration: none; font-size: 0.95rem; font-weight: 500; color: var(--brand-ink); opacity: 0.78; position: relative; padding: 0.35rem 0; transition: opacity 0.2s var(--ease); }
+  .nav__links a::after { content: ""; position: absolute; left: 0; bottom: 0; height: 2px; width: 0; background: var(--accent-dawn); transition: width 0.25s var(--ease); }
+  .nav__links a:hover, .nav__links a:focus-visible { opacity: 1; }
+  .nav__links a:hover::after, .nav__links a:focus-visible::after { width: 100%; }
+  .nav__links a:focus-visible { outline: 2px solid var(--accent-rise); outline-offset: 4px; border-radius: 4px; }
+
+  .btn {
+    font-family: var(--ui-font); font-weight: 600; font-size: 0.95rem;
+    border: none; cursor: pointer; border-radius: 999px;
+    padding: 0.72rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem;
+    text-decoration: none; transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease), background 0.2s var(--ease);
+  }
+  .btn--primary { background: var(--brand-primary); color: var(--paper); box-shadow: var(--shadow-soft); }
+  .btn--primary:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); background: #25492f; }
+  .btn--primary:active { transform: translateY(0); }
+  .btn--ghost { background: transparent; color: var(--brand-ink); border: 1.5px solid color-mix(in srgb, var(--brand-ink) 28%, transparent); }
+  .btn--ghost:hover { background: color-mix(in srgb, var(--brand-ink) 6%, transparent); transform: translateY(-2px); }
+  .btn:focus-visible { outline: 3px solid var(--accent-gold); outline-offset: 3px; }
+  .btn svg { width: 18px; height: 18px; }
+
+  .nav__cta { display: flex; align-items: center; gap: 0.85rem; }
+  .menu-toggle { display: none; }
+
+  /* ---- Sections (chapters) ---- */
+  section.chapter {
+    min-height: var(--section-min-height);
+    display: flex; align-items: center;
+    padding: calc(var(--chapter-spacing) / 1.6) 0;
+    position: relative;
+    scroll-margin-top: 80px;
+  }
+
+  /* ---- Hero / Chapter 0 ---- */
+  .hero { position: relative; overflow: hidden; padding-top: 6rem; }
+  .hero__bg { position: absolute; inset: 0; z-index: 0; }
+  .hero__bg .blob { position: absolute; filter: blur(2px); opacity: 0.55; }
+  .hero .wrap { position: relative; z-index: 1; display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 3rem; align-items: center; }
+  .hero h1 { font-size: var(--fs-hero); font-weight: 600; }
+  .hero h1 em { font-style: italic; color: var(--accent-dawn); }
+  .hero__lead { font-size: var(--fs-lead); max-width: 34ch; color: color-mix(in srgb, var(--brand-ink) 82%, transparent); }
+  .hero__actions { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-top: 1.8rem; }
+  .hero__meta { display: flex; gap: 2rem; margin-top: 2.4rem; flex-wrap: wrap; }
+  .hero__meta .stat strong { font-family: var(--narrative-font); font-size: 1.9rem; display: block; line-height: 1; }
+  .hero__meta .stat span { font-size: 0.82rem; opacity: 0.65; letter-spacing: 0.04em; }
+
+  .hero__art { aspect-ratio: 4 / 5; border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-lift); position: relative; }
+  .hero__art svg { width: 100%; height: 100%; display: block; }
+
+  /* ---- Alternating image/text narrative ---- */
+  .story-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(2rem, 5vw, 5rem); align-items: center; width: 100%; }
+  .story-grid.flip .story-grid__art { order: -1; }
+  .story-text .overline { margin-bottom: 1.1rem; }
+  .story-text h2 { font-size: var(--fs-chapter); margin-bottom: 1.3rem; }
+  .story-text p { color: color-mix(in srgb, var(--brand-ink) 85%, transparent); max-width: 46ch; }
+  .story-grid__art { aspect-ratio: 1 / 1; border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-lift); position: relative; }
+  .story-grid__art svg { width: 100%; height: 100%; display: block; }
+
+  .chapter-tag { position: absolute; top: 2rem; right: 0; font-family: var(--narrative-font); font-style: italic; font-size: clamp(3rem, 8vw, 7rem); color: color-mix(in srgb, var(--brand-ink) 7%, transparent); pointer-events: none; line-height: 1; z-index: 0; }
+
+  .chapter--dawn { background: linear-gradient(180deg, var(--paper) 0%, #f6ead9 100%); }
+  .chapter--bloom { background: linear-gradient(180deg, #f6ead9 0%, #f4e2e8 100%); }
+  .chapter--rise { background: linear-gradient(180deg, #f4e2e8 0%, #e4eef3 100%); }
+
+  /* ---- Timeline / journey ---- */
+  .timeline-section { background: var(--brand-primary); color: var(--paper); }
+  .timeline-section .overline { color: var(--accent-gold); }
+  .timeline-section h2 { font-size: var(--fs-chapter); color: var(--paper); max-width: 16ch; margin-bottom: 3.5rem; }
+  .timeline-section h2 em { font-style: italic; color: var(--accent-dawn); }
+  .timeline { position: relative; padding-left: 2.2rem; }
+  .timeline::before { content: ""; position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background: linear-gradient(180deg, var(--accent-dawn), var(--timeline-color), var(--accent-rise)); }
+  .tl-item { position: relative; padding-bottom: 2.6rem; }
+  .tl-item:last-child { padding-bottom: 0; }
+  .tl-item::before { content: ""; position: absolute; left: -2.2rem; top: 4px; width: 16px; height: 16px; border-radius: 50%; background: var(--timeline-color); box-shadow: 0 0 0 4px color-mix(in srgb, var(--timeline-color) 28%, transparent); transform: translateX(0); }
+  .tl-item .yr { font-family: var(--narrative-font); font-style: italic; font-size: 1.4rem; color: var(--accent-gold); }
+  .tl-item h3 { color: var(--paper); font-size: 1.35rem; margin: 0.2rem 0 0.5rem; font-weight: 600; }
+  .tl-item p { color: color-mix(in srgb, var(--paper) 78%, transparent); max-width: 52ch; margin: 0; }
+
+  /* ---- Pull quote ---- */
+  .quote-section { background: var(--paper-2); text-align: center; }
+  .quote-section blockquote { margin: 0 auto; max-width: 22ch; font-family: var(--narrative-font); font-size: clamp(1.8rem, 1rem + 4vw, 3.6rem); font-weight: 400; font-style: italic; line-height: 1.18; }
+  .quote-section blockquote span { color: var(--accent-bloom); }
+  .quote-cite { margin-top: 2.2rem; display: inline-flex; align-items: center; gap: 0.9rem; font-family: var(--ui-font); }
+  .quote-cite .avatar { width: 48px; height: 48px; border-radius: 50%; overflow: hidden; flex: none; box-shadow: var(--shadow-soft); }
+  .quote-cite .avatar svg { width: 100%; height: 100%; }
+  .quote-cite .who { text-align: left; }
+  .quote-cite .who strong { display: block; font-size: 0.98rem; }
+  .quote-cite .who span { font-size: 0.85rem; opacity: 0.6; }
+
+  /* ---- Closing CTA ---- */
+  .cta-section { background: linear-gradient(160deg, #1f3d2b 0%, #2c5a3c 100%); color: var(--paper); text-align: center; }
+  .cta-section .wrap { display: flex; flex-direction: column; align-items: center; }
+  .cta-section h2 { font-size: var(--fs-chapter); color: var(--paper); max-width: 18ch; margin-bottom: 1.3rem; }
+  .cta-section h2 em { font-style: italic; color: var(--accent-gold); }
+  .cta-section p { color: color-mix(in srgb, var(--paper) 80%, transparent); max-width: 48ch; }
+  .cta-section .hero__actions { justify-content: center; }
+  .cta-section .btn--ghost { color: var(--paper); border-color: color-mix(in srgb, var(--paper) 40%, transparent); }
+  .cta-section .btn--ghost:hover { background: color-mix(in srgb, var(--paper) 12%, transparent); }
+  .cta-section .btn--primary { background: var(--accent-gold); color: var(--brand-ink); }
+  .cta-section .btn--primary:hover { background: #e6b34f; }
+
+  /* ---- Footer ---- */
+  footer.site { background: var(--brand-ink); color: color-mix(in srgb, var(--paper) 70%, transparent); padding: 3rem 0; font-size: 0.9rem; }
+  footer.site .wrap { display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
+  footer.site .brand { color: var(--paper); }
+  footer.site .brand .mark { color: var(--accent-gold); }
+  footer.site nav { display: flex; gap: 1.4rem; flex-wrap: wrap; }
+  footer.site nav a { text-decoration: none; opacity: 0.8; }
+  footer.site nav a:hover { opacity: 1; color: var(--paper); }
+  footer.site nav a:focus-visible { outline: 2px solid var(--accent-gold); outline-offset: 3px; }
+
+  /* ---- Scroll reveal ---- */
+  .reveal { opacity: 0; transform: translateY(34px); transition: opacity var(--reveal-duration) var(--ease), transform var(--reveal-duration) var(--ease); }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: 90ms; }
+  .reveal.d2 { transition-delay: 180ms; }
+  .reveal.d3 { transition-delay: 270ms; }
+
+  /* parallax targets driven by JS custom prop */
+  .parallax { will-change: transform; }
+
+  /* ---- Floating chapter dots (right rail) ---- */
+  .rail { position: fixed; right: 1.1rem; top: 50%; transform: translateY(-50%); z-index: 70; display: flex; flex-direction: column; gap: 0.85rem; }
+  .rail a { width: 11px; height: 11px; border-radius: 50%; background: color-mix(in srgb, var(--brand-ink) 22%, transparent); transition: all 0.25s var(--ease); position: relative; }
+  .rail a:hover, .rail a.active { background: var(--accent-dawn); transform: scale(1.35); }
+  .rail a:focus-visible { outline: 2px solid var(--accent-rise); outline-offset: 3px; }
+  .rail a span { position: absolute; right: 22px; top: 50%; transform: translateY(-50%); white-space: nowrap; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; background: var(--brand-ink); color: var(--paper); padding: 0.25rem 0.55rem; border-radius: 6px; opacity: 0; pointer-events: none; transition: opacity 0.2s var(--ease); }
+  .rail a:hover span, .rail a:focus-visible span { opacity: 1; }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 900px) {
+    .nav__links { display: none; }
+    .menu-toggle { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 12px; border: 1.5px solid color-mix(in srgb, var(--brand-ink) 22%, transparent); background: transparent; cursor: pointer; color: var(--brand-ink); }
+    .menu-toggle:focus-visible { outline: 3px solid var(--accent-gold); outline-offset: 2px; }
+    .hero .wrap { grid-template-columns: 1fr; gap: 2.2rem; }
+    .hero__art { max-width: 420px; }
+    .story-grid { grid-template-columns: 1fr; gap: 2rem; }
+    .story-grid.flip .story-grid__art { order: 0; }
+    .story-grid__art { max-width: 460px; }
+    .rail { display: none; }
+  }
+  @media (max-width: 560px) {
+    :root { --chapter-spacing: 5rem; --section-min-height: auto; }
+    .nav__cta .btn span { display: none; }
+    .hero__meta { gap: 1.3rem; }
+    .chapter-tag { display: none; }
+    section.chapter { padding: 4rem 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+    .parallax { transform: none !important; }
+    .btn, .nav__links a, .rail a { transition: none !important; }
+    * { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to story</a>
+
+<div class="progress" aria-hidden="true"><div class="progress__bar" id="progress"></div></div>
+
+<header class="site">
+  <div class="wrap nav">
+    <a class="brand" href="#hero" aria-label="Wildroot home">
+      <svg class="mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <path d="M16 2C16 2 9 8 9 15a7 7 0 1 0 14 0c0-7-7-13-7-13Z" fill="currentColor"/>
+        <path d="M16 30v-9M16 25l-4-3M16 22l4-3" stroke="#d9a441" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      Wildroot
+    </a>
+    <nav class="nav__links" aria-label="Story chapters">
+      <a href="#origin">Origin</a>
+      <a href="#bloom">The Turn</a>
+      <a href="#journey">Journey</a>
+      <a href="#voices">Voices</a>
+    </nav>
+    <div class="nav__cta">
+      <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <a class="btn btn--primary" href="#join">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        <span>Join the story</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<nav class="rail" aria-label="Jump to chapter">
+  <a href="#hero" data-rail aria-label="Prologue"><span>Prologue</span></a>
+  <a href="#origin" data-rail aria-label="Origin"><span>Origin</span></a>
+  <a href="#bloom" data-rail aria-label="The Turn"><span>The Turn</span></a>
+  <a href="#journey" data-rail aria-label="Journey"><span>Journey</span></a>
+  <a href="#voices" data-rail aria-label="Voices"><span>Voices</span></a>
+  <a href="#join" data-rail aria-label="Join"><span>Join</span></a>
+</nav>
+
+<main id="main">
+
+  <!-- PROLOGUE / HERO -->
+  <section class="chapter hero" id="hero" aria-labelledby="hero-title">
+    <div class="hero__bg" aria-hidden="true">
+      <svg class="blob parallax" data-speed="0.25" style="top:-10%;left:-8%;width:46%;" viewBox="0 0 400 400"><defs><radialGradient id="g1"><stop offset="0%" stop-color="#e8975a"/><stop offset="100%" stop-color="#e8975a" stop-opacity="0"/></radialGradient></defs><circle cx="200" cy="200" r="200" fill="url(#g1)"/></svg>
+      <svg class="blob parallax" data-speed="0.4" style="bottom:-12%;right:-6%;width:40%;" viewBox="0 0 400 400"><defs><radialGradient id="g2"><stop offset="0%" stop-color="#4f8fb0"/><stop offset="100%" stop-color="#4f8fb0" stop-opacity="0"/></radialGradient></defs><circle cx="200" cy="200" r="200" fill="url(#g2)"/></svg>
+    </div>
+    <div class="wrap">
+      <div class="hero__copy reveal">
+        <span class="overline" style="color:var(--accent-dawn)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v18M3 12h18" stroke-linecap="round"/></svg>
+          Chapter One &middot; Prologue
+        </span>
+        <h1 id="hero-title">Every great brand begins as a <em>seed</em> someone refused to abandon.</h1>
+        <p class="hero__lead">This is how a tiny kitchen experiment grew into a movement of 40,000 home growers reclaiming the food they eat.</p>
+        <div class="hero__actions">
+          <a class="btn btn--primary" href="#origin">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+            Begin the story
+          </a>
+          <a class="btn btn--ghost" href="#join">Skip to the end</a>
+        </div>
+        <div class="hero__meta">
+          <div class="stat"><strong>40k+</strong><span>Growers rooted</span></div>
+          <div class="stat"><strong>2017</strong><span>The first seed</span></div>
+          <div class="stat"><strong>11</strong><span>Countries</span></div>
+        </div>
+      </div>
+      <div class="hero__art reveal d2">
+        <svg viewBox="0 0 400 500" role="img" aria-label="Illustration of a sprout breaking through soil at sunrise">
+          <defs>
+            <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f4c889"/><stop offset="55%" stop-color="#e8975a"/><stop offset="100%" stop-color="#d36b8f"/></linearGradient>
+            <linearGradient id="soil" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3a2a1c"/><stop offset="100%" stop-color="#221710"/></linearGradient>
+          </defs>
+          <rect width="400" height="500" fill="url(#sky)"/>
+          <circle cx="200" cy="150" r="62" fill="#fbe9c6" opacity="0.85"/>
+          <circle cx="200" cy="150" r="92" fill="#fbe9c6" opacity="0.28"/>
+          <path d="M0 350 Q200 300 400 350 L400 500 L0 500 Z" fill="url(#soil)"/>
+          <g stroke="#1f3d2b" stroke-width="9" stroke-linecap="round" fill="none">
+            <path d="M200 360 V250"/>
+            <path d="M200 300 C160 290 150 250 168 232"/>
+            <path d="M200 290 C240 282 256 248 236 226"/>
+          </g>
+          <path d="M168 232 C140 226 138 200 162 206 C156 224 168 232 168 232Z" fill="#2c5a3c"/>
+          <path d="M236 226 C264 218 268 192 242 200 C250 218 236 226 236 226Z" fill="#3a6e49"/>
+          <ellipse cx="200" cy="362" rx="46" ry="9" fill="#000" opacity="0.18"/>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHAPTER 2: ORIGIN -->
+  <section class="chapter chapter--dawn" id="origin" aria-labelledby="origin-title">
+    <span class="chapter-tag" aria-hidden="true">i.</span>
+    <div class="wrap">
+      <div class="story-grid">
+        <div class="story-text reveal">
+          <span class="overline" style="color:var(--accent-dawn)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke-linecap="round"/></svg>
+            The Origin
+          </span>
+          <h2 id="origin-title">It started on a windowsill in a fourth-floor apartment.</h2>
+          <p>Maya had no garden, no money, and no patience for grocery-store tomatoes that tasted of nothing. So she planted three seeds in a cracked mug and waited.</p>
+          <p>What grew back was not just basil. It was the stubborn idea that anyone, anywhere, could grow something real with their own hands.</p>
+          <a class="btn btn--ghost" href="#bloom">
+            Read what happened next
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+        </div>
+        <div class="story-grid__art reveal d2">
+          <svg viewBox="0 0 400 400" role="img" aria-label="A potted sprout on a windowsill at warm dawn light">
+            <defs><linearGradient id="warm" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f6d8a8"/><stop offset="100%" stop-color="#e8975a"/></linearGradient></defs>
+            <rect width="400" height="400" fill="url(#warm)"/>
+            <rect x="40" y="40" width="320" height="320" rx="14" fill="#fff3df" opacity="0.5"/>
+            <line x1="200" y1="40" x2="200" y2="360" stroke="#d6b083" stroke-width="3"/>
+            <line x1="40" y1="200" x2="360" y2="200" stroke="#d6b083" stroke-width="3"/>
+            <path d="M150 300 L250 300 L238 248 L162 248 Z" fill="#b9572d"/>
+            <path d="M162 248 L238 248 L240 240 L160 240 Z" fill="#9a4623"/>
+            <g stroke="#2c5a3c" stroke-width="7" fill="none" stroke-linecap="round">
+              <path d="M200 248 V190"/><path d="M200 215 C176 210 170 188 182 176"/><path d="M200 205 C224 200 232 178 218 168"/>
+            </g>
+            <ellipse cx="180" cy="174" rx="16" ry="9" fill="#3a6e49" transform="rotate(-30 180 174)"/>
+            <ellipse cx="220" cy="166" rx="16" ry="9" fill="#43804f" transform="rotate(30 220 166)"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHAPTER 3: THE TURN -->
+  <section class="chapter chapter--bloom" id="bloom" aria-labelledby="bloom-title">
+    <span class="chapter-tag" aria-hidden="true">ii.</span>
+    <div class="wrap">
+      <div class="story-grid flip">
+        <div class="story-text reveal d1">
+          <span class="overline" style="color:var(--accent-bloom)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.5-7 10-7 10Z"/></svg>
+            The Turn
+          </span>
+          <h2 id="bloom-title">One photo. Ten thousand strangers wanted in.</h2>
+          <p>Maya posted her tiny harvest online with a single caption: <em>&ldquo;You can do this too.&rdquo;</em> By morning, inboxes overflowed with people asking the same question &mdash; <strong>how do I start?</strong></p>
+          <p>That question became our entire reason for being. Wildroot stopped being a hobby and became a promise to never let a beginner feel alone.</p>
+          <div class="hero__meta" style="margin-top:1.6rem">
+            <div class="stat"><strong>9.2k</strong><span>First-week signups</span></div>
+            <div class="stat"><strong>1 mug</strong><span>Where it began</span></div>
+          </div>
+        </div>
+        <div class="story-grid__art reveal d2">
+          <svg viewBox="0 0 400 400" role="img" aria-label="A heart-shaped cluster of leaves blooming outward">
+            <defs><radialGradient id="bloomg" cx="50%" cy="45%"><stop offset="0%" stop-color="#f4e2e8"/><stop offset="100%" stop-color="#d36b8f"/></radialGradient></defs>
+            <rect width="400" height="400" fill="url(#bloomg)"/>
+            <g fill="#2c5a3c">
+              <ellipse cx="200" cy="150" rx="22" ry="48"/>
+              <ellipse cx="200" cy="150" rx="22" ry="48" transform="rotate(60 200 200)"/>
+              <ellipse cx="200" cy="150" rx="22" ry="48" transform="rotate(120 200 200)"/>
+              <ellipse cx="200" cy="150" rx="22" ry="48" transform="rotate(180 200 200)"/>
+              <ellipse cx="200" cy="150" rx="22" ry="48" transform="rotate(240 200 200)"/>
+              <ellipse cx="200" cy="150" rx="22" ry="48" transform="rotate(300 200 200)"/>
+            </g>
+            <circle cx="200" cy="200" r="30" fill="#d9a441"/>
+            <circle cx="200" cy="200" r="14" fill="#fbe9c6"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHAPTER 4: JOURNEY / TIMELINE -->
+  <section class="chapter timeline-section" id="journey" aria-labelledby="journey-title">
+    <div class="wrap">
+      <span class="overline reveal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12h18M12 3v18" stroke-linecap="round"/></svg>
+        The Journey
+      </span>
+      <h2 id="journey-title" class="reveal d1">Seven years, traced one <em>root</em> at a time.</h2>
+      <ol class="timeline" role="list">
+        <li class="tl-item reveal">
+          <div class="yr">2017</div>
+          <h3>The cracked mug</h3>
+          <p>Three basil seeds, one windowsill, and a refusal to accept flavorless food.</p>
+        </li>
+        <li class="tl-item reveal d1">
+          <div class="yr">2019</div>
+          <h3>The first kit ships</h3>
+          <p>We mailed 300 hand-packed starter kits. All 300 plants survived their first month.</p>
+        </li>
+        <li class="tl-item reveal d2">
+          <div class="yr">2021</div>
+          <h3>The community blooms</h3>
+          <p>Growers began teaching growers. Our forum logged its millionth message of encouragement.</p>
+        </li>
+        <li class="tl-item reveal d3">
+          <div class="yr">2024</div>
+          <h3>A movement, rooted</h3>
+          <p>40,000 households across 11 countries now grow part of what they eat. The story is still being written.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- CHAPTER 5: VOICES / QUOTE -->
+  <section class="chapter quote-section" id="voices" aria-labelledby="voices-title">
+    <div class="wrap reveal">
+      <h2 id="voices-title" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Voices from the community</h2>
+      <blockquote>
+        &ldquo;I didn't just grow a plant. I grew the <span>belief</span> that I could care for something and watch it thrive.&rdquo;
+      </blockquote>
+      <div class="quote-cite">
+        <span class="avatar" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><defs><linearGradient id="av" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#e8975a"/><stop offset="100%" stop-color="#d36b8f"/></linearGradient></defs><rect width="48" height="48" fill="url(#av)"/><circle cx="24" cy="19" r="9" fill="#fff3df"/><path d="M9 44c0-9 7-14 15-14s15 5 15 14Z" fill="#fff3df"/></svg>
+        </span>
+        <span class="who"><strong>Priya N.</strong><span>Grower since 2021 &middot; Lisbon</span></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHAPTER 6: JOIN / CTA -->
+  <section class="chapter cta-section" id="join" aria-labelledby="join-title">
+    <div class="wrap reveal">
+      <span class="overline" style="color:var(--accent-gold)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2 15 9l7 .6-5.3 4.6L18.5 21 12 17l-6.5 4 1.8-6.8L2 9.6 9 9Z" stroke-linejoin="round"/></svg>
+        The Next Chapter Is Yours
+      </span>
+      <h2 id="join-title">Plant your first seed this <em>weekend</em>.</h2>
+      <p>Start with a kit chosen for absolute beginners, backed by a community that will not let your sprout fail. Your story begins the moment you decide to grow.</p>
+      <div class="hero__actions">
+        <a class="btn btn--primary" href="#join">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          Claim your starter kit
+        </a>
+        <a class="btn btn--ghost" href="#origin">Re-read the story</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <span class="brand">
+      <svg class="mark" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 2C16 2 9 8 9 15a7 7 0 1 0 14 0c0-7-7-13-7-13Z" fill="currentColor"/><path d="M16 30v-9M16 25l-4-3M16 22l4-3" stroke="#f7f3ea" stroke-width="2" stroke-linecap="round"/></svg>
+      Wildroot
+    </span>
+    <nav aria-label="Footer">
+      <a href="#origin">Our Story</a>
+      <a href="#journey">Journey</a>
+      <a href="#join">Starter Kits</a>
+      <a href="#voices">Community</a>
+    </nav>
+    <span>&copy; 2026 Wildroot Growers Collective</span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* Scroll reveals via IntersectionObserver */
+  var reveals = document.querySelectorAll('.reveal');
+  if (reduce || !('IntersectionObserver' in window)) {
+    reveals.forEach(function (el) { el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.16, rootMargin: '0px 0px -8% 0px' });
+    reveals.forEach(function (el) { io.observe(el); });
+  }
+
+  /* Progress bar + active rail dot + parallax */
+  var bar = document.getElementById('progress');
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll('[data-rail]'));
+  var sections = railLinks.map(function (a) { return document.querySelector(a.getAttribute('href')); });
+  var parallaxEls = Array.prototype.slice.call(document.querySelectorAll('.parallax'));
+  var ticking = false;
+
+  function onScroll() {
+    var st = window.scrollY || window.pageYOffset;
+    var docH = document.documentElement.scrollHeight - window.innerHeight;
+    bar.style.width = (docH > 0 ? (st / docH) * 100 : 0) + '%';
+
+    var mid = st + window.innerHeight * 0.4;
+    var activeIdx = 0;
+    sections.forEach(function (s, i) { if (s && s.offsetTop <= mid) activeIdx = i; });
+    railLinks.forEach(function (a, i) { a.classList.toggle('active', i === activeIdx); });
+
+    if (!reduce) {
+      parallaxEls.forEach(function (el) {
+        var speed = parseFloat(el.getAttribute('data-speed')) || 0.3;
+        el.style.transform = 'translate3d(0,' + (st * speed * -0.12) + 'px,0)';
+      });
+    }
+    ticking = false;
+  }
+  window.addEventListener('scroll', function () {
+    if (!ticking) { window.requestAnimationFrame(onScroll); ticking = true; }
+  }, { passive: true });
+  onScroll();
+
+  /* Mobile menu toggle (smooth-scroll fallback to chapters) */
+  var toggle = document.querySelector('.menu-toggle');
+  if (toggle) {
+    toggle.addEventListener('click', function () {
+      var expanded = toggle.getAttribute('aria-expanded') === 'true';
+      toggle.setAttribute('aria-expanded', String(!expanded));
+      document.getElementById('origin').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
+    });
+  }
+})();
+</script>
+</body>
+</html>

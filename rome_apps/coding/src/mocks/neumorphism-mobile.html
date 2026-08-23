@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aura Home — Neumorphism (Mobile)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Palette — derived from CSV Design System Variables */
+    --bg: #E0E5EC;
+    --text: #3D4852;
+    --muted: #6B7280;
+    --accent: #6C63FF;
+    --accent-soft: rgba(108, 99, 255, 0.14);
+    --shadow-light: rgba(255, 255, 255, 0.6);
+    --shadow-dark: rgba(163, 177, 198, 0.7);
+    --inset-bg: #D1D9E6;
+
+    /* Radii */
+    --radius-card: 32px;
+    --radius-button: 16px;
+    --radius-pill: 999px;
+
+    /* Soft UI dual shadows (no blur blend extremes; offset 6, radius 10) */
+    --shadow-out: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+    --shadow-out-lg: 9px 9px 18px var(--shadow-dark), -9px -9px 18px var(--shadow-light);
+    --shadow-out-sm: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+    --shadow-in: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light);
+    --shadow-in-sm: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+
+    /* 8pt grid spacing */
+    --s1: 8px;
+    --s2: 16px;
+    --s3: 24px;
+    --s4: 32px;
+
+    /* Type scale */
+    --fs-display: 30px;
+    --fs-h2: 20px;
+    --fs-body: 16px;
+    --fs-cap: 12px;
+
+    /* Motion */
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --dur: 250ms;
+
+    --font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    font-family: var(--font);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Page = a calm clay surface; phone column centered */
+  .stage {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    /* subtle radial sheen on the desktop backdrop */
+    background:
+      radial-gradient(120% 80% at 50% -10%, rgba(255,255,255,0.55), transparent 60%),
+      var(--bg);
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 100%;
+    max-width: 390px;
+    aspect-ratio: 390 / 800;
+    border-radius: 44px;
+    background: var(--bg);
+    box-shadow: var(--shadow-out-lg);
+    padding: 12px;
+    position: relative;
+  }
+
+  .screen {
+    width: 100%;
+    height: 100%;
+    border-radius: 34px;
+    background: var(--bg);
+    box-shadow: var(--shadow-in-sm);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px var(--s3) 96px;
+    scrollbar-width: none;
+  }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  /* Status bar */
+  .statusbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px var(--s3) 4px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    color: var(--text);
+  }
+  .statusbar .icons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .statusbar svg { display: block; }
+
+  /* Header */
+  header.app {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--s3);
+  }
+  .greet .hi {
+    font-size: var(--fs-cap);
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+  .greet h1 {
+    margin: 4px 0 0;
+    font-size: var(--fs-display);
+    font-weight: 700;
+    letter-spacing: -0.7px;
+    line-height: 1.05;
+  }
+
+  /* Round neumorphic button (avatar / icon) */
+  .icon-btn {
+    width: 52px;
+    height: 52px;
+    border: none;
+    border-radius: var(--radius-pill);
+    background: var(--bg);
+    box-shadow: var(--shadow-out);
+    color: var(--text);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
+    flex-shrink: 0;
+  }
+  .icon-btn:hover { box-shadow: var(--shadow-out-lg); }
+  .icon-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-out), 0 0 0 2px var(--accent);
+  }
+  .icon-btn:active {
+    transform: scale(0.97);
+    box-shadow: var(--shadow-in-sm);
+  }
+
+  /* Search input — inset concave */
+  .search {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 50px;
+    padding: 0 18px;
+    border-radius: var(--radius-button);
+    background: var(--bg);
+    box-shadow: var(--shadow-in);
+    margin-bottom: var(--s3);
+    transition: box-shadow var(--dur) var(--ease);
+  }
+  .search:focus-within {
+    box-shadow: var(--shadow-in), 0 0 0 1.5px var(--accent);
+  }
+  .search svg { color: var(--muted); flex-shrink: 0; }
+  .search input {
+    border: none;
+    background: transparent;
+    outline: none;
+    font: 500 var(--fs-body)/1.4 var(--font);
+    color: var(--text);
+    width: 100%;
+  }
+  .search input::placeholder { color: var(--muted); }
+
+  /* Section heading */
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: var(--s4) 0 var(--s2);
+  }
+  .sec-head:first-of-type { margin-top: 0; }
+  .sec-head h2 {
+    margin: 0;
+    font-size: var(--fs-h2);
+    font-weight: 700;
+    letter-spacing: -0.4px;
+  }
+  .sec-head a {
+    font-size: var(--fs-cap);
+    font-weight: 700;
+    color: var(--accent);
+    text-decoration: none;
+    letter-spacing: 0.2px;
+  }
+  .sec-head a:hover { text-decoration: underline; }
+
+  /* Climate hero card — extruded with nested inset gauge */
+  .climate {
+    border-radius: var(--radius-card);
+    background: var(--bg);
+    box-shadow: var(--shadow-out-lg);
+    padding: var(--s3);
+    display: flex;
+    align-items: center;
+    gap: var(--s3);
+  }
+  .gauge {
+    width: 128px;
+    height: 128px;
+    border-radius: var(--radius-pill);
+    background: var(--bg);
+    box-shadow: var(--shadow-in);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .gauge .ring {
+    position: absolute;
+    inset: 0;
+    transform: rotate(-90deg);
+  }
+  .gauge .val {
+    text-align: center;
+    line-height: 1;
+  }
+  .gauge .val b {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -1px;
+  }
+  .gauge .val b sup { font-size: 14px; top: -0.7em; }
+  .gauge .val span {
+    display: block;
+    margin-top: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.4px;
+  }
+  .climate .meta { min-width: 0; }
+  .climate .meta .label {
+    font-size: var(--fs-cap);
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .climate .meta .room {
+    margin: 4px 0 14px;
+    font-size: var(--fs-h2);
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  .stepper {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    padding: 6px;
+    border-radius: var(--radius-pill);
+    background: var(--bg);
+    box-shadow: var(--shadow-in-sm);
+  }
+  .step {
+    width: 36px; height: 36px;
+    border: none; border-radius: var(--radius-pill);
+    background: var(--bg);
+    box-shadow: var(--shadow-out-sm);
+    color: var(--accent);
+    display: grid; place-items: center;
+    cursor: pointer;
+    transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  .step:hover { box-shadow: var(--shadow-out); }
+  .step:focus-visible { outline: none; box-shadow: var(--shadow-out-sm), 0 0 0 2px var(--accent); }
+  .step:active { transform: scale(0.94); box-shadow: var(--shadow-in-sm); }
+  .stepper .num { font-size: 15px; font-weight: 700; min-width: 22px; text-align: center; }
+
+  /* Device grid */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--s2);
+  }
+  .device {
+    border-radius: var(--radius-card);
+    background: var(--bg);
+    box-shadow: var(--shadow-out);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: box-shadow var(--dur) var(--ease);
+  }
+  .device:hover { box-shadow: var(--shadow-out-lg); }
+  .device .top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  /* nested inset icon slot — extruded card contains concave icon well */
+  .slot {
+    width: 46px; height: 46px;
+    border-radius: 14px;
+    background: var(--bg);
+    box-shadow: var(--shadow-in-sm);
+    display: grid; place-items: center;
+    color: var(--muted);
+  }
+  .device.on .slot { color: var(--accent); }
+
+  /* Toggle switch — neumorphic */
+  .toggle {
+    --w: 50px; --h: 28px;
+    width: var(--w); height: var(--h);
+    border: none; padding: 0;
+    border-radius: var(--radius-pill);
+    background: var(--bg);
+    box-shadow: var(--shadow-in-sm);
+    position: relative;
+    cursor: pointer;
+    transition: box-shadow var(--dur) var(--ease);
+  }
+  .toggle .knob {
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 22px; height: 22px;
+    border-radius: var(--radius-pill);
+    background: var(--bg);
+    box-shadow: var(--shadow-out-sm);
+    transition: transform var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .toggle[aria-checked="true"] { box-shadow: var(--shadow-in-sm); }
+  .toggle[aria-checked="true"] .knob {
+    transform: translateX(22px);
+    background: var(--accent);
+    box-shadow: 2px 2px 5px rgba(108,99,255,0.45), -2px -2px 5px rgba(255,255,255,0.5);
+  }
+  .toggle:focus-visible { outline: none; box-shadow: var(--shadow-in-sm), 0 0 0 2px var(--accent); }
+
+  .device .name {
+    font-size: var(--fs-body);
+    font-weight: 700;
+    letter-spacing: -0.2px;
+  }
+  .device .state {
+    font-size: var(--fs-cap);
+    font-weight: 600;
+    color: var(--muted);
+    margin-top: -8px;
+  }
+  .device.on .state { color: var(--accent); }
+
+  /* Scene / primary CTA */
+  .cta {
+    width: 100%;
+    height: 56px;
+    margin-top: var(--s3);
+    border: none;
+    border-radius: var(--radius-button);
+    background: var(--bg);
+    box-shadow: var(--shadow-out);
+    color: var(--accent);
+    font: 700 var(--fs-body)/1 var(--font);
+    letter-spacing: 0.2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  .cta:hover { box-shadow: var(--shadow-out-lg); }
+  .cta:focus-visible { outline: none; box-shadow: var(--shadow-out), 0 0 0 2px var(--accent); }
+  .cta:active { transform: scale(0.97); box-shadow: var(--shadow-in-sm); }
+
+  /* Scene chips (pill row) */
+  .chips {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    margin-bottom: 4px;
+  }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex-shrink: 0;
+    border: none;
+    border-radius: var(--radius-pill);
+    background: var(--bg);
+    box-shadow: var(--shadow-out-sm);
+    padding: 12px 18px;
+    font: 600 13px/1 var(--font);
+    color: var(--text);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .chip:hover { box-shadow: var(--shadow-out); }
+  .chip:focus-visible { outline: none; box-shadow: var(--shadow-out-sm), 0 0 0 2px var(--accent); }
+  .chip:active { transform: scale(0.96); }
+  .chip[aria-pressed="true"] {
+    box-shadow: var(--shadow-in-sm);
+    color: var(--accent);
+  }
+  .chip svg { flex-shrink: 0; }
+
+  /* Bottom tab bar — extruded floating, inset active */
+  nav.tabs {
+    flex-shrink: 0;
+    margin: 0 16px 16px;
+    height: 64px;
+    border-radius: var(--radius-pill);
+    background: var(--bg);
+    box-shadow: var(--shadow-out);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 10px;
+  }
+  .tab {
+    width: 48px; height: 48px;
+    border: none; border-radius: var(--radius-pill);
+    background: var(--bg);
+    color: var(--muted);
+    display: grid; place-items: center;
+    cursor: pointer;
+    box-shadow: none;
+    transition: box-shadow var(--dur) var(--ease), color var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  .tab:hover { color: var(--text); }
+  .tab:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--accent); }
+  .tab:active { transform: scale(0.94); }
+  .tab[aria-current="page"] {
+    box-shadow: var(--shadow-in-sm);
+    color: var(--accent);
+  }
+
+  @media (max-width: 360px) {
+    .climate { flex-direction: column; align-items: stretch; text-align: center; }
+    .gauge { margin: 0 auto; }
+    .stepper { justify-content: center; }
+  }
+
+  /* Gentle entrance pulse on the gauge ring (decorative only) */
+  @keyframes draw {
+    from { stroke-dashoffset: 339; }
+    to { stroke-dashoffset: var(--target); }
+  }
+  .ring .progress {
+    stroke-dasharray: 339;
+    stroke-dashoffset: var(--target);
+    animation: draw 1.1s var(--ease) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+    .ring .progress { animation: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="phone">
+      <div class="screen">
+
+        <!-- Status bar -->
+        <div class="statusbar" aria-hidden="true">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="8" rx="1"/><rect x="10" y="1" width="3" height="11" rx="1" opacity="0.4"/><rect x="15" y="1" width="3" height="11" rx="1" opacity="0.4"/></svg>
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.5c2.2 0 4.2.8 5.7 2.2l1.2-1.3A10 10 0 0 0 8 .5 10 10 0 0 0 1.1 3.4l1.2 1.3A8 8 0 0 1 8 2.5Z"/><path d="M8 6c1.3 0 2.5.5 3.4 1.3l1.2-1.3A7 7 0 0 0 8 4a7 7 0 0 0-4.6 2l1.2 1.3A5 5 0 0 1 8 6Z"/><circle cx="8" cy="10" r="1.6"/></svg>
+            <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x="1" y="1" width="19" height="10" rx="3" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="3" width="13" height="6" rx="1.5" fill="currentColor"/><rect x="21.5" y="4" width="1.5" height="4" rx="0.75" fill="currentColor"/></svg>
+          </span>
+        </div>
+
+        <main class="scroll">
+          <!-- Header -->
+          <header class="app">
+            <div class="greet">
+              <span class="hi">Good evening</span>
+              <h1>Aura Home</h1>
+            </div>
+            <button class="icon-btn" aria-label="Account and profile">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg>
+            </button>
+          </header>
+
+          <!-- Search (inset) -->
+          <div class="search">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+            <input type="search" placeholder="Search rooms or devices" aria-label="Search rooms or devices" />
+          </div>
+
+          <!-- Climate hero -->
+          <section aria-labelledby="climate-h">
+            <div class="sec-head">
+              <h2 id="climate-h">Climate</h2>
+              <a href="#climate-h">Schedule</a>
+            </div>
+            <div class="climate">
+              <div class="gauge" role="img" aria-label="Current temperature 22 degrees, set to 24">
+                <svg class="ring" viewBox="0 0 120 120" width="128" height="128" aria-hidden="true">
+                  <circle cx="60" cy="60" r="54" fill="none" stroke="var(--shadow-dark)" stroke-width="6" opacity="0.35"/>
+                  <circle class="progress" cx="60" cy="60" r="54" fill="none" stroke="var(--accent)" stroke-width="6" stroke-linecap="round" style="--target:118"/>
+                </svg>
+                <div class="val">
+                  <b>22<sup>°</sup></b>
+                  <span>NOW · SET 24°</span>
+                </div>
+              </div>
+              <div class="meta">
+                <div class="label">Living Room</div>
+                <div class="room">Eco comfort</div>
+                <div class="stepper" role="group" aria-label="Adjust target temperature">
+                  <button class="step" aria-label="Lower temperature">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg>
+                  </button>
+                  <span class="num" aria-live="polite">24°</span>
+                  <button class="step" aria-label="Raise temperature">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Scenes -->
+          <section aria-labelledby="scenes-h">
+            <div class="sec-head">
+              <h2 id="scenes-h">Scenes</h2>
+            </div>
+            <div class="chips" role="group" aria-label="Quick scenes">
+              <button class="chip" aria-pressed="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                Relax
+              </button>
+              <button class="chip">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.4 1.4M17.6 17.6 19 19M5 19l1.4-1.4M17.6 6.4 19 5"/></svg>
+                Morning
+              </button>
+              <button class="chip">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/></svg>
+                Away
+              </button>
+              <button class="chip">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m4 8 4-4 4 4M8 4v10M20 16l-4 4-4-4M16 20V10"/></svg>
+                Movie
+              </button>
+            </div>
+          </section>
+
+          <!-- Devices -->
+          <section aria-labelledby="dev-h">
+            <div class="sec-head">
+              <h2 id="dev-h">Devices</h2>
+              <a href="#dev-h">All rooms</a>
+            </div>
+            <div class="grid">
+              <article class="device on">
+                <div class="top">
+                  <div class="slot">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.5.4.5 1.1.5 1.6V16h6v-.5c0-.5 0-1.2.5-1.6A6 6 0 0 0 12 3Z"/></svg>
+                  </div>
+                  <button class="toggle" role="switch" aria-checked="true" aria-label="Ceiling lights"><span class="knob"></span></button>
+                </div>
+                <div>
+                  <div class="name">Ceiling Lights</div>
+                </div>
+                <div class="state">On · 80%</div>
+              </article>
+
+              <article class="device">
+                <div class="top">
+                  <div class="slot">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h13v10H3zM16 10h3l2 2v3h-5"/><circle cx="7.5" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></svg>
+                  </div>
+                  <button class="toggle" role="switch" aria-checked="false" aria-label="Robot vacuum"><span class="knob"></span></button>
+                </div>
+                <div>
+                  <div class="name">Robot Vacuum</div>
+                </div>
+                <div class="state">Docked · 100%</div>
+              </article>
+
+              <article class="device on">
+                <div class="top">
+                  <div class="slot">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v12"/><path d="M2 16h20v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2Z"/></svg>
+                  </div>
+                  <button class="toggle" role="switch" aria-checked="true" aria-label="Air purifier"><span class="knob"></span></button>
+                </div>
+                <div>
+                  <div class="name">Air Purifier</div>
+                </div>
+                <div class="state">Auto · PM 12</div>
+              </article>
+
+              <article class="device">
+                <div class="top">
+                  <div class="slot">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                  </div>
+                  <button class="toggle" role="switch" aria-checked="false" aria-label="Living room TV"><span class="knob"></span></button>
+                </div>
+                <div>
+                  <div class="name">Smart TV</div>
+                </div>
+                <div class="state">Standby</div>
+              </article>
+            </div>
+
+            <!-- Primary CTA -->
+            <button class="cta">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+              Add a device
+            </button>
+          </section>
+        </main>
+
+        <!-- Bottom tabs -->
+        <nav class="tabs" aria-label="Primary">
+          <button class="tab" aria-current="page" aria-label="Home">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/></svg>
+          </button>
+          <button class="tab" aria-label="Energy">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>
+          </button>
+          <button class="tab" aria-label="Automations">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-2.7-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 4 15H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4 8.3l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9 4.6V4a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1.1Z"/></svg>
+          </button>
+          <button class="tab" aria-label="Profile">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg>
+          </button>
+        </nav>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Lightweight demo interactions: toggles, tabs, chips, stepper.
+    document.querySelectorAll('.toggle').forEach(function (t) {
+      t.addEventListener('click', function () {
+        var on = t.getAttribute('aria-checked') === 'true';
+        t.setAttribute('aria-checked', String(!on));
+        var card = t.closest('.device');
+        if (card) {
+          card.classList.toggle('on', !on);
+          var state = card.querySelector('.state');
+          if (state) state.textContent = !on ? 'On' : 'Off';
+        }
+      });
+    });
+
+    document.querySelectorAll('.tabs .tab').forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        document.querySelectorAll('.tabs .tab').forEach(function (x) { x.removeAttribute('aria-current'); });
+        tab.setAttribute('aria-current', 'page');
+      });
+    });
+
+    document.querySelectorAll('.chips .chip').forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        document.querySelectorAll('.chips .chip').forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
+        chip.setAttribute('aria-pressed', 'true');
+      });
+    });
+
+    var num = document.querySelector('.stepper .num');
+    var temp = 24;
+    document.querySelectorAll('.stepper .step').forEach(function (btn, i) {
+      btn.addEventListener('click', function () {
+        temp = Math.min(30, Math.max(16, temp + (i === 0 ? -1 : 1)));
+        if (num) num.textContent = temp + '°';
+      });
+    });
+  </script>
+</body>
+</html>

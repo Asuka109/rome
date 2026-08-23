@@ -1,0 +1,14 @@
+:80 {
+	# Proxy /_api/* to Traefik's dashboard API on the shared rome-edge network.
+	# Lets the index page fetch live router state without CORS plumbing.
+	handle_path /_api/* {
+		reverse_proxy traefik:8080
+	}
+
+	# Static index served from the bind-mounted file.
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

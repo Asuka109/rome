@@ -1,0 +1,1 @@
+ALTER TABLE `wa_messages` ADD `reacts_to_id` text;

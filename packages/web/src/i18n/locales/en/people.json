@@ -1,0 +1,142 @@
+{
+  "header": {
+    "liveUpdated": "Live · updated {{time}}",
+    "loading": "Loading…",
+    "staleUpdated": "Couldn't refresh · last updated {{time}}",
+    "loadFailed": "Couldn't reach the server",
+    "partialUpdated": "Some sections couldn't refresh · last updated {{time}}",
+    "partialFailed": "Some sections couldn't load",
+    "refresh": "Refresh"
+  },
+  "timeAgo": {
+    "unknown": "unknown",
+    "justNow": "just now",
+    "seconds": "{{count}}s ago",
+    "minutes": "{{count}}m ago",
+    "hours": "{{count}}h ago",
+    "days": "{{count}}d ago"
+  },
+  "bondLevels": {
+    "guardian": "Guardian",
+    "innerCircle": "Inner circle",
+    "acquaintance": "Acquaintance",
+    "other": "Other",
+    "stranger": "Stranger"
+  },
+  "channels": {
+    "telegram": "Telegram",
+    "whatsapp": "WhatsApp",
+    "discord": "Discord",
+    "webchat": "Webchat",
+    "linkedin": "LinkedIn"
+  },
+  "unmappedCalloutSingular": "{{count}} unmapped sender awaiting review",
+  "unmappedCalloutPlural": "{{count}} unmapped senders awaiting review",
+  "unmapped": {
+    "heading": "Unmapped senders",
+    "description": "New senders from sentinel log without a person mapping",
+    "loading": "Loading…",
+    "emptyTitle": "No unmapped senders",
+    "emptyHint": "New senders without a person mapping will appear here",
+    "unknownSender": "Unknown sender"
+  },
+  "known": {
+    "heading": "Known persons",
+    "description": "People you have mapped across channels",
+    "loading": "Loading…",
+    "emptyTitle": "No known persons yet",
+    "emptyHint": "Create a profile for an unmapped sender to get started",
+    "emptyForFilter": "No persons in this bond level",
+    "noChannels": "No channels"
+  },
+  "filters": {
+    "groupLabel": "Filter known persons by bond",
+    "all": "All",
+    "innerCircle": "Inner circle",
+    "acquaintance": "Acquaintance",
+    "other": "Other"
+  },
+  "actions": {
+    "create": "Create",
+    "link": "Link",
+    "markStranger": "Treat as stranger",
+    "cancel": "Cancel",
+    "close": "Close",
+    "createProfile": "Create profile",
+    "creating": "Creating…",
+    "linkSubmit": "Link",
+    "linking": "Linking…",
+    "markingStranger": "Marking…"
+  },
+  "strangerConfirm": {
+    "title": "Treat {{name}} as a stranger?",
+    "description": "Rome will treat messages from {{name}} as coming from a stranger, and they will no longer appear under {{section}}. You can't undo this from the dashboard."
+  },
+  "createForm": {
+    "nameLabel": "Name",
+    "bondLevelLabel": "Bond level",
+    "relationLabel": "Relation",
+    "relationPlaceholder": "How do you know them?"
+  },
+  "linkForm": {
+    "label": "Link to existing person",
+    "selectPlaceholder": "Select a person…"
+  },
+  "errors": {
+    "requestFailed": "Something went wrong. The change wasn't saved.",
+    "network": "Couldn't reach the server. Check your connection and try again.",
+    "loadFailedTitle": "Couldn't load",
+    "loadFailedFallback": "Something went wrong. Check your connection and try again.",
+    "messagesFailed": "Couldn't load messages",
+    "retry": "Try again"
+  },
+  "whatsapp": {
+    "heading": "WhatsApp contacts",
+    "description": "Synced from your WhatsApp address book",
+    "searchPlaceholder": "Search name or number…",
+    "emptyForSearch": "No contacts match your search",
+    "loadingContacts": "Loading contacts…",
+    "emptyTitle": "No WhatsApp contacts",
+    "emptyHint": "Nothing has synced yet — if WhatsApp isn't linked, connect it in Settings.",
+    "linkedTo": "Linked · {{name}}",
+    "groupChat": "Group chat",
+    "contact": "WhatsApp contact",
+    "messages": "Messages",
+    "dialogTitle": "Messages · {{name}}",
+    "loading": "Loading messages…",
+    "noMessages": "No messages yet",
+    "noMessagesHint": "Send a message to start the conversation",
+    "mediaPlaceholder": "[{{type}}]",
+    "composerPlaceholder": "Type a message",
+    "send": "Send",
+    "sendFailed": "Not delivered · tap to retry",
+    "notConnected": "WhatsApp isn't connected — link it in Settings to send.",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "reactedTo": "Reacted {{emoji}} to an earlier message",
+    "reactedToYou": "You reacted {{emoji}} to an earlier message"
+  },
+  "linkedin": {
+    "heading": "LinkedIn messages",
+    "description": "Synced from your LinkedIn inbox by the LinkedIn connection",
+    "searchPlaceholder": "Search name or preview…",
+    "emptyForSearch": "No conversations match your search",
+    "loadingThreads": "Loading conversations…",
+    "emptyTitle": "No LinkedIn conversations",
+    "emptyHint": "Nothing has synced yet — if LinkedIn isn't connected, connect it in Settings.",
+    "groupChat": "Group conversation",
+    "participants": "{{count}} participants",
+    "thread": "LinkedIn conversation",
+    "unread": "Unread",
+    "messages": "Messages",
+    "dialogTitle": "Messages · {{name}}",
+    "openInLinkedIn": "Open in LinkedIn",
+    "loading": "Loading messages…",
+    "noMessages": "No messages synced yet",
+    "noMessagesHint": "Messages appear after the next sync — Rome checks a few times an hour.",
+    "composerPlaceholder": "Reply on LinkedIn",
+    "send": "Send",
+    "sendFailed": "LinkedIn reply wasn't sent — tap to retry",
+    "notConnected": "LinkedIn isn't connected — link it in Settings to reply."
+  }
+}

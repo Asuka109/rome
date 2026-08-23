@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>POP RIOT — Creative Festival</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* --- Memphis core palette (from CSV Design System Variables) --- */
+    --memphis-pink: #FF71CE;
+    --memphis-yellow: #FFCE5C;
+    --memphis-teal: #86CCCA;
+    --memphis-purple: #6A7BB4;
+
+    /* --- Derived / supporting --- */
+    --ink: #1B1530;
+    --paper: #FBF7EF;
+    --paper-2: #FFFFFF;
+    --line: #1B1530;
+
+    /* --- Pattern + shape config --- */
+    --pattern-size: 20px;
+    --shape-rotation: 15deg;
+
+    /* --- Radius --- */
+    --r-sm: 6px;
+    --r-md: 14px;
+    --r-lg: 26px;
+    --r-pill: 999px;
+
+    /* --- Hard offset "sticker" shadows --- */
+    --shadow-ink: 6px 6px 0 0 var(--ink);
+    --shadow-ink-lg: 10px 10px 0 0 var(--ink);
+    --shadow-pink: 6px 6px 0 0 var(--memphis-pink);
+    --shadow-teal: 6px 6px 0 0 var(--memphis-teal);
+
+    /* --- Spacing scale --- */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 24px;
+    --sp-6: 36px;
+    --sp-7: 56px;
+    --sp-8: 80px;
+
+    /* --- Typography scale --- */
+    --font-head: 'Space Grotesk', system-ui, sans-serif;
+    --font-body: 'Archivo', system-ui, -apple-system, sans-serif;
+    --t-xs: 0.75rem;
+    --t-sm: 0.875rem;
+    --t-base: 1rem;
+    --t-lg: 1.25rem;
+    --t-xl: 1.75rem;
+    --t-2xl: 2.5rem;
+    --t-3xl: clamp(2.75rem, 9vw, 6rem);
+
+    /* --- Motion --- */
+    --ease: cubic-bezier(.34, 1.56, .64, 1);
+    --dur: 200ms;
+    --dur-slow: 600ms;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-body);
+    color: var(--ink);
+    background-color: var(--paper);
+    /* dotted Memphis texture */
+    background-image:
+      radial-gradient(var(--memphis-purple) 2px, transparent 2px),
+      radial-gradient(var(--memphis-pink) 2px, transparent 2px);
+    background-size: calc(var(--pattern-size) * 3) calc(var(--pattern-size) * 3);
+    background-position: 0 0, calc(var(--pattern-size) * 1.5) calc(var(--pattern-size) * 1.5);
+    line-height: 1.5;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection { background: var(--memphis-yellow); color: var(--ink); }
+
+  a { color: inherit; text-decoration: none; }
+
+  h1, h2, h3 { font-family: var(--font-head); line-height: 1.02; letter-spacing: -0.01em; }
+
+  :focus-visible {
+    outline: 3px dashed var(--memphis-purple);
+    outline-offset: 3px;
+    border-radius: var(--r-sm);
+  }
+
+  .wrap { width: min(1180px, 100%); margin-inline: auto; padding-inline: var(--sp-5); }
+
+  /* ============ DECORATIVE SVG SHAPES ============ */
+  .deco { position: absolute; z-index: 0; pointer-events: none; }
+  .float {
+    animation: float 7s ease-in-out infinite;
+  }
+  .spin {
+    animation: spin 18s linear infinite;
+    transform-origin: center;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0) rotate(var(--shape-rotation)); }
+    50% { transform: translateY(-16px) rotate(calc(var(--shape-rotation) * -1)); }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ============ HEADER / NAV ============ */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--paper-2);
+    border-bottom: 4px solid var(--ink);
+  }
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4);
+    padding-block: var(--sp-3);
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-3);
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: var(--t-lg);
+    letter-spacing: -0.02em;
+  }
+  .brand .mark {
+    width: 38px; height: 38px;
+    display: grid; place-items: center;
+    background: var(--memphis-pink);
+    border: 3px solid var(--ink);
+    border-radius: var(--r-sm);
+    transform: rotate(-8deg);
+  }
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-5);
+    list-style: none;
+    font-weight: 600;
+    font-size: var(--t-sm);
+  }
+  .nav-links a { position: relative; padding-block: var(--sp-1); }
+  .nav-links a::after {
+    content: "";
+    position: absolute; left: 0; bottom: -2px;
+    width: 100%; height: 3px;
+    background: var(--memphis-teal);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--dur) var(--ease);
+  }
+  .nav-links a:hover::after,
+  .nav-links a:focus-visible::after { transform: scaleX(1); }
+
+  .btn {
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: var(--t-sm);
+    cursor: pointer;
+    border: 3px solid var(--ink);
+    border-radius: var(--r-pill);
+    padding: var(--sp-3) var(--sp-5);
+    background: var(--memphis-yellow);
+    color: var(--ink);
+    box-shadow: var(--shadow-ink);
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+  .btn:hover { transform: translate(-2px, -2px); box-shadow: 9px 9px 0 0 var(--ink); }
+  .btn:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 0 var(--ink); }
+  .btn--pink { background: var(--memphis-pink); }
+  .btn--teal { background: var(--memphis-teal); }
+  .btn--ghost { background: var(--paper-2); }
+
+  /* ============ HERO ============ */
+  .hero {
+    position: relative;
+    padding-block: var(--sp-8) var(--sp-7);
+    overflow: hidden;
+  }
+  .hero .wrap { position: relative; z-index: 2; }
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: var(--t-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: var(--ink);
+    color: var(--paper);
+    padding: var(--sp-2) var(--sp-4);
+    border-radius: var(--r-pill);
+    transform: rotate(-2deg);
+  }
+  .hero h1 {
+    font-size: var(--t-3xl);
+    font-weight: 700;
+    margin-block: var(--sp-5) var(--sp-4);
+    max-width: 14ch;
+    text-transform: uppercase;
+  }
+  .hero h1 .pop { color: var(--memphis-pink); }
+  .hero h1 .riot {
+    color: var(--memphis-purple);
+    -webkit-text-stroke: 2px var(--ink);
+    text-stroke: 2px var(--ink);
+  }
+  .hero p.lede {
+    font-size: var(--t-lg);
+    max-width: 48ch;
+    font-weight: 500;
+    margin-bottom: var(--sp-6);
+  }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: var(--sp-4); align-items: center; }
+
+  .hero-meta {
+    display: flex; flex-wrap: wrap;
+    gap: var(--sp-5);
+    margin-top: var(--sp-7);
+    font-family: var(--font-head);
+    font-weight: 600;
+  }
+  .hero-meta .item {
+    display: flex; flex-direction: column;
+    padding-left: var(--sp-4);
+    border-left: 4px solid var(--memphis-teal);
+  }
+  .hero-meta .item:nth-child(2) { border-color: var(--memphis-pink); }
+  .hero-meta .item:nth-child(3) { border-color: var(--memphis-yellow); }
+  .hero-meta .big { font-size: var(--t-xl); }
+  .hero-meta .small { font-size: var(--t-xs); text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.7; }
+
+  /* hero decorative positions */
+  .hero .d-tri { top: 8%; right: 6%; }
+  .hero .d-squig { bottom: 4%; left: -10px; }
+  .hero .d-dots { top: 30%; right: 22%; }
+  .hero .d-circ { bottom: 18%; right: 10%; }
+
+  /* ============ MARQUEE ============ */
+  .marquee {
+    background: var(--memphis-purple);
+    border-block: 4px solid var(--ink);
+    overflow: hidden;
+    padding-block: var(--sp-3);
+  }
+  .marquee-track {
+    display: flex;
+    gap: var(--sp-6);
+    white-space: nowrap;
+    width: max-content;
+    animation: scroll 24s linear infinite;
+    font-family: var(--font-head);
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--paper);
+    font-size: var(--t-lg);
+    letter-spacing: 0.04em;
+  }
+  .marquee-track span { display: inline-flex; align-items: center; gap: var(--sp-6); }
+  .marquee-track .dot { color: var(--memphis-yellow); }
+  @keyframes scroll { to { transform: translateX(-50%); } }
+
+  /* ============ SECTIONS ============ */
+  section { position: relative; }
+  .section-pad { padding-block: var(--sp-8); }
+
+  .sec-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-4);
+    flex-wrap: wrap;
+    margin-bottom: var(--sp-6);
+  }
+  .sec-head h2 {
+    font-size: var(--t-2xl);
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .sec-head .tag {
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: var(--t-sm);
+    background: var(--memphis-teal);
+    border: 3px solid var(--ink);
+    border-radius: var(--r-pill);
+    padding: var(--sp-2) var(--sp-4);
+    transform: rotate(3deg);
+  }
+
+  /* lineup grid */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr));
+    gap: var(--sp-5);
+  }
+  .card {
+    position: relative;
+    background: var(--paper-2);
+    border: 4px solid var(--ink);
+    border-radius: var(--r-md);
+    padding: var(--sp-5);
+    box-shadow: var(--shadow-ink);
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+    overflow: hidden;
+  }
+  .card:hover, .card:focus-within {
+    transform: translate(-3px, -3px) rotate(-1deg);
+    box-shadow: var(--shadow-ink-lg);
+  }
+  .card .topbar {
+    height: 10px;
+    margin: calc(var(--sp-5) * -1) calc(var(--sp-5) * -1) var(--sp-4);
+    background: repeating-linear-gradient(45deg, var(--memphis-pink) 0 12px, var(--memphis-yellow) 12px 24px);
+    border-bottom: 4px solid var(--ink);
+  }
+  .card .num {
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: var(--t-xs);
+    color: var(--memphis-purple);
+    letter-spacing: 0.12em;
+  }
+  .card h3 { font-size: var(--t-xl); margin-block: var(--sp-1) var(--sp-3); }
+  .card .stage {
+    display: inline-flex; align-items: center; gap: var(--sp-2);
+    font-weight: 600; font-size: var(--t-sm);
+    background: var(--memphis-yellow);
+    border: 2px solid var(--ink);
+    border-radius: var(--r-pill);
+    padding: var(--sp-1) var(--sp-3);
+  }
+  .card .meta-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: var(--sp-5);
+    font-size: var(--t-sm); font-weight: 600;
+  }
+  .avatar {
+    width: 64px; height: 64px;
+    border: 3px solid var(--ink);
+    border-radius: var(--r-sm);
+    transform: rotate(var(--shape-rotation));
+    margin-bottom: var(--sp-3);
+  }
+
+  /* schedule / tickets layout */
+  .split {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: var(--sp-6);
+    align-items: start;
+  }
+  @media (max-width: 880px) { .split { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--paper-2);
+    border: 4px solid var(--ink);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-ink);
+    overflow: hidden;
+  }
+  .panel-head {
+    padding: var(--sp-5);
+    border-bottom: 4px solid var(--ink);
+    background: var(--memphis-teal);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .panel-head h3 { font-size: var(--t-lg); text-transform: uppercase; }
+
+  .sched-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: var(--sp-4);
+    align-items: center;
+    padding: var(--sp-4) var(--sp-5);
+    border-bottom: 2px dashed var(--ink);
+    transition: background var(--dur);
+  }
+  .sched-row:last-child { border-bottom: 0; }
+  .sched-row:hover { background: color-mix(in srgb, var(--memphis-yellow) 35%, transparent); }
+  .sched-row .time { font-family: var(--font-head); font-weight: 700; font-size: var(--t-base); }
+  .sched-row .act { font-weight: 600; }
+  .sched-row .where { font-size: var(--t-xs); text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.65; }
+  .pill {
+    font-family: var(--font-head);
+    font-weight: 700; font-size: var(--t-xs);
+    border: 2px solid var(--ink);
+    border-radius: var(--r-pill);
+    padding: var(--sp-1) var(--sp-3);
+  }
+  .pill--live { background: var(--memphis-pink); }
+  .pill--soon { background: var(--paper); }
+
+  /* ticket card */
+  .ticket {
+    background: var(--ink);
+    color: var(--paper);
+    border: 4px solid var(--ink);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-pink);
+    position: relative;
+  }
+  .ticket .t-top { padding: var(--sp-5); }
+  .ticket .price {
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: var(--t-2xl);
+    color: var(--memphis-yellow);
+  }
+  .ticket .price small { font-size: var(--t-sm); color: var(--paper); font-weight: 500; }
+  .ticket ul { list-style: none; margin-top: var(--sp-4); display: grid; gap: var(--sp-3); }
+  .ticket li { display: flex; gap: var(--sp-3); align-items: center; font-size: var(--t-sm); font-weight: 500; }
+  .ticket li svg { flex: 0 0 auto; }
+  .ticket .perforation {
+    height: 0; border-top: 3px dashed var(--memphis-teal); margin: 0 var(--sp-5);
+    position: relative;
+  }
+  .ticket .t-bottom { padding: var(--sp-5); }
+  .ticket .btn { width: 100%; justify-content: center; }
+
+  /* ============ NEWSLETTER ============ */
+  .signup {
+    background: var(--memphis-pink);
+    border-block: 4px solid var(--ink);
+    position: relative;
+    overflow: hidden;
+  }
+  .signup .inner {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--sp-6);
+    align-items: center;
+    padding-block: var(--sp-7);
+  }
+  @media (max-width: 760px) { .signup .inner { grid-template-columns: 1fr; } }
+  .signup h2 { font-size: var(--t-2xl); text-transform: uppercase; max-width: 16ch; }
+  .signup p { font-weight: 600; margin-top: var(--sp-3); max-width: 40ch; }
+  .form {
+    display: flex; gap: var(--sp-3); flex-wrap: wrap;
+  }
+  .form input {
+    flex: 1 1 220px;
+    font-family: var(--font-body);
+    font-size: var(--t-base);
+    font-weight: 600;
+    padding: var(--sp-3) var(--sp-4);
+    border: 3px solid var(--ink);
+    border-radius: var(--r-pill);
+    background: var(--paper);
+    color: var(--ink);
+    min-width: 0;
+  }
+  .form input::placeholder { color: color-mix(in srgb, var(--ink) 55%, transparent); }
+
+  /* ============ FOOTER ============ */
+  footer {
+    background: var(--ink);
+    color: var(--paper);
+    padding-block: var(--sp-7) var(--sp-5);
+  }
+  .foot-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-6);
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .foot-grid h4 {
+    font-family: var(--font-head);
+    font-size: var(--t-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--memphis-teal);
+    margin-bottom: var(--sp-3);
+  }
+  .foot-grid ul { list-style: none; display: grid; gap: var(--sp-2); font-size: var(--t-sm); }
+  .foot-grid a:hover { color: var(--memphis-yellow); }
+  .socials { display: flex; gap: var(--sp-3); }
+  .socials a {
+    width: 42px; height: 42px;
+    display: grid; place-items: center;
+    border: 3px solid var(--paper);
+    border-radius: var(--r-sm);
+    transition: transform var(--dur) var(--ease), background var(--dur);
+  }
+  .socials a:hover { background: var(--memphis-pink); transform: rotate(-8deg); }
+  .foot-bottom {
+    margin-top: var(--sp-6);
+    padding-top: var(--sp-4);
+    border-top: 2px dashed color-mix(in srgb, var(--paper) 40%, transparent);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--sp-3);
+    font-size: var(--t-xs); opacity: 0.8;
+  }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 720px) {
+    .nav-links { display: none; }
+    .hero .d-tri, .hero .d-dots { display: none; }
+  }
+
+  /* mobile menu toggle (shown on small) */
+  .menu-btn { display: none; }
+  @media (max-width: 720px) {
+    .menu-btn {
+      display: inline-grid; place-items: center;
+      width: 44px; height: 44px;
+      border: 3px solid var(--ink);
+      border-radius: var(--r-sm);
+      background: var(--memphis-teal);
+      cursor: pointer;
+    }
+  }
+
+  /* ============ REDUCED MOTION ============ */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+    .float, .spin { animation: none !important; }
+    .marquee-track { animation: none !important; transform: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#" aria-label="Pop Riot festival home">
+      <span class="mark" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M3 21 L12 3 L21 21 Z" fill="#1B1530"/>
+        </svg>
+      </span>
+      POP&nbsp;RIOT
+    </a>
+    <nav aria-label="Primary">
+      <ul class="nav-links">
+        <li><a href="#lineup">Lineup</a></li>
+        <li><a href="#schedule">Schedule</a></li>
+        <li><a href="#tickets">Tickets</a></li>
+        <li><a href="#info">Info</a></li>
+      </ul>
+    </nav>
+    <a class="btn btn--pink" href="#tickets">
+      Get Tickets
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M5 12h14M13 6l6 6-6 6" stroke="#1B1530" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+    <button class="menu-btn" aria-label="Open menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 7h16M4 12h16M4 17h16" stroke="#1B1530" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<main>
+  <!-- HERO -->
+  <section class="hero" aria-labelledby="hero-title">
+    <!-- decorative shapes -->
+    <svg class="deco d-tri float" width="120" height="120" viewBox="0 0 120 120" aria-hidden="true">
+      <path d="M60 8 L112 108 L8 108 Z" fill="var(--memphis-teal)" stroke="var(--ink)" stroke-width="5"/>
+    </svg>
+    <svg class="deco d-circ spin" width="110" height="110" viewBox="0 0 110 110" aria-hidden="true">
+      <circle cx="55" cy="55" r="40" fill="none" stroke="var(--memphis-purple)" stroke-width="8" stroke-dasharray="14 12"/>
+    </svg>
+    <svg class="deco d-squig float" width="170" height="60" viewBox="0 0 170 60" aria-hidden="true" style="animation-delay:-2s">
+      <path d="M5 35 Q25 5 45 35 T85 35 T125 35 T165 35" fill="none" stroke="var(--memphis-pink)" stroke-width="7" stroke-linecap="round"/>
+    </svg>
+    <svg class="deco d-dots" width="120" height="80" viewBox="0 0 120 80" aria-hidden="true">
+      <g fill="var(--memphis-yellow)" stroke="var(--ink)" stroke-width="2">
+        <circle cx="12" cy="12" r="7"/><circle cx="42" cy="12" r="7"/><circle cx="72" cy="12" r="7"/><circle cx="102" cy="12" r="7"/>
+        <circle cx="12" cy="42" r="7"/><circle cx="42" cy="42" r="7"/><circle cx="72" cy="42" r="7"/><circle cx="102" cy="42" r="7"/>
+        <circle cx="12" cy="72" r="7"/><circle cx="42" cy="72" r="7"/><circle cx="72" cy="72" r="7"/><circle cx="102" cy="72" r="7"/>
+      </g>
+    </svg>
+
+    <div class="wrap">
+      <span class="eyebrow">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 2v20M2 12h20" stroke="#FBF7EF" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        Aug 14–16 · Riverside Park
+      </span>
+      <h1 id="hero-title">Three days of <span class="pop">color</span>, <span class="riot">noise</span> &amp; pure chaos</h1>
+      <p class="lede">A postmodern festival of sound and shape. 40+ artists across five stages, late-night sets, art installations and a whole lot of squiggles.</p>
+      <div class="hero-cta">
+        <a class="btn btn--yellow" href="#tickets">Grab the weekend pass</a>
+        <a class="btn btn--ghost" href="#lineup">
+          See full lineup
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M6 9l6 6 6-6" stroke="#1B1530" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
+
+      <dl class="hero-meta">
+        <div class="item"><span class="big">40+</span><span class="small">Artists</span></div>
+        <div class="item"><span class="big">5</span><span class="small">Stages</span></div>
+        <div class="item"><span class="big">72h</span><span class="small">Non-stop</span></div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- MARQUEE -->
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee-track">
+      <span>Neon Cassette <span class="dot">●</span> The Squigglers <span class="dot">●</span> Pastel Static <span class="dot">●</span> Mega Geometry <span class="dot">●</span> Hot Triangle <span class="dot">●</span> Disco Brutal <span class="dot">●</span></span>
+      <span>Neon Cassette <span class="dot">●</span> The Squigglers <span class="dot">●</span> Pastel Static <span class="dot">●</span> Mega Geometry <span class="dot">●</span> Hot Triangle <span class="dot">●</span> Disco Brutal <span class="dot">●</span></span>
+    </div>
+  </div>
+
+  <!-- LINEUP -->
+  <section class="section-pad" id="lineup" aria-labelledby="lineup-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 id="lineup-title">Headliners</h2>
+        <span class="tag">Phase 1 announced</span>
+      </div>
+      <div class="grid">
+        <article class="card" tabindex="0">
+          <div class="topbar" aria-hidden="true"></div>
+          <svg class="avatar" viewBox="0 0 64 64" aria-hidden="true">
+            <rect width="64" height="64" fill="var(--memphis-pink)"/>
+            <circle cx="32" cy="26" r="13" fill="var(--memphis-yellow)" stroke="var(--ink)" stroke-width="3"/>
+            <path d="M10 60 Q32 38 54 60" fill="var(--memphis-teal)" stroke="var(--ink)" stroke-width="3"/>
+          </svg>
+          <span class="num">FRIDAY · 22:30</span>
+          <h3>Neon Cassette</h3>
+          <span class="stage">Main Stage</span>
+          <div class="meta-row">
+            <span>Synthwave / 80s</span>
+            <span aria-hidden="true">↗</span>
+          </div>
+        </article>
+
+        <article class="card" tabindex="0">
+          <div class="topbar" aria-hidden="true"></div>
+          <svg class="avatar" viewBox="0 0 64 64" aria-hidden="true">
+            <rect width="64" height="64" fill="var(--memphis-teal)"/>
+            <path d="M32 8 L56 56 L8 56 Z" fill="var(--memphis-purple)" stroke="var(--ink)" stroke-width="3"/>
+          </svg>
+          <span class="num">SATURDAY · 23:00</span>
+          <h3>Mega Geometry</h3>
+          <span class="stage">Triangle Tent</span>
+          <div class="meta-row">
+            <span>Techno / Industrial</span>
+            <span aria-hidden="true">↗</span>
+          </div>
+        </article>
+
+        <article class="card" tabindex="0">
+          <div class="topbar" aria-hidden="true"></div>
+          <svg class="avatar" viewBox="0 0 64 64" aria-hidden="true">
+            <rect width="64" height="64" fill="var(--memphis-yellow)"/>
+            <path d="M6 40 Q18 18 30 40 T54 40" fill="none" stroke="var(--memphis-pink)" stroke-width="5" stroke-linecap="round"/>
+            <circle cx="48" cy="18" r="8" fill="var(--memphis-purple)" stroke="var(--ink)" stroke-width="3"/>
+          </svg>
+          <span class="num">SATURDAY · 20:00</span>
+          <h3>The Squigglers</h3>
+          <span class="stage">Pattern Park</span>
+          <div class="meta-row">
+            <span>Indie / Art Pop</span>
+            <span aria-hidden="true">↗</span>
+          </div>
+        </article>
+
+        <article class="card" tabindex="0">
+          <div class="topbar" aria-hidden="true"></div>
+          <svg class="avatar" viewBox="0 0 64 64" aria-hidden="true">
+            <rect width="64" height="64" fill="var(--memphis-purple)"/>
+            <rect x="14" y="14" width="36" height="36" fill="var(--memphis-yellow)" stroke="var(--ink)" stroke-width="3" transform="rotate(12 32 32)"/>
+          </svg>
+          <span class="num">SUNDAY · 21:30</span>
+          <h3>Disco Brutal</h3>
+          <span class="stage">The Block</span>
+          <div class="meta-row">
+            <span>Disco / House</span>
+            <span aria-hidden="true">↗</span>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCHEDULE + TICKETS -->
+  <section class="section-pad" id="schedule" aria-labelledby="schedule-title">
+    <div class="wrap split">
+      <!-- schedule panel -->
+      <div class="panel">
+        <div class="panel-head">
+          <h3 id="schedule-title">Saturday Set Times</h3>
+          <span class="pill pill--live" aria-label="Currently live">● Now Live</span>
+        </div>
+        <div role="list">
+          <div class="sched-row" role="listitem">
+            <span class="time">19:00</span>
+            <span><span class="act">Pastel Static</span><br /><span class="where">Pattern Park</span></span>
+            <span class="pill pill--live">Live</span>
+          </div>
+          <div class="sched-row" role="listitem">
+            <span class="time">20:00</span>
+            <span><span class="act">The Squigglers</span><br /><span class="where">Pattern Park</span></span>
+            <span class="pill pill--soon">21:50</span>
+          </div>
+          <div class="sched-row" role="listitem">
+            <span class="time">21:15</span>
+            <span><span class="act">Hot Triangle</span><br /><span class="where">Triangle Tent</span></span>
+            <span class="pill pill--soon">Up next</span>
+          </div>
+          <div class="sched-row" role="listitem">
+            <span class="time">23:00</span>
+            <span><span class="act">Mega Geometry</span><br /><span class="where">Triangle Tent</span></span>
+            <span class="pill pill--soon">Headliner</span>
+          </div>
+          <div class="sched-row" role="listitem">
+            <span class="time">01:30</span>
+            <span><span class="act">Afterhours: Disco Brutal</span><br /><span class="where">The Block</span></span>
+            <span class="pill pill--soon">Late</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ticket panel -->
+      <div class="ticket" id="tickets">
+        <div class="t-top">
+          <span class="num" style="color:var(--memphis-teal)">WEEKEND PASS</span>
+          <div class="price">$189 <small>/ 3 days</small></div>
+          <ul>
+            <li>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke="#86CCCA" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              All five stages, all three days
+            </li>
+            <li>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke="#86CCCA" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Re-entry &amp; locker access
+            </li>
+            <li>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke="#86CCCA" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Free art-zone workshops
+            </li>
+          </ul>
+        </div>
+        <div class="perforation" aria-hidden="true"></div>
+        <div class="t-bottom">
+          <a class="btn btn--teal" href="#tickets" aria-label="Buy weekend pass">
+            Buy now
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6" stroke="#1B1530" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SIGNUP -->
+  <section class="signup" id="info" aria-labelledby="signup-title">
+    <svg class="deco spin" width="90" height="90" viewBox="0 0 90 90" aria-hidden="true" style="top:-20px;left:-20px">
+      <rect x="20" y="20" width="50" height="50" fill="var(--memphis-yellow)" stroke="var(--ink)" stroke-width="5" transform="rotate(15 45 45)"/>
+    </svg>
+    <div class="wrap inner">
+      <div>
+        <h2 id="signup-title">Don't miss the lineup drop</h2>
+        <p>Phase 2 artists land next month. Subscribe and get a 24-hour early ticket window.</p>
+      </div>
+      <form class="form" onsubmit="event.preventDefault(); this.reset();" aria-label="Newsletter signup">
+        <label for="email" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Email address</label>
+        <input id="email" type="email" name="email" placeholder="you@email.com" required autocomplete="email" />
+        <button class="btn" type="submit">Notify me</button>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div style="max-width:280px">
+        <a class="brand" href="#" style="color:var(--paper)" aria-label="Pop Riot home">
+          <span class="mark" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21 L12 3 L21 21 Z" fill="#1B1530"/></svg>
+          </span>
+          POP&nbsp;RIOT
+        </a>
+        <p style="margin-top:var(--sp-3);font-size:var(--t-sm);opacity:.8">Riverside Park · Aug 14–16. A festival for the bold, the loud and the geometric.</p>
+      </div>
+      <div>
+        <h4>Festival</h4>
+        <ul>
+          <li><a href="#lineup">Lineup</a></li>
+          <li><a href="#schedule">Schedule</a></li>
+          <li><a href="#tickets">Tickets</a></li>
+          <li><a href="#info">Getting there</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Support</h4>
+        <ul>
+          <li><a href="#info">FAQ</a></li>
+          <li><a href="#info">Accessibility</a></li>
+          <li><a href="#info">Refunds</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Follow</h4>
+        <div class="socials">
+          <a href="#info" aria-label="Instagram">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" stroke="#FBF7EF" stroke-width="2"/><circle cx="12" cy="12" r="4" stroke="#FBF7EF" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.3" fill="#FBF7EF"/></svg>
+          </a>
+          <a href="#info" aria-label="TikTok">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14 4v9.5a3.5 3.5 0 1 1-3-3.46" stroke="#FBF7EF" stroke-width="2" stroke-linecap="round"/><path d="M14 4c.5 2.5 2 4 4.5 4.3" stroke="#FBF7EF" stroke-width="2" stroke-linecap="round"/></svg>
+          </a>
+          <a href="#info" aria-label="YouTube">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="3" stroke="#FBF7EF" stroke-width="2"/><path d="M11 9.5l4 2.5-4 2.5z" fill="#FBF7EF"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 Pop Riot Festival. All rights reserved.</span>
+      <span>Privacy · Terms · Cookies</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Lightweight mobile menu toggle (progressive enhancement)
+  var menuBtn = document.querySelector('.menu-btn');
+  var links = document.querySelector('.nav-links');
+  if (menuBtn && links) {
+    menuBtn.addEventListener('click', function () {
+      var open = links.style.display === 'flex';
+      links.style.display = open ? '' : 'flex';
+      links.style.flexDirection = 'column';
+      links.style.position = 'absolute';
+      links.style.top = '100%';
+      links.style.left = '0';
+      links.style.right = '0';
+      links.style.background = 'var(--paper-2)';
+      links.style.borderBottom = '4px solid var(--ink)';
+      links.style.padding = '16px 24px';
+      links.style.gap = '12px';
+      menuBtn.setAttribute('aria-expanded', String(!open));
+    });
+  }
+</script>
+</body>
+</html>

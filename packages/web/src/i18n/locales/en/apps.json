@@ -1,0 +1,280 @@
+{
+  "builtinApps": "Builtin Apps",
+  "header": {
+    "title": "Apps",
+    "appStore": "App store",
+    "myAppsCount_one": "{{count}} built by you",
+    "myAppsCount_other": "{{count}} built by you",
+    "installedCount_one": "{{count}} installed",
+    "installedCount_other": "{{count}} installed",
+    "builtinCount_one": "{{count}} built-in",
+    "builtinCount_other": "{{count}} built-in",
+    "updatesCount_one": "{{count}} update",
+    "updatesCount_other": "{{count}} updates"
+  },
+  "sections": {
+    "my": {
+      "title": "My apps",
+      "newApp": "New app",
+      "newAppDraft": "Create a new app that "
+    },
+    "appstore": {
+      "title": "Installed apps",
+      "browse": "App store",
+      "browseStore": "Browse store"
+    },
+    "builtin": {
+      "title": "Built-in apps"
+    }
+  },
+  "search": {
+    "placeholder": "Search apps",
+    "ariaLabel": "Search apps",
+    "clear": "Clear search",
+    "resultsCount_one": "{{count}} result",
+    "resultsCount_other": "{{count}} results",
+    "noResults": "No apps match “{{query}}”",
+    "noResultsHint": "Try a different search, or browse the App store."
+  },
+  "builtinDescriptions": {
+    "projects": "Working directories the agent operates in",
+    "memory": "Identity, journal, and the people Rome knows",
+    "people": "Persons the guardian has introduced",
+    "routines": "Scheduled and recurring agent actions",
+    "activity": "What Rome has been doing, in order",
+    "store": "Browse and install Rome apps",
+    "desktop": "Embedded browser surface",
+    "chat": "Talk to your agents",
+    "settings": "Profile, channels, and integrations"
+  },
+  "installedApps": "Installed Apps",
+  "tabs": {
+    "installed": "Installed",
+    "store": "App store"
+  },
+  "pageTitle": {
+    "installed": "Installed apps",
+    "store": "App store"
+  },
+  "status": {
+    "active": "Enabled",
+    "disabled": "Disabled",
+    "failed": "Failed"
+  },
+  "phase": {
+    "installed": "Installed",
+    "installing": "Installing…",
+    "uninstalling": "Uninstalling…"
+  },
+  "placeholder": {
+    "failed": "Failed to start",
+    "disabled": "Disabled",
+    "noFrontend": "No frontend"
+  },
+  "toggle": {
+    "disabling": "Disabling...",
+    "enabling": "Enabling...",
+    "disable": "Disable",
+    "enable": "Enable"
+  },
+  "capabilities": {
+    "agents": "Agents",
+    "actions": "Actions",
+    "skills": "Skills",
+    "hooks": "Hooks"
+  },
+  "detail": {
+    "back": "Back to apps",
+    "notFound": "This app is not installed.",
+    "readme": "README",
+    "manage": "Manage",
+    "open": "Open",
+    "change": "Change",
+    "update": "Update",
+    "updateBanner": "Version {{version}} is available.",
+    "enabledTitle": "Enabled",
+    "enabledHint": "Turn off to hide this app and stop its agents, actions, and hooks.",
+    "chatTitle": "Update with chat",
+    "chatHint": "Open a chat in this app's source project to change it.",
+    "publishTitle": "Publish to App Store",
+    "publishHint": "Upload the installed bundle (v{{version}}) to the Rome App Store.",
+    "uninstallHint": "Remove the app. Its data is preserved for a later reinstall.",
+    "uninstallPurgeHint": "Remove the app and erase its data. This cannot be undone."
+  },
+  "installed": {
+    "loading": "Loading apps...",
+    "openLabelAria": "Open {{name}} in full view",
+    "openFullTitle": "Open full view",
+    "openButton": "Open",
+    "upgradeButton": "Upgrade → v{{version}}",
+    "upgradeTitle": "Upgrade {{name}} to v{{version}}",
+    "upgrading": "Upgrading...",
+    "settingsTitle": "{{name}} settings",
+    "settingsAria": "{{name}} settings",
+    "uninstall": "Uninstall",
+    "uninstallPurge": "Uninstall and erase data",
+    "installSuccess": "Installed {{name}}.",
+    "uninstallSuccess": "Uninstalled {{name}}. Data preserved for reinstall.",
+    "uninstallPurgeSuccess": "Uninstalled {{name}} and erased its data.",
+    "moreActionsAria": "More actions for {{name}}",
+    "moreActionsWithUpdateAria": "More actions for {{name}} (update to v{{version}} available)",
+    "closeActionsAria": "Close actions",
+    "updateAvailable": "Update to v{{version}} available",
+    "updateAll": "Update all",
+    "updateAllUpdating": "Updating...",
+    "updateAllSuccess_one": "Updated {{count}} app.",
+    "updateAllSuccess_other": "Updated {{count}} apps.",
+    "updateAllPartial": "Updated {{updated}} of {{count}} apps; {{failed}} failed.",
+    "openDetailsAria": "View details for {{name}}",
+    "publish": "Publish",
+    "publishing": "Publishing…",
+    "remix": "Remix…",
+    "remixDialog": {
+      "title": "Remix {{name}}",
+      "description": "Choose a new scoped name for a copy of {{name}} v{{version}}. You will add your changes in chat next.",
+      "nameLabel": "New app name",
+      "invalidName": "Use a scoped name such as @ray/calendar with your lowercase username.",
+      "confirm": "Continue in chat",
+      "cancel": "Cancel"
+    },
+    "publishSuccess": "Published {{name}} v{{version}} to the App Store.",
+    "publishDialog": {
+      "title": "Publish {{name}} to the App Store?",
+      "description": "The installed bundle (v{{version}}) will be uploaded to the Rome App Store and become publicly available to install.",
+      "confirm": "Publish"
+    },
+    "uninstallDialog": {
+      "title": "Uninstall {{name}}?",
+      "descriptionKeep": "The app will be removed from your install. Its database rows and data directory are preserved so a later reinstall can pick up where it left off.",
+      "descriptionPurge": "The app will be removed, and its database rows and data directory will be erased. This cannot be undone.",
+      "confirmKeep": "Uninstall",
+      "confirmPurge": "Uninstall and erase data"
+    },
+    "togglePublicAria": "Toggle public access for {{name}}",
+    "public": "Public",
+    "private": "Login required",
+    "access": "Access",
+    "accessPublic": "Allow public access",
+    "accessPrivate": "Private (login required)",
+    "accessDialog": {
+      "title": "Access for {{name}}",
+      "description": "Choose who can open this app from the public Rome URL.",
+      "privateTitle": "Private",
+      "privateDescription": "Only you can use this app.",
+      "publicTitle": "Public",
+      "publicDescription": "Anyone with the app URL can open and use it.",
+      "cloudEmailTitle": "Rome Cloud email list",
+      "cloudEmailDescription": "Visitors sign in with Rome Cloud, then Rome checks their email before the app loads.",
+      "emailLabel": "Allowed Rome Cloud emails",
+      "emailPlaceholder": "ada@example.com",
+      "emailHelp": "Press Enter to add. Paste a list and we'll split it on commas, spaces, or new lines.",
+      "addEmail": "Add",
+      "removeEmail": "Remove {{email}}",
+      "emptyEmails": "Add at least one Rome Cloud email.",
+      "invalidEmails": "These emails look invalid: {{emails}}",
+      "cancel": "Cancel",
+      "save": "Save access",
+      "saving": "Saving..."
+    },
+    "pin": "Pin to sidebar",
+    "unpin": "Unpin from sidebar",
+    "pinNoUi": "App has no UI",
+    "viewDetails": "View details",
+    "skillLoadFailed": "Failed to load",
+    "chatWithAgentTitle": "Chat with {{agent}}",
+    "chatWithAgentAria": "Chat with {{agent}}",
+    "chatToUpdate": "Start chat here",
+    "noCapabilities": "No {{label}} declared.",
+    "undoDisabled": "{{name}} disabled.",
+    "undo": "Undo",
+    "errors": {
+      "loadFailed": "Failed to load apps",
+      "toggleEnableFailed": "Failed to enable {{name}}.",
+      "toggleDisableFailed": "Failed to disable {{name}}.",
+      "appUpdateFailed": "App update failed.",
+      "appInstallFailed": "App install failed.",
+      "upgradeFailed": "Failed to upgrade {{name}}.",
+      "appUpgradeFailed": "App upgrade failed.",
+      "uninstallFailed": "Failed to uninstall {{name}}.",
+      "publishFailed": "Failed to publish {{name}}.",
+      "appUninstallFailed": "App uninstall failed.",
+      "publicAccessLoadFailed": "Failed to load public access settings for {{name}}.",
+      "publicAccessUpdateFailed": "Failed to update public access for {{name}}.",
+      "publicAccessFailed": "Public access update failed."
+    }
+  },
+  "store": {
+    "loading": "Loading store listings...",
+    "retry": "Retry",
+    "unavailable": "App store is not available on this Rome instance.",
+    "empty": "No apps have been published to Rome Cloud yet.",
+    "installCountOne": "{{count}} install",
+    "installCountOther": "{{count}} installs",
+    "errors": {
+      "loadFailed": "Failed to load store listings"
+    }
+  },
+  "listing": {
+    "back": "← Back to App store",
+    "loading": "Loading listing...",
+    "retry": "Retry",
+    "unavailable": "App store is not available on this Rome instance.",
+    "installV": "Install v{{version}}",
+    "installedV": "Installed v{{version}}",
+    "updateToV": "Update to v{{version}}",
+    "installing": "Installing...",
+    "updatedAt": "Updated {{date}}",
+    "about": "About",
+    "homepage": "Homepage ↗",
+    "repository": "Repository ↗",
+    "versions": "Versions",
+    "noLiveVersions": "No live versions available.",
+    "installButton": "Install",
+    "installed": "Installed",
+    "revoked": "Revoked",
+    "errors": {
+      "loadFailed": "Failed to load listing",
+      "installFailed": "Failed to install app"
+    }
+  },
+  "install": {
+    "loading": "Loading app details...",
+    "title": "Install this app?",
+    "subtitle": "This will install <strong>{{name}}</strong> on your Rome.",
+    "confirm": "Install v{{version}}",
+    "installing": "Installing...",
+    "cancel": "Cancel",
+    "version": "Version",
+    "size": "Size",
+    "publisher": "Publisher",
+    "checksum": "Checksum",
+    "noLiveVersion": "No installable version is available for this app.",
+    "unavailable": "The App Store is not configured for this Rome instance.",
+    "errors": {
+      "loadFailed": "Failed to load app details",
+      "installFailed": "Failed to install app",
+      "notFound": "App not found in the store"
+    }
+  },
+  "embedded": {
+    "failedTitle": "Failed to load app",
+    "errors": {
+      "loadFailed": "Failed to load app manifest"
+    }
+  },
+  "full": {
+    "failedTitle": "Failed to load app",
+    "errors": {
+      "loadFailed": "Failed to load app manifest"
+    }
+  },
+  "accessGate": {
+    "title": "{{name}} requires Rome Cloud access",
+    "description": "Sign in with Rome Cloud to continue.",
+    "deniedDescription": "{{email}} is signed in, but is not on this app's access list.",
+    "signIn": "Sign in with Rome Cloud",
+    "signingIn": "Opening Rome Cloud...",
+    "startFailed": "Could not start Rome Cloud sign-in.",
+    "networkFailed": "Network error while starting Rome Cloud sign-in."
+  }
+}

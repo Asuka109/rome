@@ -1,0 +1,722 @@
+{
+  "page": {
+    "title": "设置",
+    "loading": "加载设置中…",
+    "loadFailedFallback": "加载设置失败。",
+    "retry": "重试",
+    "savedFlash": "设置已保存",
+    "saveFailedFallback": "保存失败"
+  },
+  "tabs": {
+    "Appearance": "外观",
+    "Connections": "连接",
+    "Favors": "Favors",
+    "Trust": "信任",
+    "Channels": "渠道",
+    "AI Tools": "AI 工具",
+    "Advanced": "高级"
+  },
+  "appearance": {
+    "title": "外观",
+    "language": {
+      "title": "语言"
+    },
+    "theme": {
+      "title": "主题"
+    },
+    "mode": {
+      "title": "外观模式",
+      "system": "系统",
+      "light": "浅色",
+      "dark": "深色"
+    }
+  },
+  "common": {
+    "loading": "加载中…",
+    "save": "保存",
+    "saving": "保存中…",
+    "disconnect": "断开",
+    "disconnecting": "断开中…",
+    "connect": "连接",
+    "connecting": "连接中…",
+    "networkError": "网络错误，请重试。",
+    "connectionFailed": "连接失败。",
+    "unknown": "未知",
+    "online": "在线",
+    "offline": "离线",
+    "remove": "移除",
+    "cancel": "取消"
+  },
+  "connections": {
+    "loading": "正在加载连接",
+    "errorTitle": "无法加载连接",
+    "emptyTitle": "暂无可用连接",
+    "loadFailedFallback": "加载连接失败。",
+    "headings": {
+      "connected": "这个连接让你的 agent 能",
+      "primary": "连接后，你的 agent 将能",
+      "secondary": "添加后，你的 agent 还能",
+      "availableToAdd": "可添加"
+    },
+    "oauth": {
+      "unavailable": "此主机上无法使用该集成。",
+      "accessActive": "访问有效",
+      "accessExpired": "访问已过期 — 重新连接以继续使用",
+      "reconnect": "重新连接",
+      "reconnecting": "正在重新连接账户…",
+      "resumePending": "你已开始连接 {{label}} 但尚未完成。请在 {{label}} 上继续，或取消。"
+    },
+    "composio": {
+      "unavailable": "此主机上无法使用 Composio。"
+    },
+    "cards": {
+      "telegram": {
+        "bot": {
+          "titleFallback": "你的 Telegram 机器人",
+          "subtitle": "通过 @BotFather 添加一个机器人",
+          "bullets": {
+            "reply": "有人给 {{identity}} 发消息时自动回复",
+            "start": "收到新消息时启动任务"
+          },
+          "bulletsFallback": {
+            "reply": "有人给你的机器人发消息时自动回复",
+            "start": "收到新消息时启动任务"
+          }
+        },
+        "session": {
+          "title": "你的账号",
+          "subtitle": "用手机号登录",
+          "bullets": {
+            "send": "以你的身份从你的账号发消息——像你本人一样联系供应商和客户",
+            "read": "阅读并总结你的聊天和群组",
+            "notice": "群里有需要你关注的事情时及时提醒你"
+          },
+          "privacyNote": "已加密，只存储在你的实例上，可在 Telegram 的活动会话中看到。随时可断开。"
+        }
+      },
+      "whatsapp": {
+        "bot": {
+          "title": "你的 WhatsApp",
+          "subtitle": "使用配对码配对设备",
+          "bullets": {
+            "reply": "有人在 WhatsApp 上给你发消息时自动回复",
+            "start": "收到新消息时启动任务"
+          }
+        }
+      },
+      "wechat": {
+        "bot": {
+          "title": "你的微信",
+          "subtitle": "扫描二维码关联账号",
+          "bullets": {
+            "reply": "有人在微信上给你发消息时自动回复",
+            "start": "收到新消息时启动任务"
+          }
+        }
+      },
+      "linkedin": {
+        "bot": {
+          "title": "你的领英",
+          "subtitle": "通过 Rome 的浏览器登录",
+          "bullets": {
+            "read": "保持同步你的领英收件箱副本",
+            "recap": "阅读并总结你的领英对话"
+          }
+        }
+      },
+      "discord": {
+        "bot": {
+          "titleFallback": "你的 Discord 机器人",
+          "subtitle": "在 Discord 开发者门户添加一个机器人",
+          "bullets": {
+            "reply": "有人在你的服务器里给 {{identity}} 发消息时自动回复",
+            "start": "收到新消息时启动任务"
+          },
+          "bulletsFallback": {
+            "reply": "有人在你的服务器里给你的机器人发消息时自动回复",
+            "start": "收到新消息时启动任务"
+          }
+        }
+      },
+      "feishu": {
+        "bot": {
+          "title": "你的飞书应用",
+          "bullets": {
+            "reply": "有人在飞书上给你的 agent 发消息时自动回复",
+            "start": "收到新消息时启动任务"
+          }
+        }
+      },
+      "email": {
+        "bot": {
+          "title": "你 agent 的邮箱地址",
+          "bullets": {
+            "reply": "给你的 agent 发邮件，它会回复",
+            "start": "收到新邮件时启动任务"
+          }
+        }
+      },
+      "webchat": {
+        "bot": {
+          "title": "面板聊天",
+          "bullets": {
+            "chat": "在这个面板里直接和你的 agent 聊天"
+          },
+          "alwaysOn": "始终开启 — 无需配置。"
+        }
+      },
+      "github": {
+        "user": {
+          "title": "你的 GitHub 账号",
+          "bullets": {
+            "work": "以你的身份处理你的仓库、issue、pull request 和项目看板",
+            "watch": "你的仓库里发生变化时作出响应"
+          },
+          "privacyNote": "你在 GitHub 上授权访问，随时可以在这里断开。"
+        }
+      },
+      "google": {
+        "user": {
+          "title": "你的 Google 账号",
+          "bullets": {
+            "work": "以你的身份使用你的各项 Google 服务"
+          },
+          "privacyNote": "你在 Google 上授权访问，随时可以在这里断开。"
+        }
+      },
+      "slack": {
+        "user": {
+          "title": "你的 Slack 账号",
+          "bullets": {
+            "work": "以你的身份在你的 Slack 工作区收发消息"
+          },
+          "privacyNote": "你在 Slack 上授权访问，随时可以在这里断开。"
+        }
+      },
+      "composio": {
+        "user": {
+          "title": "你的 Composio 账号",
+          "bullets": {
+            "act": "通过你在 Composio 上连接的第三方应用执行操作"
+          }
+        }
+      }
+    }
+  },
+  "trust": {
+    "title": "关系层级规则",
+    "trustedLevels": {
+      "title": "受信消息",
+      "description": "来自这些关系层级的消息将跳过哨兵筛查。"
+    },
+    "replyToLevels": {
+      "title": "回复消息",
+      "description": "Rome 只回复来自这些关系层级的传入消息。发送者映射会先于此规则运行。"
+    },
+    "levels": {
+      "guardian": "守护者",
+      "inner-circle": "核心圈",
+      "acquaintance": "熟人",
+      "other": "其他"
+    }
+  },
+  "channels": {
+    "title": "渠道连接",
+    "conversationSettings": {
+      "configure": "配置会话",
+      "searchPlaceholder": "搜索提供商、工作区或会话",
+      "allConnections": "所有连接",
+      "anyStatus": "所有状态",
+      "connectionFilterAria": "按连接筛选",
+      "statusFilterAria": "按状态筛选",
+      "status": {
+        "online": "在线",
+        "offline": "离线",
+        "notConnected": "未连接"
+      },
+      "kinds": {
+        "channel": "频道",
+        "group": "群组",
+        "dm": "私聊",
+        "topic": "话题"
+      },
+      "loading": "正在加载会话…",
+      "emptyTitle": "未找到可配置的会话",
+      "emptyDescription": "连接受支持的对话服务，或发送一条消息让 Rome 发现该会话。",
+      "loadMore": "加载更多",
+      "overrideCount_one": "{{count}} 项覆盖",
+      "overrideCount_other": "{{count}} 项覆盖",
+      "providerDefaults": "产品默认值",
+      "sections": {
+        "activation": "触发",
+        "replies": "回复",
+        "session": "会话",
+        "routing": "路由"
+      },
+      "fields": {
+        "enabled": "Rome 在此会话中",
+        "respond": "响应条件",
+        "botMessages": "机器人消息",
+        "whenOthersMentioned": "提及其他人时",
+        "replies": "回复位置",
+        "agent": "智能体",
+        "sessionReset": "提供商会话重置"
+      },
+      "descriptions": {
+        "enabled": "关闭后 Rome 将完全不再在此处响应",
+        "respond": "Rome 何时参与该会话",
+        "botMessages": "Rome 如何处理其他机器人的消息",
+        "whenOthersMentioned": "被提及的是其他人，而非 Rome",
+        "replies": "Rome 的回复发布在哪里",
+        "agent": "由哪个智能体处理该会话",
+        "sessionReset": "清除提供商侧的会话记忆"
+      },
+      "source": {
+        "overridden": "已覆盖"
+      },
+      "options": {
+        "mention": "仅被提及时",
+        "mentions": "仅提及消息",
+        "all": "全部",
+        "ignore": "忽略",
+        "respond": "响应",
+        "thread": "原生话题",
+        "inline": "会话内"
+      },
+      "mainAgent": "main（默认）",
+      "sessionReset": {
+        "never": "永不",
+        "afterInactivity": "无活动后",
+        "inactiveFor": "无活动达",
+        "duration": "无活动时长",
+        "unit": "时长单位",
+        "minutes": "分钟",
+        "hours": "小时",
+        "days": "天",
+        "daily": "每天",
+        "resetAt": "重置于",
+        "dailyHour": "每日重置时间",
+        "utc": "UTC"
+      },
+      "saving": "保存中…",
+      "retry": "重试"
+    },
+    "restartNeededFallback": "后端不可达 — 需要重启以应用更改",
+    "disconnectFailedFallback": "断开失败。",
+    "status": {
+      "connected": "已连接",
+      "disconnected": "未连接",
+      "configured": "已配置",
+      "awaitingVerification": "等待验证",
+      "codePending": "等待验证码"
+    },
+    "connectedAs": "已连接为",
+    "telegram": {
+      "title": "Telegram",
+      "guardianLinked": "你的 Telegram 账号已绑定为守护者。",
+      "linkAccount": "绑定你的 Telegram 账号",
+      "sendCodeTo": "在 Telegram 中向 <link>{{target}}</link> 发送以下验证码：",
+      "sendCodeToPlain": "在 Telegram 中向 {{target}} 发送以下验证码：",
+      "yourBot": "你的机器人",
+      "waitingVerification": "等待验证中…",
+      "codeShownEarlier": "首次连接时已显示验证码。请断开后重新连接以生成新验证码。",
+      "botTokenLabel": "机器人 Token",
+      "botTokenPlaceholder": "来自 @BotFather 的机器人 Token"
+    },
+    "telegramUser": {
+      "fallbackName": "Telegram 用户",
+      "disconnectFailedFallback": "断开 Telegram 用户账号失败。"
+    },
+    "wechat": {
+      "title": "WeChat",
+      "guardianLinked": "你的微信账号已关联为守护者。"
+    },
+    "discord": {
+      "title": "Discord",
+      "guardianLinked": "你的 Discord 账号已绑定为守护者。",
+      "botTokenLabel": "机器人 Token",
+      "botTokenPlaceholder": "在此粘贴你的机器人 Token",
+      "routing": {
+        "title": "频道路由",
+        "channelHeader": "频道",
+        "agentHeader": "Agent",
+        "main": "main（默认）",
+        "noBindings": "暂无频道绑定。在 Discord 目标频道里运行 /channel agent set <name>。",
+        "loading": "加载中…",
+        "save": "保存",
+        "clear": "清除",
+        "saving": "保存中…",
+        "saved": "已保存",
+        "saveError": "保存失败：",
+        "remove": "删除绑定",
+        "removing": "删除中…",
+        "removeConfirm": "确定删除此频道的绑定？可信发件人将回落到 main。",
+        "removeConfirmYes": "删除",
+        "removeConfirmNo": "取消",
+        "stale": "已保存，但列表可能已过期 — 请重新加载刷新。",
+        "addButton": "+ 新增绑定",
+        "addTitle": "新增 频道 → agent 绑定",
+        "addChannelPlaceholder": "选择 Discord 频道…",
+        "addAgentPlaceholder": "选择 agent…",
+        "addSubmit": "新增",
+        "adding": "新增中…",
+        "addCancel": "取消",
+        "addPickBoth": "请同时选择频道和 agent。",
+        "addAllBound": "所有可见频道都已绑定 — 请在上方编辑现有行进行修改。",
+        "addDiscordOffline": "Discord 未连接。请先在上方连接 bot 以填充列表。",
+        "suggestionsTitle": "应用建议",
+        "suggestionFromApp": "{{app}} 建议把某个 Discord 频道路由到"
+      }
+    },
+    "feishu": {
+      "title": "飞书",
+      "guardianLinked": "你的飞书账号已绑定为守护者。"
+    }
+  },
+  "favors": {
+    "payingApprovalRequest": "正在支付审批请求",
+    "decliningApprovalRequest": "正在拒绝审批请求",
+    "startingPackPurchase": "正在购买 favor 套餐"
+  },
+  "tailscale": {
+    "title": "Tailscale",
+    "daemonMode": "守护进程模式",
+    "status": {
+      "connected": "已连接",
+      "notConnected": "未连接",
+      "authenticating": "正在认证",
+      "notConfigured": "未配置"
+    },
+    "connectButton": "连接到 Tailscale",
+    "connectButtonOauth": "连接 Tailscale",
+    "authPrompt": "在浏览器中完成认证：",
+    "polling": "正在轮询完成状态…",
+    "infoLabels": {
+      "ip": "Tailscale IP",
+      "hostname": "主机名",
+      "fqdn": "FQDN"
+    },
+    "peersTable": {
+      "hostname": "主机名",
+      "fqdn": "FQDN",
+      "ip": "IP",
+      "os": "系统",
+      "status": "状态",
+      "thisDevice": "本机"
+    },
+    "noPeers": "未在 tailnet 中找到对端节点。",
+    "exitNode": {
+      "title": "出口节点",
+      "description": "允许 tailnet 中的其他设备通过此 Rome 服务器转发互联网流量。",
+      "updating": "正在更新出口节点设置…",
+      "updateFailed": "更新出口节点设置失败。"
+    },
+    "downloadBannerPrefix": "在 Docker 之外运行。请下载",
+    "downloadBannerLink": "Tailscale 桌面应用",
+    "downloadBannerSuffix": "以将本机连接到你的 tailnet。",
+    "devicesTable": {
+      "name": "名称",
+      "os": "系统",
+      "ipAddresses": "IP 地址",
+      "version": "版本",
+      "status": "状态",
+      "lastSeen": "最后在线"
+    },
+    "noDevices": "未在 tailnet 中找到设备。",
+    "modal": {
+      "title": "连接 Tailscale",
+      "introPrefix": "输入你的 Tailscale OAuth 客户端凭证。可在",
+      "introLink": "Tailscale 管理控制台",
+      "introSuffix": "中创建。客户端至少需要 <code>devices:read</code> 权限。",
+      "clientIdLabel": "Client ID",
+      "clientIdPlaceholder": "k1234567890abcdef",
+      "clientSecretLabel": "Client Secret",
+      "clientSecretPlaceholder": "tskey-client-...",
+      "cancel": "取消"
+    }
+  },
+  "publicAccess": {
+    "title": "访问控制",
+    "description": "控制谁可以访问仪表盘。守护者认证始终会保护仪表盘：你可以允许特定 Rome Cloud 账号登录，或将访问限制在你的 Tailscale 网络内。标记为公开或限制为 Rome Cloud 邮箱列表的应用仍可从公开主机访问。",
+    "savedFlash": "公开访问设置已保存",
+    "saveFailedFallback": "保存公开访问设置失败。",
+    "openFirst": "请先在本设备上打开 Rome 的 Tailscale URL，然后再开启访问控制。",
+    "handoffFailed": "无法将你的会话切换到 Tailscale URL。",
+    "toggleLabel": "限制为仅 Tailscale 主机访问",
+    "restrictedNote": "公网访问已受限。请继续使用 Tailscale 主机名访问仪表盘。",
+    "needTailscaleNote": "请先将本机连接到 Tailscale，然后再将仪表盘限制为仅 Tailscale 主机访问。",
+    "needHttpsNote": "请先完成 Tailscale HTTPS 设置，然后再开启访问控制。",
+    "openTailnetNote": "请先在本设备上打开 Rome 的 Tailscale URL，让 Rome 验证连接是否正常。",
+    "checkingSuffix": " 检查中…",
+    "publicEnabledNote": "已启用公网主机访问。仪表盘仍需登录，但公开应用和 Rome Cloud 邮箱访问应用除外。",
+    "dashboardEmails": {
+      "title": "允许的邮箱",
+      "description": "这些账号可以登录完整 Web 仪表盘。",
+      "accountCount_one": "{{count}} 个账号",
+      "accountCount_other": "{{count}} 个账号",
+      "inputLabel": "添加邮箱地址",
+      "placeholder": "name@example.com",
+      "add": "添加",
+      "help": "按回车添加。粘贴列表时会按逗号、空格或换行自动拆分。",
+      "empty": "还没有账号。添加账号之前，共享仪表盘访问保持关闭。",
+      "remove": "移除 {{email}}",
+      "invalidEmails": "邮箱地址无效：{{emails}}",
+      "savedFlash": "允许的邮箱已保存",
+      "saveFailedFallback": "保存允许的邮箱失败。"
+    }
+  },
+  "aiTools": {
+    "title": "AI 工具",
+    "description": "使用你现有的订阅来驱动智能体。",
+    "refresh": "刷新",
+    "refreshing": "正在刷新…",
+    "refreshFailed": "无法刷新 AI 工具，请重试。",
+    "providers": {
+      "claudeCode": {
+        "name": "Claude"
+      },
+      "codex": {
+        "name": "ChatGPT"
+      },
+      "geminiCli": {
+        "name": "Gemini"
+      },
+      "grok": {
+        "name": "Grok"
+      }
+    },
+    "status": {
+      "connected": "已连接",
+      "notConnected": "未连接",
+      "needsReauth": "需要重新登录",
+      "apiKeyActive": "API 密钥生效中",
+      "apiKeyNeedsUpdate": "API 密钥需要更新",
+      "comingSoon": "即将推出",
+      "signedInWith": "已通过 <1>{{method}}</1> 登录",
+      "signedIn": "已登录",
+      "accountType": "账号类型：<1>{{type}}</1>"
+    },
+    "authSource": {
+      "environmentApiKey": "运行环境中的 API 密钥"
+    },
+    "usage": {
+      "fiveHour": "5 小时已用",
+      "sevenDay": "7 天已用",
+      "resetsIn": "<1>{{time}}</1> 后重置"
+    },
+    "logIn": "登录",
+    "logOut": "登出",
+    "loggingOut": "正在退出…",
+    "codexLogout": {
+      "title": "退出 ChatGPT 登录？",
+      "description": "Rome 将在此服务器上退出你的 ChatGPT 账户。你可以随时重新登录。",
+      "failed": "退出 ChatGPT 登录失败，请重试。"
+    },
+    "claudeLogout": {
+      "title": "退出 Claude 登录？",
+      "description": "Rome 将在此服务器上退出你的 Claude 账户。你可以随时重新登录。",
+      "failed": "退出 Claude 登录失败，请重试。"
+    },
+    "methods": {
+      "browser": "浏览器",
+      "terminal": "终端",
+      "deviceCode": "设备码"
+    },
+    "otherProviders": {
+      "title": "其他 API 提供方",
+      "experimental": "实验性",
+      "apiKey": "API 密钥",
+      "apiProvidersTooltip": "MiniMax、DeepSeek、Kimi、Z.ai 等",
+      "changeProvider": "更换",
+      "dialogDescription": "为 Claude 会话使用 Anthropic 兼容的 API 提供方。移除前，它的优先级高于你的 Claude 账号。",
+      "providerLabel": "提供方",
+      "providerPlaceholder": "选择提供方",
+      "apiKeyLabel": "API 密钥",
+      "apiKeyPlaceholderReplace": "输入新密钥以替换已保存的密钥",
+      "apiKeyPlaceholderNew": "粘贴 API 密钥",
+      "saveKey": "保存密钥",
+      "saveConfiguration": "保存配置",
+      "envHint": "{{envVar}} 将发送至 {{baseUrl}} 用于 Anthropic 兼容的 Claude 会话。",
+      "needsApiKeyUpdate": "保存的 {{providerName}} API 密钥已被拒绝。保存新密钥即可重新连接该提供方。",
+      "saveFailedFallback": "保存提供方密钥失败。",
+      "removeFailedFallback": "移除提供方密钥失败。",
+      "removeConfirm": {
+        "title": "移除 {{providerName}} API 密钥？",
+        "description": "Rome 将永久删除已保存的 API 密钥。Claude 会话将停止使用 {{providerName}}。若要再次使用，你需要添加新密钥。"
+      },
+      "custom": {
+        "providerName": "自定义",
+        "title": "自定义环境变量",
+        "inputModeLabel": "环境变量输入方式",
+        "jsonMode": "粘贴 JSON",
+        "fieldsMode": "Key / Value",
+        "jsonLabel": "自定义环境变量 JSON",
+        "jsonPlaceholder": "{\n  \"env\": {\n    \"ANTHROPIC_AUTH_TOKEN\": \"...\",\n    \"ANTHROPIC_BASE_URL\": \"https://...\"\n  }\n}",
+        "emptyFields": "还没有环境变量。",
+        "keyAriaLabel": "第 {{index}} 个环境变量名称",
+        "valueAriaLabel": "第 {{index}} 个环境变量值",
+        "keyPlaceholder": "VARIABLE_NAME",
+        "valuePlaceholder": "值",
+        "addVariable": "添加变量",
+        "removeVariable": "删除 {{key}}",
+        "securityHint": "仅接受 Claude 和 Anthropic Provider 变量；所有值均按保存内容原样显示。",
+        "errors": {
+          "invalidJson": "请输入有效的 JSON。",
+          "envMustBeObject": "env 必须是一个 JSON 对象。",
+          "valuesMustBeStrings": "所有环境变量的值都必须是字符串。",
+          "emptyKey": "每个环境变量都必须填写名称。",
+          "emptyValue": "每个环境变量都必须填写值。",
+          "duplicateKey": "环境变量名称不能重复。",
+          "emptyEnv": "请至少添加一个环境变量。"
+        }
+      }
+    }
+  },
+  "sentinelLog": {
+    "title": "哨兵日志",
+    "empty": "暂无哨兵日志条目。",
+    "responsePrefix": "回复：{{response}}",
+    "markReviewed": "标记为已审阅",
+    "reviewed": "已审阅"
+  },
+  "advanced": {
+    "title": "高级设置",
+    "presentationMode": {
+      "title": "演示模式",
+      "description": "所有聊天均以主助手身份呈现——隐藏固定代理的名称、头像和输入框标签，让录屏和演示看起来与普通对话无异。仅影响显示，且仅对当前浏览器生效。",
+      "toggleLabel": "在聊天中隐藏代理身份"
+    },
+    "developerSettings": {
+      "title": "开发者设置"
+    },
+    "fable": {
+      "title": "Fable",
+      "description": "Claude 可用时，优先使用 Fable 处理 large 模型请求。",
+      "toggleLabel": "将 large 模型路由到 Fable"
+    },
+    "modelSelector": {
+      "title": "模型选择器",
+      "toggleLabel": "在聊天中启用模型选择器"
+    },
+    "impersonation": {
+      "title": "身份模拟",
+      "toggleLabel": "在聊天中启用身份模拟"
+    },
+    "aiToolUsage": {
+      "title": "AI 工具用量",
+      "description": "在 AI 工具设置页显示 Claude 和 ChatGPT 的用量窗口。",
+      "toggleLabel": "显示 Claude 和 ChatGPT 用量"
+    },
+    "relayHealth": {
+      "title": "Webhook 中继",
+      "loading": "正在检查中继状态…",
+      "loadFailed": "加载中继状态失败。",
+      "status": {
+        "connected": "已连接",
+        "notConnected": "未连接",
+        "notConfigured": "未配置",
+        "reconnecting": "正在重连",
+        "retrying": "正在重试投递",
+        "blocked": "投递已阻塞"
+      },
+      "notConfiguredHint": "未存储中继凭据，Webhook 不会被排空到本实例。",
+      "depositUrl": "投递 URL",
+      "drainUrl": "排空 URL",
+      "targetApp": "目标应用",
+      "noConsumer": "没有已安装的应用消费中继 Webhook",
+      "backlog": "积压事件",
+      "nextAttempt": "下次尝试",
+      "failure": "最近失败",
+      "resume": "立即重试",
+      "resuming": "正在重试…",
+      "resumed": "已恢复投递重试。",
+      "resumeFailed": "无法恢复投递重试。",
+      "copy": "复制",
+      "copied": "已复制"
+    },
+    "diagnosis": {
+      "title": "系统诊断",
+      "loading": "正在运行诊断…",
+      "loadFailed": "加载诊断信息失败。",
+      "refresh": "刷新",
+      "reconnect": "重新连接",
+      "reconnecting": "正在重新连接…",
+      "reconnectFailed": "无法发起重新连接，请重试。",
+      "status": {
+        "ok": "健康",
+        "degraded": "降级"
+      },
+      "version": "版本",
+      "unversioned": "未版本化构建",
+      "commit": "提交",
+      "builtAt": "构建时间",
+      "uptime": "运行时长",
+      "enrollment": "实例注册",
+      "account": "账户 ID",
+      "auth": {
+        "ok": "已注册",
+        "no_token": "未注册",
+        "unconfigured": "未配置 Rome Cloud",
+        "unreachable": "无法连接 Rome Cloud",
+        "revoked": "令牌已吊销",
+        "unknown": "令牌被拒绝"
+      },
+      "database": "数据库",
+      "dbReachable": "可访问",
+      "dbUnreachable": "无法访问",
+      "relayDepositUrl": "Relay deposit URL",
+      "relayDepositConfigured": "已配置",
+      "relayDepositMissing": "缺失",
+      "relayNotConfigured": "Relay 未配置",
+      "channels": "通道",
+      "noChannels": "无活动通道",
+      "apps": "应用",
+      "appsHealthy": "已加载 {{count}} 个，无失败",
+      "appsUnhealthy": "已加载 {{count}} 个；失败：{{ids}}"
+    },
+    "uptimePrefix": "已运行 {{uptime}}",
+    "buildPrefix": "版本 {{sha}} · 构建于 {{builtAt}}"
+  },
+  "system": {
+    "title": "系统",
+    "currentVersion": "当前版本",
+    "versionUnknown": "未知 — 源码构建或未标版本的镜像",
+    "builtAt": "构建于 {{builtAt}}",
+    "buildInfoFailed": "无法加载版本信息。",
+    "retry": "重试",
+    "upgradedNotice": "Rome 自上次启动以来已从 {{from}} 升级到 {{to}}。",
+    "checkButton": "检查更新",
+    "checking": "检查中…",
+    "upToDate": "已是最新 — {{version}} 为最新版本。",
+    "upgradeAvailable": "新版本 {{version}} 可用。",
+    "upgradeButton": "升级到 {{version}}",
+    "notManaged": "此实例未由 Rome Cloud 托管，无法从仪表盘发起升级。",
+    "upgradeUnsupported": "此构建没有发行版本号，不支持升级。开发与测试构建通过重建实例来更新。",
+    "unresolvable": "无法确定最新版本 — 发行注册表不可达，请稍后再试。",
+    "checkFailed": "检查更新失败：{{message}}",
+    "checkFailedFallback": "检查更新失败。",
+    "confirmTitle": "将 Rome 升级到 {{version}}？",
+    "confirmDescription": "Rome 将重启以应用升级。预计有几分钟的停机时间，进行中的工作会被中断。Rome 恢复后此页面会自动重新连接。",
+    "confirmButton": "升级并重启",
+    "targetChanged": "期间发布了更新的版本（{{version}}）— 请再次确认以升级到该版本。",
+    "upgradeFailed": "升级请求失败：{{message}}",
+    "upgradeFailedFallback": "升级请求失败。",
+    "restartingTitle": "Rome 正在重启",
+    "restartingBody": "正在升级到 {{version}}。Rome 恢复在线后此页面将自动刷新。",
+    "restartTimeoutTitle": "升级耗时超出预期",
+    "restartTimeoutBody": "Rome 在 {{minutes}} 分钟后仍未以 {{version}} 版本恢复。升级可能仍在进行，也可能已失败。",
+    "restartTimeoutAction": "前往 Rome Cloud 查看实例状态。"
+  },
+  "sentinel": {
+    "title": "哨兵设置",
+    "intervalLabel": "审阅间隔（分钟）",
+    "intervalHelp": "提醒守护者审阅哨兵日志条目的频率。"
+  },
+  "easterEgg": {
+    "closeLabel": "关闭高级彩蛋",
+    "console": "控制台",
+    "artLabel": "高级彩蛋",
+    "estLine": "Est · MMXXVI",
+    "tagline": "Svmmvs · Civitatis"
+  }
+}

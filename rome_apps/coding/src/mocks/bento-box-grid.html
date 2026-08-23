@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lumen Analytics — Workspace</title>
+<style>
+  /* ============ DESIGN TOKENS ============ */
+  :root {
+    /* Color — neutral base + brand accent (from CSV) */
+    --page-bg: #F5F5F7;
+    --card-bg: #FFFFFF;
+    --card-bg-2: #FAFAFC;
+    --ink: #1A1A1F;
+    --ink-soft: #50505A;
+    --ink-faint: #8A8A95;
+    --line: #ECECEF;
+    --line-strong: #E1E1E6;
+
+    --brand: #4F46E5;
+    --brand-soft: #EEF0FF;
+    --brand-ink: #3730A3;
+    --accent: #EA580C;
+    --accent-soft: #FFF1E9;
+    --teal: #0D9488;
+    --teal-soft: #E6F6F4;
+    --pink: #DB2777;
+    --pink-soft: #FCE8F1;
+
+    --pos: #16A34A;
+    --neg: #DC2626;
+
+    /* Radius */
+    --card-radius: 24px;
+    --radius-sm: 14px;
+    --radius-pill: 999px;
+
+    /* Shadow */
+    --shadow: 0 4px 6px rgba(0,0,0,0.05);
+    --shadow-md: 0 10px 24px rgba(20,20,40,0.07);
+    --shadow-lg: 0 20px 48px rgba(20,20,40,0.12);
+    --shadow-focus: 0 0 0 3px rgba(79,70,229,0.35);
+
+    /* Spacing */
+    --grid-gap: 16px;
+    --pad: 24px;
+    --pad-sm: 16px;
+
+    /* Typography scale */
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --fs-display: clamp(1.75rem, 1.2rem + 2.4vw, 2.75rem);
+    --fs-h2: 1.0625rem;
+    --fs-body: 0.9375rem;
+    --fs-small: 0.8125rem;
+    --fs-micro: 0.6875rem;
+
+    /* Motion */
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --t-fast: 140ms;
+    --t-med: 260ms;
+    --hover-scale: 1.02;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font);
+    background:
+      radial-gradient(1200px 600px at 85% -10%, #ECECF5 0%, transparent 60%),
+      var(--page-bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    font-size: var(--fs-body);
+    line-height: 1.5;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+  .shell {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: clamp(16px, 2vw, 28px);
+  }
+
+  /* ============ TOP NAV ============ */
+  header.topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--line);
+    border-radius: var(--card-radius);
+    padding: 12px 16px;
+    box-shadow: var(--shadow);
+    margin-bottom: var(--grid-gap);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    font-size: 1.0625rem;
+  }
+  .brand .logo {
+    width: 36px; height: 36px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, var(--brand), #7C6CF6);
+    display: grid; place-items: center;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(79,70,229,0.4);
+    flex: none;
+  }
+  nav.mainnav {
+    display: flex;
+    gap: 4px;
+    margin-left: 10px;
+  }
+  nav.mainnav a {
+    padding: 8px 14px;
+    border-radius: var(--radius-pill);
+    color: var(--ink-soft);
+    font-size: var(--fs-small);
+    font-weight: 500;
+    transition: background var(--t-fast), color var(--t-fast);
+  }
+  nav.mainnav a:hover { background: var(--page-bg); color: var(--ink); }
+  nav.mainnav a[aria-current="page"] {
+    background: var(--brand-soft);
+    color: var(--brand-ink);
+    font-weight: 600;
+  }
+  nav.mainnav a:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+
+  .topbar .spacer { flex: 1; }
+
+  .search {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--page-bg);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    padding: 8px 14px;
+    color: var(--ink-faint);
+    font-size: var(--fs-small);
+    min-width: 0;
+  }
+  .search input {
+    border: none; background: none; outline: none;
+    font: inherit; color: var(--ink);
+    width: 130px; min-width: 0;
+  }
+  .search input::placeholder { color: var(--ink-faint); }
+  .icon-btn {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    color: var(--ink-soft);
+    background: var(--page-bg);
+    border: 1px solid var(--line);
+    transition: transform var(--t-fast) var(--ease), color var(--t-fast), background var(--t-fast);
+    flex: none;
+    position: relative;
+  }
+  .icon-btn:hover { color: var(--brand); background: var(--brand-soft); }
+  .icon-btn:active { transform: scale(0.94); }
+  .icon-btn:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+  .icon-btn .dot {
+    position: absolute; top: 8px; right: 9px;
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--card-bg);
+  }
+  .avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--pink));
+    display: grid; place-items: center;
+    color: #fff; font-weight: 700; font-size: var(--fs-small);
+    flex: none;
+  }
+
+  /* ============ PAGE HEADER ============ */
+  .pagehead {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 6px 4px 18px;
+  }
+  .pagehead h1 {
+    font-size: var(--fs-display);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.04;
+    margin: 0 0 4px;
+  }
+  .pagehead p { margin: 0; color: var(--ink-soft); font-size: var(--fs-small); }
+  .head-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .seg {
+    display: inline-flex;
+    background: var(--card-bg);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    padding: 3px;
+    box-shadow: var(--shadow);
+  }
+  .seg button {
+    padding: 7px 14px;
+    border-radius: var(--radius-pill);
+    font-size: var(--fs-small);
+    font-weight: 500;
+    color: var(--ink-soft);
+    transition: background var(--t-fast), color var(--t-fast);
+  }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+  .seg button:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--brand);
+    color: #fff;
+    font-weight: 600;
+    font-size: var(--fs-small);
+    padding: 10px 18px;
+    border-radius: var(--radius-pill);
+    box-shadow: 0 6px 16px rgba(79,70,229,0.35);
+    transition: transform var(--t-fast) var(--ease), box-shadow var(--t-fast), filter var(--t-fast);
+  }
+  .btn-primary:hover { filter: brightness(1.06); box-shadow: 0 10px 24px rgba(79,70,229,0.45); }
+  .btn-primary:active { transform: scale(0.97); }
+  .btn-primary:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+
+  /* ============ BENTO GRID ============ */
+  .bento {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-rows: 188px;
+    gap: var(--grid-gap);
+  }
+  .tile {
+    background: var(--card-bg);
+    border: 1px solid var(--line);
+    border-radius: var(--card-radius);
+    padding: var(--pad);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    transition: transform var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease), border-color var(--t-med);
+  }
+  .tile:hover {
+    transform: scale(var(--hover-scale));
+    box-shadow: var(--shadow-lg);
+    border-color: var(--line-strong);
+    z-index: 2;
+  }
+  .tile:focus-within { box-shadow: var(--shadow-md); }
+
+  /* spans */
+  .span-2 { grid-column: span 2; }
+  .span-2x2 { grid-column: span 2; grid-row: span 2; }
+  .row-2 { grid-row: span 2; }
+
+  .tile-head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 12px;
+  }
+  .tile-head h2 {
+    font-size: var(--fs-h2);
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+  .tile-head .sub { font-size: var(--fs-small); color: var(--ink-faint); margin: 1px 0 0; }
+  .badge-ico {
+    width: 34px; height: 34px; border-radius: 10px;
+    display: grid; place-items: center; flex: none;
+  }
+  .bi-brand { background: var(--brand-soft); color: var(--brand); }
+  .bi-accent { background: var(--accent-soft); color: var(--accent); }
+  .bi-teal { background: var(--teal-soft); color: var(--teal); }
+  .bi-pink { background: var(--pink-soft); color: var(--pink); }
+  .tile-head .spacer { flex: 1; }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: var(--fs-micro);
+    font-weight: 700;
+    padding: 4px 9px;
+    border-radius: var(--radius-pill);
+    letter-spacing: 0.02em;
+  }
+  .pill.up { background: #E7F7ED; color: var(--pos); }
+  .pill.down { background: #FDECEC; color: var(--neg); }
+
+  /* KPI tiles */
+  .kpi .value {
+    font-size: 2.4rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin: auto 0 6px;
+  }
+  .kpi .label { font-size: var(--fs-small); color: var(--ink-faint); margin: 0; }
+  .spark { margin-top: auto; }
+
+  /* Big revenue tile (2x2) */
+  .hero-tile { background: linear-gradient(160deg, #1E1B4B 0%, #312E81 55%, #4338CA 100%); color: #fff; border: none; }
+  .hero-tile .tile-head h2 { color: #fff; }
+  .hero-tile .sub { color: rgba(255,255,255,0.6); }
+  .hero-tile .big {
+    font-size: clamp(2.2rem, 1.4rem + 3vw, 3.4rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin: 14px 0 4px;
+  }
+  .hero-tile .cap { color: rgba(255,255,255,0.7); font-size: var(--fs-small); }
+  .hero-tile .pill.up { background: rgba(255,255,255,0.16); color: #B9F7CC; }
+  .chart-wrap { margin-top: auto; }
+  .legend { display: flex; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-micro); color: rgba(255,255,255,0.78); }
+  .legend i { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
+
+  /* Donut tile */
+  .donut-row { display: flex; align-items: center; gap: 18px; margin-top: auto; }
+  .donut-legend { display: flex; flex-direction: column; gap: 9px; flex: 1; min-width: 0; }
+  .donut-legend .row { display: flex; align-items: center; gap: 8px; font-size: var(--fs-small); }
+  .donut-legend .row b { margin-left: auto; font-variant-numeric: tabular-nums; }
+  .donut-legend i { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+  /* Activity list (row-2) */
+  .feed { display: flex; flex-direction: column; gap: 2px; margin: 4px -6px 0; overflow: hidden; }
+  .feed-item {
+    display: flex; align-items: center; gap: 11px;
+    padding: 9px 6px;
+    border-radius: 12px;
+    transition: background var(--t-fast);
+  }
+  .feed-item:hover { background: var(--card-bg-2); }
+  .feed-item .fa {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: grid; place-items: center; flex: none;
+    font-weight: 700; font-size: var(--fs-small); color: #fff;
+  }
+  .feed-item .ft { min-width: 0; flex: 1; }
+  .feed-item .ft p { margin: 0; font-size: var(--fs-small); line-height: 1.35; }
+  .feed-item .ft .meta { color: var(--ink-faint); font-size: var(--fs-micro); }
+  .feed-item .ft b { font-weight: 650; }
+
+  /* progress goals */
+  .goal { margin-top: 14px; }
+  .goal:first-of-type { margin-top: auto; }
+  .goal .gl { display: flex; justify-content: space-between; font-size: var(--fs-small); margin-bottom: 6px; }
+  .goal .gl span:last-child { color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+  .track { height: 8px; border-radius: var(--radius-pill); background: var(--page-bg); overflow: hidden; }
+  .track > i { display: block; height: 100%; border-radius: var(--radius-pill); }
+
+  /* status tile */
+  .status .ring {
+    margin: auto auto 6px;
+    position: relative;
+    width: 96px; height: 96px;
+  }
+  .status .ring p {
+    position: absolute; inset: 0;
+    display: grid; place-content: center; text-align: center;
+    margin: 0;
+  }
+  .status .ring .num { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+  .status .ring .nl { font-size: var(--fs-micro); color: var(--ink-faint); }
+  .status .foot { text-align: center; font-size: var(--fs-small); color: var(--ink-soft); }
+
+  /* table tile (span-2) */
+  .mini-table { width: 100%; border-collapse: collapse; font-size: var(--fs-small); margin-top: 6px; }
+  .mini-table th {
+    text-align: left; font-weight: 600; color: var(--ink-faint);
+    font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 0 0 8px;
+  }
+  .mini-table td { padding: 8px 0; border-top: 1px solid var(--line); }
+  .mini-table tr:hover td { color: var(--brand-ink); }
+  .mini-table td.r { text-align: right; font-variant-numeric: tabular-nums; }
+  .chiprow { display: inline-flex; align-items: center; gap: 8px; }
+  .swatch { width: 26px; height: 26px; border-radius: 8px; flex: none; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: var(--fs-micro); }
+  .tag { font-size: var(--fs-micro); font-weight: 700; padding: 3px 8px; border-radius: var(--radius-pill); }
+  .tag.live { background: #E7F7ED; color: var(--pos); }
+  .tag.paused { background: #FFF4E5; color: #B45309; }
+
+  /* bar chart svg */
+  .bars rect { transition: opacity var(--t-fast); }
+  .tile:hover .bars rect { opacity: 1; }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 920px) {
+    .bento { grid-template-columns: repeat(2, 1fr); }
+    .span-2, .span-2x2 { grid-column: span 2; }
+    .span-2x2 { grid-row: span 2; }
+    nav.mainnav { display: none; }
+  }
+  @media (max-width: 560px) {
+    .bento { grid-template-columns: 1fr; grid-auto-rows: auto; }
+    .tile { min-height: 168px; }
+    .span-2, .span-2x2, .row-2 { grid-column: span 1; grid-row: auto; }
+    .search input { width: 90px; }
+    .pagehead h1 { font-size: 1.9rem; }
+    .hero-tile { min-height: 280px; }
+    .tile:hover { transform: none; }
+  }
+  @media (max-width: 420px) {
+    .search { display: none; }
+  }
+
+  /* ============ REDUCED MOTION ============ */
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+    .tile:hover { transform: none; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- TOP NAV -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h6v8H3zM15 3h6v18h-6zM3 3h6v6H3zM15 13h-2"/></svg>
+      </span>
+      Lumen
+    </div>
+    <nav class="mainnav" aria-label="Primary">
+      <a href="#" aria-current="page">Overview</a>
+      <a href="#">Reports</a>
+      <a href="#">Audiences</a>
+      <a href="#">Automations</a>
+    </nav>
+    <span class="spacer"></span>
+    <label class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="search" placeholder="Search metrics…" aria-label="Search metrics">
+    </label>
+    <button class="icon-btn" aria-label="Notifications">
+      <span class="dot" aria-hidden="true"></span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+    </button>
+    <div class="avatar" aria-label="Account: Maya Chen" title="Maya Chen">MC</div>
+  </header>
+
+  <!-- PAGE HEADER -->
+  <div class="pagehead">
+    <div>
+      <h1>Good morning, Maya</h1>
+      <p>Here is how your workspace is performing this week.</p>
+    </div>
+    <div class="head-actions">
+      <div class="seg" role="group" aria-label="Time range">
+        <button type="button">Day</button>
+        <button type="button" aria-pressed="true">Week</button>
+        <button type="button">Month</button>
+      </div>
+      <button class="btn-primary" type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        New report
+      </button>
+    </div>
+  </div>
+
+  <!-- BENTO GRID -->
+  <main class="bento" aria-label="Workspace metrics">
+
+    <!-- HERO REVENUE 2x2 -->
+    <section class="tile span-2x2 hero-tile" tabindex="0">
+      <div class="tile-head">
+        <div>
+          <h2>Total revenue</h2>
+          <p class="sub">May 1 – 30, 2026</p>
+        </div>
+        <span class="spacer"></span>
+        <span class="pill up"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 15 7-7 7 7"/></svg>18.2%</span>
+      </div>
+      <p class="big">$284,910</p>
+      <p class="cap">vs $241,070 in the previous period</p>
+
+      <div class="chart-wrap">
+        <svg viewBox="0 0 360 120" width="100%" height="120" preserveAspectRatio="none" role="img" aria-label="Revenue trend line chart, steadily rising over 30 days">
+          <defs>
+            <linearGradient id="fillA" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#A5B4FC" stop-opacity="0.45"/>
+              <stop offset="100%" stop-color="#A5B4FC" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M0 96 L40 88 L80 92 L120 70 L160 76 L200 52 L240 58 L280 36 L320 30 L360 14 L360 120 L0 120 Z" fill="url(#fillA)"/>
+          <path d="M0 96 L40 88 L80 92 L120 70 L160 76 L200 52 L240 58 L280 36 L320 30 L360 14" fill="none" stroke="#C7D2FE" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M0 108 L40 104 L80 106 L120 98 L160 100 L200 90 L240 92 L280 84 L320 82 L360 76" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="2" stroke-dasharray="4 5" stroke-linecap="round"/>
+        </svg>
+        <div class="legend">
+          <span><i style="background:#C7D2FE"></i> Net revenue</span>
+          <span><i style="background:rgba(255,255,255,0.4)"></i> Forecast</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- KPI: active users -->
+    <section class="tile kpi" tabindex="0">
+      <div class="tile-head">
+        <span class="badge-ico bi-brand" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg></span>
+        <span class="spacer"></span>
+        <span class="pill up">+6.4%</span>
+      </div>
+      <p class="value">12,847</p>
+      <p class="label">Active users</p>
+      <svg class="spark" viewBox="0 0 120 28" width="100%" height="28" preserveAspectRatio="none" aria-hidden="true"><path d="M0 22 L20 18 L40 20 L60 12 L80 15 L100 7 L120 9" fill="none" stroke="#4F46E5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </section>
+
+    <!-- KPI: conversion -->
+    <section class="tile kpi" tabindex="0">
+      <div class="tile-head">
+        <span class="badge-ico bi-teal" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg></span>
+        <span class="spacer"></span>
+        <span class="pill up">+1.1%</span>
+      </div>
+      <p class="value">4.92%</p>
+      <p class="label">Conversion rate</p>
+      <svg class="spark" viewBox="0 0 120 28" width="100%" height="28" preserveAspectRatio="none" aria-hidden="true"><path d="M0 20 L20 22 L40 14 L60 17 L80 11 L100 13 L120 6" fill="none" stroke="#0D9488" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </section>
+
+    <!-- TRAFFIC BAR CHART (span 2) -->
+    <section class="tile span-2" tabindex="0">
+      <div class="tile-head">
+        <span class="badge-ico bi-accent" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6" rx="1"/><rect x="12" y="7" width="3" height="10" rx="1"/><rect x="17" y="13" width="3" height="4" rx="1"/></svg></span>
+        <div>
+          <h2>Sessions by day</h2>
+          <p class="sub">Peak on Thursday</p>
+        </div>
+        <span class="spacer"></span>
+        <span class="pill up">+9.7%</span>
+      </div>
+      <svg class="bars" viewBox="0 0 340 90" width="100%" height="90" preserveAspectRatio="none" role="img" aria-label="Sessions by day bar chart, peaking on Thursday">
+        <g fill="#FDBA8C">
+          <rect x="4"   y="40" width="36" height="50" rx="6" opacity="0.85"/>
+          <rect x="52"  y="28" width="36" height="62" rx="6" opacity="0.85"/>
+          <rect x="100" y="48" width="36" height="42" rx="6" opacity="0.85"/>
+          <rect x="148" y="14" width="36" height="76" rx="6" fill="#EA580C" opacity="1"/>
+          <rect x="196" y="34" width="36" height="56" rx="6" opacity="0.85"/>
+          <rect x="244" y="56" width="36" height="34" rx="6" opacity="0.85"/>
+          <rect x="292" y="62" width="36" height="28" rx="6" opacity="0.85"/>
+        </g>
+      </svg>
+    </section>
+
+    <!-- TRAFFIC SOURCES DONUT -->
+    <section class="tile span-2 row-2" tabindex="0">
+      <div class="tile-head">
+        <span class="badge-ico bi-pink" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 12V2a10 10 0 0 1 10 10z"/></svg></span>
+        <div>
+          <h2>Traffic sources</h2>
+          <p class="sub">Where visitors came from</p>
+        </div>
+      </div>
+      <div class="donut-row">
+        <svg width="124" height="124" viewBox="0 0 42 42" role="img" aria-label="Traffic source breakdown: Organic 46 percent, Paid 27 percent, Referral 17 percent, Social 10 percent" style="flex:none">
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="#F0EEF9" stroke-width="6"/>
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="#4F46E5" stroke-width="6" stroke-dasharray="46 54" stroke-dashoffset="25" stroke-linecap="round"/>
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="#0D9488" stroke-width="6" stroke-dasharray="27 73" stroke-dashoffset="79" stroke-linecap="round"/>
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="#EA580C" stroke-width="6" stroke-dasharray="17 83" stroke-dashoffset="52" stroke-linecap="round"/>
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="#DB2777" stroke-width="6" stroke-dasharray="10 90" stroke-dashoffset="35" stroke-linecap="round"/>
+          <text x="21" y="20" text-anchor="middle" font-size="6.5" font-weight="700" fill="#1A1A1F">68.4k</text>
+          <text x="21" y="26.5" text-anchor="middle" font-size="2.8" fill="#8A8A95">visits</text>
+        </svg>
+        <div class="donut-legend">
+          <div class="row"><i style="background:#4F46E5"></i> Organic <b>46%</b></div>
+          <div class="row"><i style="background:#0D9488"></i> Paid <b>27%</b></div>
+          <div class="row"><i style="background:#EA580C"></i> Referral <b>17%</b></div>
+          <div class="row"><i style="background:#DB2777"></i> Social <b>10%</b></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ACTIVITY FEED (row 2) -->
+    <section class="tile row-2" tabindex="0">
+      <div class="tile-head">
+        <h2>Live activity</h2>
+        <span class="spacer"></span>
+        <span class="pill up" style="background:var(--brand-soft);color:var(--brand-ink)">Now</span>
+      </div>
+      <div class="feed">
+        <div class="feed-item">
+          <span class="fa" style="background:var(--brand)" aria-hidden="true">JD</span>
+          <div class="ft"><p><b>Jordan D.</b> upgraded to Scale</p><p class="meta">2 min ago</p></div>
+        </div>
+        <div class="feed-item">
+          <span class="fa" style="background:var(--teal)" aria-hidden="true">SR</span>
+          <div class="ft"><p><b>Sana R.</b> exported a report</p><p class="meta">14 min ago</p></div>
+        </div>
+        <div class="feed-item">
+          <span class="fa" style="background:var(--accent)" aria-hidden="true">KP</span>
+          <div class="ft"><p><b>Kai P.</b> invited 3 teammates</p><p class="meta">38 min ago</p></div>
+        </div>
+        <div class="feed-item">
+          <span class="fa" style="background:var(--pink)" aria-hidden="true">LM</span>
+          <div class="ft"><p><b>Lin M.</b> connected Stripe</p><p class="meta">1 hr ago</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GOALS / PROGRESS -->
+    <section class="tile" tabindex="0">
+      <div class="tile-head">
+        <h2>Monthly goals</h2>
+      </div>
+      <div class="goal">
+        <div class="gl"><span>Revenue target</span><span>89%</span></div>
+        <div class="track"><i style="width:89%;background:linear-gradient(90deg,#4F46E5,#7C6CF6)"></i></div>
+      </div>
+      <div class="goal">
+        <div class="gl"><span>New signups</span><span>64%</span></div>
+        <div class="track"><i style="width:64%;background:linear-gradient(90deg,#0D9488,#2DD4BF)"></i></div>
+      </div>
+      <div class="goal">
+        <div class="gl"><span>Retention</span><span>97%</span></div>
+        <div class="track"><i style="width:97%;background:linear-gradient(90deg,#EA580C,#FB923C)"></i></div>
+      </div>
+    </section>
+
+    <!-- HEALTH STATUS RING -->
+    <section class="tile status" tabindex="0">
+      <div class="tile-head">
+        <h2>System health</h2>
+      </div>
+      <div class="ring">
+        <svg width="96" height="96" viewBox="0 0 42 42" aria-hidden="true">
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="#E7F7ED" stroke-width="5"/>
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="#16A34A" stroke-width="5" stroke-dasharray="99 100" stroke-dashoffset="25" stroke-linecap="round"/>
+        </svg>
+        <p><span class="num">99.9%</span><span class="nl">uptime</span></p>
+      </div>
+      <p class="foot">All systems operational</p>
+    </section>
+
+    <!-- TOP CAMPAIGNS TABLE (span 2) -->
+    <section class="tile span-2" tabindex="0">
+      <div class="tile-head">
+        <h2>Top campaigns</h2>
+        <span class="spacer"></span>
+        <a href="#" style="font-size:var(--fs-small);font-weight:600;color:var(--brand)">View all</a>
+      </div>
+      <table class="mini-table">
+        <thead>
+          <tr><th>Campaign</th><th>Status</th><th class="r">Revenue</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="chiprow"><span class="swatch" style="background:var(--brand)" aria-hidden="true">SP</span> Spring Launch</span></td>
+            <td><span class="tag live">Live</span></td>
+            <td class="r">$94,210</td>
+          </tr>
+          <tr>
+            <td><span class="chiprow"><span class="swatch" style="background:var(--accent)" aria-hidden="true">RF</span> Referral Boost</span></td>
+            <td><span class="tag live">Live</span></td>
+            <td class="r">$61,540</td>
+          </tr>
+          <tr>
+            <td><span class="chiprow"><span class="swatch" style="background:var(--teal)" aria-hidden="true">WB</span> Webinar Series</span></td>
+            <td><span class="tag paused">Paused</span></td>
+            <td class="r">$38,902</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- AVG ORDER KPI -->
+    <section class="tile kpi" tabindex="0">
+      <div class="tile-head">
+        <span class="badge-ico bi-teal" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>
+        <span class="spacer"></span>
+        <span class="pill down"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 9 7 7 7-7"/></svg>2.3%</span>
+      </div>
+      <p class="value">$72.40</p>
+      <p class="label">Avg. order value</p>
+      <svg class="spark" viewBox="0 0 120 28" width="100%" height="28" preserveAspectRatio="none" aria-hidden="true"><path d="M0 8 L20 12 L40 10 L60 16 L80 14 L100 19 L120 17" fill="none" stroke="#DC2626" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </section>
+
+    <!-- CHURN KPI -->
+    <section class="tile kpi" tabindex="0">
+      <div class="tile-head">
+        <span class="badge-ico bi-pink" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 4v8h8"/></svg></span>
+        <span class="spacer"></span>
+        <span class="pill up"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 15 7-7 7 7"/></svg>0.4%</span>
+      </div>
+      <p class="value">1.8%</p>
+      <p class="label">Monthly churn</p>
+      <svg class="spark" viewBox="0 0 120 28" width="100%" height="28" preserveAspectRatio="none" aria-hidden="true"><path d="M0 10 L20 9 L40 13 L60 11 L80 16 L100 18 L120 22" fill="none" stroke="#DB2777" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </section>
+
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aurum — Chronometer Atelier</title>
+<style>
+  /* ============ DESIGN TOKENS (3D & Hyperrealism) ============ */
+  :root {
+    /* Primary palette (from CSV) */
+    --navy: #001F3F;
+    --navy-deep: #00152b;
+    --forest: #228B22;
+    --burgundy: #800020;
+    --gold: #FFD700;
+    --gold-soft: #f3cf5b;
+    --silver: #C0C0C0;
+
+    /* Surfaces — complex gradient bases */
+    --bg-0: #060a14;
+    --bg-1: #0b1426;
+    --surface: #111d33;
+    --surface-hi: #1a2942;
+    --ink: #eef3fb;
+    --ink-soft: #aebbd0;
+    --ink-dim: #6f7e96;
+    --line: rgba(192,192,192,0.16);
+
+    /* Metallic gradients */
+    --grad-gold: linear-gradient(135deg, #fff7d6 0%, #ffd700 28%, #b8860b 60%, #fff2bd 78%, #8a6a08 100%);
+    --grad-silver: linear-gradient(135deg, #ffffff 0%, #d8dde6 30%, #9aa3b2 55%, #ffffff 72%, #7d8694 100%);
+    --grad-navy-room: radial-gradient(120% 90% at 70% 12%, #1f3a63 0%, #0c1a33 45%, #050b18 100%);
+    --grad-burgundy: linear-gradient(135deg, #b3142f 0%, #800020 55%, #4a0012 100%);
+
+    /* Shadow depth (20-40% darker layered) */
+    --shadow-room: 0 2px 4px rgba(0,0,0,.4), 0 12px 28px rgba(0,0,0,.5), 0 40px 80px rgba(0,0,0,.55);
+    --shadow-raise: 0 1px 0 rgba(255,255,255,.05) inset, 0 2px 6px rgba(0,0,0,.45), 0 18px 40px rgba(0,0,0,.5);
+    --shadow-press: 0 1px 2px rgba(0,0,0,.6) inset, 0 1px 1px rgba(0,0,0,.4);
+    --glow-gold: 0 0 0 1px rgba(255,215,0,.4), 0 8px 30px rgba(255,215,0,.28);
+
+    /* Radius */
+    --r-sm: 10px;
+    --r-md: 18px;
+    --r-lg: 28px;
+    --r-pill: 999px;
+
+    /* Spacing */
+    --s-1: 6px; --s-2: 10px; --s-3: 16px; --s-4: 24px; --s-5: 36px; --s-6: 56px;
+
+    /* Type scale */
+    --t-display: clamp(2.6rem, 6vw, 5rem);
+    --t-h2: clamp(1.5rem, 3vw, 2.2rem);
+    --t-h3: 1.15rem;
+    --t-body: 1rem;
+    --t-meta: 0.8rem;
+    --font-serif: "Hoefler Text", "Georgia", "Times New Roman", serif;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+
+    /* Motion (3D smooth 300-400ms) */
+    --perspective: 1000px;
+    --dur: 360ms;
+    --ease: cubic-bezier(.22,.61,.36,1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--font-sans);
+    color: var(--ink);
+    background:
+      radial-gradient(80% 60% at 15% -10%, rgba(34,139,34,.12), transparent 60%),
+      radial-gradient(70% 60% at 95% 0%, rgba(128,0,32,.18), transparent 55%),
+      var(--grad-navy-room);
+    background-attachment: fixed;
+    min-height: 100vh;
+    line-height: 1.5;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  .metal-text {
+    background: var(--grad-gold);
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,.4));
+  }
+
+  /* ============ HEADER / NAV ============ */
+  header.site {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--s-3);
+    padding: var(--s-3) clamp(var(--s-3), 4vw, var(--s-6));
+    background: linear-gradient(180deg, rgba(6,10,20,.92), rgba(6,10,20,.55));
+    backdrop-filter: blur(14px) saturate(140%);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: var(--s-2); font-family: var(--font-serif); }
+  .brand .mark {
+    width: 38px; height: 38px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--grad-gold);
+    box-shadow: var(--glow-gold), 0 4px 10px rgba(0,0,0,.5);
+  }
+  .brand .mark svg { width: 22px; height: 22px; }
+  .brand b { font-size: 1.25rem; letter-spacing: .14em; }
+  .brand span { font-size: var(--t-meta); color: var(--ink-dim); letter-spacing: .3em; text-transform: uppercase; display: block; margin-top: -3px; }
+
+  nav.primary { display: flex; gap: var(--s-4); }
+  nav.primary a { font-size: .9rem; color: var(--ink-soft); padding: 6px 2px; position: relative; transition: color var(--dur) var(--ease); }
+  nav.primary a::after { content: ""; position: absolute; left: 0; bottom: -2px; width: 0; height: 2px; background: var(--grad-gold); transition: width var(--dur) var(--ease); border-radius: 2px; }
+  nav.primary a:hover, nav.primary a:focus-visible { color: var(--ink); }
+  nav.primary a:hover::after, nav.primary a:focus-visible::after { width: 100%; }
+
+  .header-actions { display: flex; align-items: center; gap: var(--s-3); }
+  .icon-btn {
+    width: 42px; height: 42px; border-radius: var(--r-sm); border: 1px solid var(--line);
+    background: linear-gradient(160deg, var(--surface-hi), var(--surface));
+    color: var(--ink-soft); display: grid; place-items: center; cursor: pointer;
+    box-shadow: var(--shadow-raise);
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .icon-btn svg { width: 20px; height: 20px; }
+  .icon-btn:hover { transform: translateY(-2px); color: var(--gold-soft); }
+  .icon-btn:active { transform: translateY(0); box-shadow: var(--shadow-press); }
+  .icon-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .cart-count {
+    position: absolute; transform: translate(14px,-14px);
+    background: var(--grad-burgundy); color: #fff; font-size: .65rem; font-weight: 700;
+    min-width: 18px; height: 18px; border-radius: var(--r-pill); display: grid; place-items: center; padding: 0 5px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.5);
+  }
+
+  /* Button system */
+  .btn {
+    font: inherit; font-weight: 600; cursor: pointer; border: 0;
+    padding: 14px 28px; border-radius: var(--r-pill); display: inline-flex; align-items: center; gap: 10px;
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), filter var(--dur) var(--ease);
+  }
+  .btn svg { width: 18px; height: 18px; }
+  .btn-gold {
+    background: var(--grad-gold); color: #2a1d00;
+    box-shadow: var(--glow-gold), 0 10px 24px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.6);
+  }
+  .btn-gold:hover { transform: translateY(-3px); filter: brightness(1.06); }
+  .btn-gold:active { transform: translateY(-1px); box-shadow: var(--shadow-press); }
+  .btn-ghost {
+    background: linear-gradient(160deg, var(--surface-hi), var(--surface));
+    color: var(--ink); border: 1px solid var(--line); box-shadow: var(--shadow-raise);
+  }
+  .btn-ghost:hover { transform: translateY(-3px); border-color: rgba(255,215,0,.4); }
+  .btn-ghost:active { transform: translateY(-1px); box-shadow: var(--shadow-press); }
+  .btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+  main { display: block; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 0 clamp(var(--s-3), 4vw, var(--s-6)); }
+
+  /* ============ HERO ============ */
+  .hero {
+    display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-6); align-items: center;
+    padding: clamp(var(--s-5), 6vw, 90px) 0 var(--s-6);
+  }
+  .hero-copy .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px; font-size: var(--t-meta); letter-spacing: .28em; text-transform: uppercase;
+    color: var(--gold-soft); padding: 7px 14px; border-radius: var(--r-pill);
+    background: rgba(255,215,0,.06); border: 1px solid rgba(255,215,0,.22);
+  }
+  .hero-copy h1 { font-family: var(--font-serif); font-size: var(--t-display); line-height: 1.02; margin: var(--s-3) 0; letter-spacing: -.01em; }
+  .hero-copy h1 em { font-style: italic; }
+  .hero-copy p.lede { color: var(--ink-soft); font-size: 1.08rem; max-width: 46ch; margin-bottom: var(--s-4); }
+  .hero-cta { display: flex; gap: var(--s-3); flex-wrap: wrap; margin-bottom: var(--s-5); }
+  .hero-stats { display: flex; gap: var(--s-5); flex-wrap: wrap; }
+  .hero-stats .stat .n { font-family: var(--font-serif); font-size: 1.6rem; }
+  .hero-stats .stat .l { font-size: var(--t-meta); color: var(--ink-dim); letter-spacing: .1em; text-transform: uppercase; }
+
+  /* The 3D watch stage — parallax + perspective */
+  .stage {
+    position: relative; aspect-ratio: 1/1; perspective: var(--perspective);
+    display: grid; place-items: center;
+  }
+  .stage-pedestal {
+    position: absolute; bottom: 6%; left: 50%; width: 78%; height: 26%;
+    transform: translateX(-50%);
+    background: radial-gradient(60% 70% at 50% 25%, rgba(0,0,0,.55), transparent 72%);
+    filter: blur(8px);
+  }
+  .watch-3d {
+    position: relative; width: 72%; aspect-ratio: 1/1;
+    transform-style: preserve-3d;
+    transform: rotateX(14deg) rotateY(-14deg);
+    transition: transform var(--dur) var(--ease);
+    will-change: transform;
+    animation: float 6s ease-in-out infinite;
+  }
+  @keyframes float { 0%,100% { translate: 0 0; } 50% { translate: 0 -14px; } }
+
+  /* depth layers (parallax 5 layers) */
+  .layer { position: absolute; inset: 0; border-radius: 50%; }
+  .l-glow { transform: translateZ(-90px) scale(1.25); background: radial-gradient(circle, rgba(34,139,34,.28), transparent 62%); filter: blur(30px); }
+  .l-ring { transform: translateZ(-30px); box-shadow: var(--shadow-room); }
+
+  .watch-svg { position: relative; transform: translateZ(40px); filter: drop-shadow(0 24px 30px rgba(0,0,0,.55)); width: 100%; height: auto; }
+  .l-shine { transform: translateZ(70px); background: radial-gradient(40% 30% at 36% 26%, rgba(255,255,255,.5), transparent 60%); mix-blend-mode: screen; pointer-events: none; }
+
+  .stage:hover .watch-3d { transform: rotateX(8deg) rotateY(0deg) scale(1.03); }
+
+  .badge-float {
+    position: absolute; z-index: 3; display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border-radius: var(--r-md);
+    background: linear-gradient(160deg, rgba(26,41,66,.92), rgba(11,20,38,.92));
+    border: 1px solid var(--line); box-shadow: var(--shadow-raise); backdrop-filter: blur(6px);
+    font-size: var(--t-meta);
+  }
+  .badge-float .dot { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+  .badge-float .dot svg { width: 16px; height: 16px; }
+  .badge-float b { display: block; font-size: .82rem; }
+  .badge-float small { color: var(--ink-dim); }
+  .badge-a { top: 8%; left: -4%; }
+  .badge-b { bottom: 16%; right: -6%; }
+
+  /* ============ SECTION HEAD ============ */
+  .sec-head { display: flex; align-items: end; justify-content: space-between; gap: var(--s-3); margin: var(--s-6) 0 var(--s-4); flex-wrap: wrap; }
+  .sec-head h2 { font-family: var(--font-serif); font-size: var(--t-h2); }
+  .sec-head p { color: var(--ink-dim); font-size: .92rem; }
+
+  /* ============ MATERIAL / FINISH SELECTOR ============ */
+  .config {
+    display: grid; grid-template-columns: 1.3fr 1fr; gap: var(--s-5);
+    padding: var(--s-5); border-radius: var(--r-lg);
+    background: linear-gradient(160deg, rgba(26,41,66,.7), rgba(8,14,26,.7));
+    border: 1px solid var(--line); box-shadow: var(--shadow-room);
+  }
+  .config .preview {
+    position: relative; border-radius: var(--r-md); min-height: 260px; perspective: var(--perspective);
+    background: radial-gradient(70% 70% at 50% 30%, #16294a, #070d1a 80%);
+    border: 1px solid var(--line); display: grid; place-items: center; overflow: hidden;
+  }
+  .config .preview .case {
+    width: 150px; height: 150px; border-radius: 50%;
+    background: var(--grad-gold);
+    box-shadow: inset 0 6px 16px rgba(255,255,255,.45), inset 0 -10px 20px rgba(0,0,0,.5), var(--shadow-room);
+    display: grid; place-items: center;
+    transform: rotateX(18deg); transition: background var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .config .preview .case .inner {
+    width: 108px; height: 108px; border-radius: 50%;
+    background: radial-gradient(60% 60% at 40% 30%, #1c2c4e, #060c18 85%);
+    box-shadow: inset 0 0 18px rgba(0,0,0,.7); display: grid; place-items: center;
+    color: var(--gold-soft); font-family: var(--font-serif);
+  }
+  .config .preview[data-finish="silver"] .case { background: var(--grad-silver); }
+  .config .preview[data-finish="rose"] .case { background: linear-gradient(135deg,#ffd9c2,#d98a6a 55%,#7a3d28); }
+
+  .config .controls { display: flex; flex-direction: column; gap: var(--s-4); }
+  .config h3 { font-family: var(--font-serif); font-size: var(--t-h3); }
+  .swatches { display: flex; gap: var(--s-3); flex-wrap: wrap; }
+  .swatch {
+    cursor: pointer; border: 1px solid var(--line); background: var(--surface);
+    border-radius: var(--r-sm); padding: 8px; display: flex; align-items: center; gap: 10px;
+    transition: transform var(--dur) var(--ease), border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+    box-shadow: var(--shadow-raise); color: var(--ink-soft); font-size: .85rem;
+  }
+  .swatch .chip { width: 26px; height: 26px; border-radius: 50%; box-shadow: inset 0 2px 4px rgba(255,255,255,.4), inset 0 -3px 6px rgba(0,0,0,.5); }
+  .swatch:hover { transform: translateY(-2px); }
+  .swatch[aria-pressed="true"] { border-color: var(--gold); box-shadow: var(--glow-gold); color: var(--ink); }
+  .swatch:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .chip-gold { background: var(--grad-gold); }
+  .chip-silver { background: var(--grad-silver); }
+  .chip-rose { background: linear-gradient(135deg,#ffd9c2,#d98a6a 55%,#7a3d28); }
+
+  .spec-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: .9rem; }
+  .spec-row span:first-child { color: var(--ink-dim); }
+  .price-line { display: flex; align-items: baseline; gap: 10px; }
+  .price-line .price { font-family: var(--font-serif); font-size: 2rem; }
+  .price-line .was { color: var(--ink-dim); text-decoration: line-through; font-size: 1rem; }
+
+  /* ============ COLLECTION CARDS ============ */
+  .grid-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-4); }
+  .card {
+    position: relative; border-radius: var(--r-md); overflow: hidden;
+    background: linear-gradient(160deg, var(--surface-hi), var(--surface));
+    border: 1px solid var(--line); box-shadow: var(--shadow-raise);
+    transform-style: preserve-3d; transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .card:hover { transform: translateY(-6px) rotateX(3deg); box-shadow: var(--shadow-room); }
+  .card .thumb {
+    aspect-ratio: 4/3; display: grid; place-items: center; position: relative;
+    background: radial-gradient(70% 70% at 50% 30%, #15294a, #070d1a 82%);
+  }
+  .card .thumb .disc {
+    width: 96px; height: 96px; border-radius: 50%;
+    box-shadow: inset 0 4px 10px rgba(255,255,255,.4), inset 0 -8px 14px rgba(0,0,0,.55), 0 14px 28px rgba(0,0,0,.5);
+  }
+  .d-forest { background: radial-gradient(60% 60% at 40% 30%, #3cb043, #0c3d12 85%); }
+  .d-burgundy { background: var(--grad-burgundy); }
+  .d-navy { background: radial-gradient(60% 60% at 40% 30%, #2f5da3, #001432 85%); }
+  .card .tag {
+    position: absolute; top: 12px; left: 12px; font-size: .68rem; letter-spacing: .14em; text-transform: uppercase;
+    padding: 5px 10px; border-radius: var(--r-pill); background: rgba(0,0,0,.4); border: 1px solid var(--line); color: var(--gold-soft);
+  }
+  .card .body { padding: var(--s-3) var(--s-3) var(--s-4); }
+  .card .body h3 { font-family: var(--font-serif); font-size: 1.1rem; }
+  .card .body .meta { color: var(--ink-dim); font-size: var(--t-meta); margin: 4px 0 12px; }
+  .card .body .foot { display: flex; align-items: center; justify-content: space-between; }
+  .card .body .foot .p { font-family: var(--font-serif); font-size: 1.15rem; color: var(--gold-soft); }
+  .stars { display: inline-flex; gap: 2px; color: var(--gold); }
+  .stars svg { width: 14px; height: 14px; }
+
+  /* ============ FOOTER ============ */
+  footer.site {
+    margin-top: var(--s-6); padding: var(--s-6) 0 var(--s-5);
+    border-top: 1px solid var(--line);
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,.4));
+  }
+  .foot-grid { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: var(--s-4); }
+  footer h4 { font-size: var(--t-meta); letter-spacing: .2em; text-transform: uppercase; color: var(--ink-dim); margin-bottom: var(--s-3); }
+  footer ul { list-style: none; display: grid; gap: 8px; }
+  footer a { color: var(--ink-soft); font-size: .9rem; transition: color var(--dur) var(--ease); }
+  footer a:hover, footer a:focus-visible { color: var(--gold-soft); }
+  .foot-bottom { max-width: 1280px; margin: var(--s-5) auto 0; padding: var(--s-4) clamp(var(--s-3),4vw,var(--s-6)) 0; border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; color: var(--ink-dim); font-size: var(--t-meta); }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 940px) {
+    .hero { grid-template-columns: 1fr; gap: var(--s-5); }
+    .stage { order: -1; max-width: 460px; margin: 0 auto; width: 100%; }
+    .config { grid-template-columns: 1fr; }
+    .grid-cards { grid-template-columns: repeat(2, 1fr); }
+    .foot-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 700px) {
+    nav.primary { display: none; }
+  }
+  @media (max-width: 560px) {
+    .grid-cards { grid-template-columns: 1fr; }
+    .foot-grid { grid-template-columns: 1fr; }
+    .badge-a { left: 0; } .badge-b { right: 0; }
+    .hero-stats { gap: var(--s-4); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { scroll-behavior: auto !important; }
+    .watch-3d { animation: none !important; }
+    .btn, .card, .icon-btn, .watch-3d, .swatch, nav.primary a, .config .preview .case { transition: none !important; }
+    .stage:hover .watch-3d { transform: rotateX(14deg) rotateY(-14deg); }
+  }
+</style>
+</head>
+<body>
+  <header class="site">
+    <div class="brand">
+      <span class="mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#2a1d00" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>
+        </svg>
+      </span>
+      <div>
+        <b>AURUM</b>
+        <span>Chronometer Atelier</span>
+      </div>
+    </div>
+    <nav class="primary" aria-label="Primary">
+      <a href="#collection">Collection</a>
+      <a href="#configure">Configure</a>
+      <a href="#heritage">Heritage</a>
+      <a href="#service">Service</a>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-btn" aria-label="Search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      </button>
+      <button class="icon-btn" aria-label="Cart, 2 items" style="position:relative">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6h15l-1.5 9h-12z"/><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M6 6 5 3H3"/></svg>
+        <span class="cart-count" aria-hidden="true">2</span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="wrap hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <span class="eyebrow">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#FFD700" aria-hidden="true"><path d="M12 2l2.6 6.6L22 9.3l-5 4.6L18.2 21 12 17.3 5.8 21 7 13.9l-5-4.6 7.4-.7z"/></svg>
+          Maison Edition No. V
+        </span>
+        <h1>The <em>Lumière</em> <span class="metal-text">Tourbillon</span></h1>
+        <p class="lede">A hand-finished automatic movement encased in 18k forged gold, sculpted under physically accurate light. Rotate, configure, and own a horological object built in real spatial depth.</p>
+        <div class="hero-cta">
+          <a class="btn btn-gold" href="#configure">
+            Configure yours
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <a class="btn btn-ghost" href="#collection">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 3l14 9-14 9z"/></svg>
+            View collection
+          </a>
+        </div>
+        <div class="hero-stats">
+          <div class="stat"><div class="n metal-text">324</div><div class="l">Components</div></div>
+          <div class="stat"><div class="n metal-text">72h</div><div class="l">Power reserve</div></div>
+          <div class="stat"><div class="n metal-text">5yr</div><div class="l">Warranty</div></div>
+        </div>
+      </div>
+
+      <div class="stage" aria-label="3D rendering of the Lumière Tourbillon watch">
+        <div class="stage-pedestal" aria-hidden="true"></div>
+        <div class="watch-3d">
+          <div class="layer l-glow" aria-hidden="true"></div>
+          <div class="layer l-ring" aria-hidden="true"></div>
+          <svg class="watch-svg" viewBox="0 0 300 300" role="img" aria-label="Gold tourbillon wristwatch face">
+            <defs>
+              <radialGradient id="caseG" cx="40%" cy="30%" r="75%">
+                <stop offset="0%" stop-color="#fff7d6"/><stop offset="35%" stop-color="#ffd700"/>
+                <stop offset="70%" stop-color="#b8860b"/><stop offset="100%" stop-color="#7a5c06"/>
+              </radialGradient>
+              <radialGradient id="dialG" cx="42%" cy="30%" r="80%">
+                <stop offset="0%" stop-color="#1f3a63"/><stop offset="60%" stop-color="#0a1830"/><stop offset="100%" stop-color="#04101f"/>
+              </radialGradient>
+              <linearGradient id="bezelEdge" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#fff2bd"/><stop offset="50%" stop-color="#caa017"/><stop offset="100%" stop-color="#fff7d6"/>
+              </linearGradient>
+            </defs>
+            <!-- lugs / band -->
+            <rect x="128" y="0" width="44" height="70" rx="14" fill="url(#caseG)"/>
+            <rect x="128" y="230" width="44" height="70" rx="14" fill="url(#caseG)"/>
+            <!-- outer case -->
+            <circle cx="150" cy="150" r="118" fill="url(#bezelEdge)"/>
+            <circle cx="150" cy="150" r="108" fill="url(#caseG)"/>
+            <circle cx="150" cy="150" r="92" fill="url(#dialG)"/>
+            <!-- minute track -->
+            <g stroke="#FFD700" stroke-width="2" opacity=".85">
+              <line x1="150" y1="64" x2="150" y2="78"/>
+              <line x1="236" y1="150" x2="222" y2="150"/>
+              <line x1="150" y1="236" x2="150" y2="222"/>
+              <line x1="64" y1="150" x2="78" y2="150"/>
+              <line x1="211" y1="89" x2="201" y2="99"/>
+              <line x1="211" y1="211" x2="201" y2="201"/>
+              <line x1="89" y1="211" x2="99" y2="201"/>
+              <line x1="89" y1="89" x2="99" y2="99"/>
+            </g>
+            <!-- tourbillon aperture -->
+            <circle cx="150" cy="206" r="26" fill="#06101f" stroke="#FFD700" stroke-width="1.5"/>
+            <g stroke="#C0C0C0" stroke-width="1.4" opacity=".9" fill="none">
+              <circle cx="150" cy="206" r="18"/>
+              <path d="M150 188v36M132 206h36M137 193l26 26M163 193l-26 26"/>
+            </g>
+            <circle cx="150" cy="206" r="4" fill="#FFD700"/>
+            <!-- hands -->
+            <rect x="147" y="92" width="6" height="62" rx="3" fill="#fff7d6"/>
+            <rect x="148" y="118" width="4" height="40" rx="2" fill="#C0C0C0"/>
+            <circle cx="150" cy="150" r="7" fill="url(#caseG)" stroke="#7a5c06"/>
+            <!-- crown -->
+            <rect x="262" y="142" width="16" height="16" rx="4" fill="url(#caseG)"/>
+            <!-- specular highlight -->
+            <ellipse cx="118" cy="108" rx="40" ry="22" fill="#ffffff" opacity=".18"/>
+          </svg>
+          <div class="layer l-shine" aria-hidden="true"></div>
+        </div>
+
+        <div class="badge-float badge-a">
+          <span class="dot" style="background:var(--grad-gold)" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#2a1d00" stroke-width="2.2" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+          </span>
+          <span><b>Swiss Certified</b><small>COSC Chronometer</small></span>
+        </div>
+        <div class="badge-float badge-b">
+          <span class="dot" style="background:var(--grad-burgundy)" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 2 4 6v6c0 5 3.4 8 8 10 4.6-2 8-5 8-10V6z"/></svg>
+          </span>
+          <span><b>Lifetime care</b><small>Atelier servicing</small></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONFIGURATOR -->
+    <section class="wrap" id="configure" aria-labelledby="cfg-title">
+      <div class="sec-head">
+        <h2 id="cfg-title">Configure your finish</h2>
+        <p>Real-time material rendering — choose your case alloy.</p>
+      </div>
+      <div class="config">
+        <div class="preview" id="finishPreview" data-finish="gold">
+          <div class="case"><div class="inner" id="finishLabel">Forged Gold</div></div>
+        </div>
+        <div class="controls">
+          <h3>Case alloy</h3>
+          <div class="swatches" role="group" aria-label="Select case alloy">
+            <button class="swatch" data-finish="gold" data-label="Forged Gold" data-price="$18,400" aria-pressed="true">
+              <span class="chip chip-gold" aria-hidden="true"></span> Forged Gold
+            </button>
+            <button class="swatch" data-finish="silver" data-label="Platinum Silver" data-price="$21,900" aria-pressed="false">
+              <span class="chip chip-silver" aria-hidden="true"></span> Platinum Silver
+            </button>
+            <button class="swatch" data-finish="rose" data-label="Rose Gold" data-price="$19,600" aria-pressed="false">
+              <span class="chip chip-rose" aria-hidden="true"></span> Rose Gold
+            </button>
+          </div>
+          <div>
+            <div class="spec-row"><span>Movement</span><span>Automatic Tourbillon AT-V</span></div>
+            <div class="spec-row"><span>Case diameter</span><span>41 mm</span></div>
+            <div class="spec-row"><span>Water resistance</span><span>50 m</span></div>
+            <div class="spec-row"><span>Crystal</span><span>Domed sapphire, AR-coated</span></div>
+          </div>
+          <div class="price-line">
+            <span class="price metal-text" id="finishPrice">$18,400</span>
+            <span class="was">$22,000</span>
+          </div>
+          <a class="btn btn-gold" href="#" style="align-self:flex-start">
+            Add to bag
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6h15l-1.5 9h-12z"/><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/></svg>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- COLLECTION -->
+    <section class="wrap" id="collection" aria-labelledby="col-title">
+      <div class="sec-head">
+        <h2 id="col-title">The Lumière collection</h2>
+        <p>Six dials, hand-lacquered under directional light.</p>
+      </div>
+      <div class="grid-cards">
+        <article class="card">
+          <div class="thumb"><div class="disc d-forest" aria-hidden="true"></div><span class="tag">New</span></div>
+          <div class="body">
+            <h3>Lumière Émeraude</h3>
+            <div class="meta">Forest enamel dial · 41mm</div>
+            <div class="foot">
+              <span class="p">$18,400</span>
+              <span class="stars" aria-label="Rated 5 of 5">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.6L22 9.3l-5 4.6L18.2 21 12 17.3 5.8 21 7 13.9l-5-4.6 7.4-.7z"/></svg>
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.6L22 9.3l-5 4.6L18.2 21 12 17.3 5.8 21 7 13.9l-5-4.6 7.4-.7z"/></svg>
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.6L22 9.3l-5 4.6L18.2 21 12 17.3 5.8 21 7 13.9l-5-4.6 7.4-.7z"/></svg>
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.6L22 9.3l-5 4.6L18.2 21 12 17.3 5.8 21 7 13.9l-5-4.6 7.4-.7z"/></svg>
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.6L22 9.3l-5 4.6L18.2 21 12 17.3 5.8 21 7 13.9l-5-4.6 7.4-.7z"/></svg>
+              </span>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <div class="thumb"><div class="disc d-burgundy" aria-hidden="true"></div><span class="tag">Limited</span></div>
+          <div class="body">
+            <h3>Lumière Bordeaux</h3>
+            <div class="meta">Burgundy guilloché · 41mm</div>
+            <div class="foot">
+              <span class="p">$19,800</span>
+              <span class="stars" aria-label="Rated 4 of 5">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.6L22 9.3l-5 4.6L18.2 21 12 17.3 5.8 21 7 13.9l-5-4.6 7.4-.7z"/></svg>
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.6L22 9.3l-5 4.6L18.2 21 12 17.3 5.8 21 7 13.9l-5-4.6 7.4-.7z"/></svg>
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.6L22 9.3l-5 4.6L18.2 21 12 17.3 5.8 21 7 13.9l-5-4.6 7.4-.7z"/></svg>
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.6L22 9.3l-5 4.6L18.2 21 12 17.3 5.8 21 7 13.9l-5-4.6 7.4-.7z"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l2.6 6.6L22 9.3l-5 4.6L18.2 21 12 17.3 5.8 21 7 13.9l-5-4.6 7.4-.7z"/></svg>
+              </span>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <div class="thumb"><div class="disc d-navy" aria-hidden="true"></div><span class="tag">Signature</span></div>
+          <div class="body">
+            <h3>Lumière Nuit</h3>
+            <div class="meta">Deep navy sunburst · 41mm</div>
+            <div class="foot">
+              <span class="p">$21,200</span>
+              <span class="stars" aria-label="Rated 5 of 5">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.6L22 9.3l-5 4.6L18.2 21 12 17.3 5.8 21 7 13.9l-5-4.6 7.4-.7z"/></svg>
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.6L22 9.3l-5 4.6L18.2 21 12 17.3 5.8 21 7 13.9l-5-4.6 7.4-.7z"/></svg>
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.6L22 9.3l-5 4.6L18.2 21 12 17.3 5.8 21 7 13.9l-5-4.6 7.4-.7z"/></svg>
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.6L22 9.3l-5 4.6L18.2 21 12 17.3 5.8 21 7 13.9l-5-4.6 7.4-.7z"/></svg>
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.6L22 9.3l-5 4.6L18.2 21 12 17.3 5.8 21 7 13.9l-5-4.6 7.4-.7z"/></svg>
+              </span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site" id="service">
+    <div class="wrap foot-grid">
+      <div>
+        <div class="brand" style="margin-bottom:var(--s-3)">
+          <span class="mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#2a1d00" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
+          </span>
+          <div><b>AURUM</b><span>Chronometer Atelier</span></div>
+        </div>
+        <p style="color:var(--ink-dim); font-size:.9rem; max-width:34ch">Independent Swiss watchmaking since 1948. Every movement assembled by hand in Vallée de Joux.</p>
+      </div>
+      <div>
+        <h4>Collection</h4>
+        <ul><li><a href="#collection">Lumière</a></li><li><a href="#collection">Heritage</a></li><li><a href="#collection">Limited series</a></li></ul>
+      </div>
+      <div>
+        <h4>Atelier</h4>
+        <ul><li><a href="#service">Servicing</a></li><li><a href="#service">Warranty</a></li><li><a href="#service">Boutiques</a></li></ul>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <ul><li><a href="#service">Concierge</a></li><li><a href="#service">Book a visit</a></li><li><a href="#service">Journal</a></li></ul>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 1948–2026 Aurum Genève SA</span>
+      <span>Crafted with physically based rendering</span>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var preview = document.getElementById('finishPreview');
+      var label = document.getElementById('finishLabel');
+      var price = document.getElementById('finishPrice');
+      var swatches = document.querySelectorAll('.swatch');
+      swatches.forEach(function (s) {
+        s.addEventListener('click', function () {
+          swatches.forEach(function (o) { o.setAttribute('aria-pressed', 'false'); });
+          s.setAttribute('aria-pressed', 'true');
+          preview.setAttribute('data-finish', s.dataset.finish);
+          label.textContent = s.dataset.label;
+          price.textContent = s.dataset.price;
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

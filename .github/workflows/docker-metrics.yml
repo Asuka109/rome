@@ -1,0 +1,65 @@
+name: Docker Metrics
+
+on:
+  schedule:
+    - cron: "0 8 * * *" # 08:00 UTC daily
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set execute bit for benchmark script
+        run: chmod +x scripts/benchmark-docker.sh
+
+      - name: Run Docker benchmark
+        id: benchmark
+        run: |
+          BENCH_OUTPUT_DIR=metrics \
+          BENCH_IMAGE_TAG=rome:metrics \
+          BENCH_BOOT_TIMEOUT_SEC=240 \
+          scripts/benchmark-docker.sh
+
+      - name: Add run summary
+        if: always()
+        run: |
+          if [[ -f metrics/docker-benchmark-latest.json ]]; then
+            ts="$(jq -r '.timestamp_utc' metrics/docker-benchmark-latest.json)"
+            sha="$(jq -r '.git_sha' metrics/docker-benchmark-latest.json)"
+            size_mb="$(jq -r '.image_size_mb' metrics/docker-benchmark-latest.json)"
+            build_sec="$(jq -r '.build_time_sec' metrics/docker-benchmark-latest.json)"
+            boot_sec="$(jq -r '.boot_time_sec' metrics/docker-benchmark-latest.json)"
+            boot_status="$(jq -r '.boot_status' metrics/docker-benchmark-latest.json)"
+
+            {
+              echo "## Docker Benchmark"
+              echo ""
+              echo "| Metric | Value |"
+              echo "| --- | --- |"
+              echo "| Timestamp (UTC) | ${ts} |"
+              echo "| Commit | ${sha} |"
+              echo "| Image Size (MB) | ${size_mb} |"
+              echo "| Build Time (s) | ${build_sec} |"
+              echo "| Boot Time (s) | ${boot_sec} |"
+              echo "| Boot Status | ${boot_status} |"
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No benchmark JSON found." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload benchmark artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: docker-metrics-${{ github.run_id }}
+          path: metrics/
+          retention-days: 90
+          if-no-files-found: warn

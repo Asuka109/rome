@@ -1,0 +1,21 @@
+title: __APP_NAME__
+description: __APP_NAME__ runs a repeatable workflow and keeps recent results in Rome.
+long_description: |
+  __APP_NAME__ turns a repeatable process into a one-click Rome workflow.
+  Replace this copy with the trigger, result, and audience for your workflow.
+categories:
+  - Productivity
+keywords:
+  - workflow
+  - automation
+  - productivity
+# Optional store-only media. Paths are relative to this .rome_store directory
+# and are uploaded separately from the installable app bundle.
+# image: assets/store-og.png
+# image_alt: __APP_NAME__ preview
+# media:
+#   - type: image
+#     path: assets/screenshot.png
+#     alt: __APP_NAME__ main screen
+preview: off
+noindex: false

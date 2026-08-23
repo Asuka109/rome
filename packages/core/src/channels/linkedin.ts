@@ -1,0 +1,263 @@
+// LinkedIn inbox poller. Channel contract: docs/architecture/channels.md.
+//
+// LinkedIn has no push surface Rome can subscribe to: the session lives in the
+// server-side Chrome profile and opencli reads the messaging UI through it. So
+// ingestion is a poll — each tick lists the inbox, diffs the listing against
+// the mirror's per-thread watermarks, and snapshots only the threads whose
+// latest message moved. The cadence is deliberately jittered (a fresh uniform
+// delay in [min, max] every tick, not a fixed interval) so the traffic pattern
+// does not look like a metronome to LinkedIn.
+//
+// Fault taxonomy (mirrors the whatsapp/telegram-user split):
+//   - an auth wall / signed-out session → `onAuthRejected` (the Talker maps it
+//     to CredentialRejected{ grant: "session" } → renew-probe → degrade);
+//   - anything else (CDP down, timeout, shape drift) is transient: it never
+//     touches grant state. After two consecutive failed ticks the poller
+//     reports a runtime degradation so the dashboard shows amber "Degraded"
+//     with the reason, and the next successful tick clears it.
+
+import { createLogger } from "../logger.js";
+import {
+  OpencliAuthError,
+  parseInbox,
+  parseThreadSnapshot,
+  type LinkedInInboxRow,
+  type RunOpencli,
+} from "./linkedin-cli.js";
+import type { LinkedInSyncSink, LinkedInThreadCursor } from "./linkedin-sync.js";
+
+const log = createLogger("linkedin");
+
+const DEFAULT_INBOX_LIMIT = 40;
+const DEFAULT_THREAD_FETCH_LIMIT = 25;
+const DEFAULT_MAX_SNAPSHOTS_PER_TICK = 6;
+const SNAPSHOT_TIMEOUT_MS = 240_000;
+/** One failed tick is routine (a Chrome restart, a slow page); the guardian is
+ *  warned once failures look persistent. */
+const DEGRADE_AFTER_CONSECUTIVE_FAILURES = 2;
+
+export interface LinkedInPollerCallbacks {
+  /** The session behind the browser is signed out; the epoch owner decides
+   *  what that means for the grant. */
+  onAuthRejected(cause: OpencliAuthError): void;
+}
+
+export interface LinkedInPollerOptions {
+  sink: LinkedInSyncSink;
+  run: RunOpencli;
+  /** Every tick draws a fresh uniform delay in [min, max]. */
+  minIntervalMs: number;
+  maxIntervalMs: number;
+  inboxLimit?: number;
+  threadFetchLimit?: number;
+  maxSnapshotsPerTick?: number;
+  /** Test seam for the jitter draw. */
+  random?: () => number;
+}
+
+/** A fresh uniform delay in [minMs, maxMs]. */
+export function pollDelayMs(minMs: number, maxMs: number, random: () => number): number {
+  return Math.round(minMs + random() * (Math.max(maxMs, minMs) - minMs));
+}
+
+/**
+ * Whether a thread's inbox listing has moved past the mirror's watermark. A
+ * never-snapshotted thread is always stale (first connect backfills the
+ * inbox a capped batch per tick). Listing rows that carry no timestamp fall
+ * back to the preview text.
+ */
+export function threadNeedsSnapshot(
+  row: LinkedInInboxRow,
+  cursor: LinkedInThreadCursor | undefined,
+): boolean {
+  if (!cursor || cursor.lastSyncedAt === null) return true;
+  if (row.lastMessageAt) {
+    if (!cursor.lastMessageAt) return true;
+    return row.lastMessageAt.getTime() !== cursor.lastMessageAt.getTime();
+  }
+  return (row.lastMessagePreview ?? "") !== (cursor.lastMessagePreview ?? "");
+}
+
+export class LinkedInInboxPoller {
+  private readonly sink: LinkedInSyncSink;
+  private readonly run: RunOpencli;
+  private readonly minIntervalMs: number;
+  private readonly maxIntervalMs: number;
+  private readonly inboxLimit: number;
+  private readonly threadFetchLimit: number;
+  private readonly maxSnapshotsPerTick: number;
+  private readonly random: () => number;
+
+  private callbacks: LinkedInPollerCallbacks | null = null;
+  private timer: ReturnType<typeof setTimeout> | null = null;
+  private abort: AbortController | null = null;
+  /** Only ever true between a stop() and the next start(): it aborts the
+   *  in-flight tick's snapshot loop and suppresses rescheduling. */
+  private stopped = false;
+  private ticking = false;
+  private consecutiveFailures = 0;
+  private lastFailureMessage: string | null = null;
+  private nextRunAt: Date | null = null;
+
+  constructor(opts: LinkedInPollerOptions) {
+    this.sink = opts.sink;
+    this.run = opts.run;
+    this.minIntervalMs = opts.minIntervalMs;
+    this.maxIntervalMs = opts.maxIntervalMs;
+    this.inboxLimit = opts.inboxLimit ?? DEFAULT_INBOX_LIMIT;
+    this.threadFetchLimit = opts.threadFetchLimit ?? DEFAULT_THREAD_FETCH_LIMIT;
+    this.maxSnapshotsPerTick = opts.maxSnapshotsPerTick ?? DEFAULT_MAX_SNAPSHOTS_PER_TICK;
+    this.random = opts.random ?? Math.random;
+  }
+
+  /** First tick runs immediately (a fresh connect should mirror right away);
+   *  each subsequent tick re-draws its own jittered delay. */
+  start(callbacks: LinkedInPollerCallbacks): void {
+    this.callbacks = callbacks;
+    this.stopped = false;
+    this.abort = new AbortController();
+    void this.tick();
+  }
+
+  stop(): void {
+    this.stopped = true;
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = null;
+    }
+    this.abort?.abort();
+    this.abort = null;
+    this.callbacks = null;
+  }
+
+  /** Runtime health beside the unlocked capability (the WeChat pattern):
+   *  non-null while polls are persistently failing without the session being
+   *  signed out. */
+  getRuntimeDegradation(): { reason: string; retryAt?: string } | null {
+    if (this.consecutiveFailures < DEGRADE_AFTER_CONSECUTIVE_FAILURES) return null;
+    return {
+      reason:
+        `LinkedIn sync has failed ${this.consecutiveFailures} times in a row` +
+        `${this.lastFailureMessage ? ` (${this.lastFailureMessage})` : ""}. ` +
+        "Rome keeps retrying automatically.",
+      ...(this.nextRunAt ? { retryAt: this.nextRunAt.toISOString() } : {}),
+    };
+  }
+
+  /** One poll: list the inbox, upsert the listing, snapshot stale threads.
+   *  Public as the unit-test entry point; production ticks come off the timer. */
+  async pollOnce(): Promise<void> {
+    const signal = this.abort?.signal;
+    const inboxResult = await this.run(
+      ["linkedin", "inbox", "--limit", String(this.inboxLimit)],
+      signal ? { signal } : {},
+    );
+    const rows = parseInbox(inboxResult);
+
+    // Read the watermarks BEFORE upserting the listing — the upsert advances
+    // `lastMessageAt`, which is exactly the field the diff compares.
+    const cursors = await this.sink.getThreadCursors(rows.map((r) => r.threadId));
+    const stale = rows
+      .filter((row) => threadNeedsSnapshot(row, cursors.get(row.threadId)))
+      .sort((a, b) => a.rank - b.rank);
+
+    await this.sink.upsertThreads(
+      rows.map((row) => ({
+        threadId: row.threadId,
+        threadUrl: row.threadUrl,
+        personName: row.personName,
+        lastMessagePreview: row.lastMessagePreview,
+        lastMessageAt: row.lastMessageAt,
+        unread: row.unread,
+        counterpartyType: row.counterpartyType,
+        category: row.category,
+      })),
+    );
+
+    const batch = stale.slice(0, this.maxSnapshotsPerTick);
+    if (stale.length > batch.length) {
+      log.info("linkedin snapshot backlog capped for this tick", {
+        stale: stale.length,
+        synced: batch.length,
+      });
+    }
+
+    for (const row of batch) {
+      if (this.stopped) return;
+      await this.snapshotThread(row, signal);
+    }
+    if (batch.length > 0) {
+      log.info("linkedin threads synced", { threads: batch.length });
+    }
+  }
+
+  private async snapshotThread(row: LinkedInInboxRow, signal?: AbortSignal): Promise<void> {
+    const result = await this.run(
+      [
+        "linkedin",
+        "thread-snapshot",
+        "--thread-url",
+        row.threadUrl,
+        "--limit",
+        String(this.threadFetchLimit),
+      ],
+      { timeoutMs: SNAPSHOT_TIMEOUT_MS, ...(signal ? { signal } : {}) },
+    );
+    const messages = parseThreadSnapshot(result);
+    await this.sink.upsertMessages(
+      messages.map((m) => ({
+        messageId: m.messageId,
+        threadId: m.threadId,
+        sentAt: m.sentAt,
+        senderName: m.senderName,
+        senderProfileUrl: m.senderProfileUrl,
+        senderHeadline: m.senderHeadline,
+        senderType: m.senderType,
+        senderIsSelf: m.senderIsSelf,
+        text: m.text,
+        subject: m.subject,
+        reactionCount: m.reactionCount,
+      })),
+    );
+    await this.sink.markThreadSynced(row.threadId, {
+      conversationTitle: messages.find((m) => m.conversationTitle)?.conversationTitle ?? null,
+      isGroup: messages.find((m) => m.conversationIsGroup != null)?.conversationIsGroup ?? null,
+      participantCount: messages.find((m) => m.participantCount != null)?.participantCount ?? null,
+    });
+  }
+
+  private async tick(): Promise<void> {
+    if (this.ticking || this.stopped) return;
+    this.ticking = true;
+    try {
+      await this.pollOnce();
+      this.consecutiveFailures = 0;
+      this.lastFailureMessage = null;
+    } catch (err) {
+      if (this.stopped) return; // an aborted in-flight command is not a failure
+      if (err instanceof OpencliAuthError) {
+        // Grant state owns the user-facing warning from here; the epoch is
+        // torn down by the registry, which calls stop().
+        this.callbacks?.onAuthRejected(err);
+      } else {
+        this.consecutiveFailures++;
+        this.lastFailureMessage = err instanceof Error ? err.message : String(err);
+        log.warn("linkedin poll failed", {
+          consecutiveFailures: this.consecutiveFailures,
+          error: this.lastFailureMessage,
+        });
+      }
+    } finally {
+      this.ticking = false;
+      this.scheduleNext();
+    }
+  }
+
+  private scheduleNext(): void {
+    if (this.stopped) return;
+    const delay = pollDelayMs(this.minIntervalMs, this.maxIntervalMs, this.random);
+    this.nextRunAt = new Date(Date.now() + delay);
+    this.timer = setTimeout(() => void this.tick(), delay);
+    (this.timer as { unref?: () => void }).unref?.();
+  }
+}

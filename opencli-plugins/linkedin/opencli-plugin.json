@@ -1,0 +1,6 @@
+{
+  "name": "rome-linkedin",
+  "description": "Rome extensions for OpenCLI's LinkedIn site commands",
+  "version": "0.1.0",
+  "opencli": ">=1.8.0"
+}

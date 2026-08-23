@@ -1,0 +1,11 @@
+name: run
+type: custom
+description: >-
+  Run this app's workflow: execute its runWorkflow function (control flow written
+  in plain TypeScript) and return the final result. The workflow reaches reusable
+  work — including `system:summon` — via the action runner.
+entry: ./index.ts
+complexity: moderate
+speed: moderate
+reliability: high
+sideEffects: write

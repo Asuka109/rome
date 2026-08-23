@@ -1,0 +1,16 @@
+name: connector_connect
+type: custom
+description: |
+  Connect a third-party toolkit (e.g. github, gmail, slack, supabase, neon) so
+  its tools become usable in workflows and agent steps. Requires being signed in
+  to Composio first: if not signed in, this returns an error telling you to call
+  connector_login once, after which you re-run connector_connect per toolkit. If
+  the toolkit is already connected this reports so; otherwise it provisions the
+  managed auth config and returns the authorization step the guardian completes
+  in the Connector dashboard (the OAuth sign-in happens in the browser, not
+  headlessly). Pass the toolkit slug.
+entry: ./index.ts
+complexity: simple
+speed: moderate
+reliability: medium
+sideEffects: write

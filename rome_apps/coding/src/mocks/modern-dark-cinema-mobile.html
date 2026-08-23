@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lumina — Cinema</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Color — from Design System Variables */
+    --bg-deep: #020203;
+    --bg-base: #050506;
+    --bg-elevated: #0a0a0c;
+    --surface: rgba(255, 255, 255, 0.05);
+    --surface-2: rgba(255, 255, 255, 0.07);
+    --foreground: #EDEDEF;
+    --foreground-muted: #8A8F98;
+    --accent: #5E6AD2;
+    --accent-bright: #7C88EC;
+    --accent-glow: rgba(94, 106, 210, 0.2);
+    --border: rgba(255, 255, 255, 0.08);
+    --gold: #CA8A04;
+
+    /* Radius */
+    --radius: 16px;
+    --radius-sm: 10px;
+    --radius-lg: 24px;
+    --radius-pill: 999px;
+
+    /* Shadow */
+    --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --shadow-glow: 0 8px 28px var(--accent-glow), 0 2px 8px rgba(0,0,0,0.4);
+
+    /* Spacing scale */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 24px;
+    --sp-6: 32px;
+    --sp-7: 48px;
+
+    /* Typography scale */
+    --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --fs-display: 30px;
+    --fs-h1: 22px;
+    --fs-h2: 17px;
+    --fs-body: 15px;
+    --fs-sm: 13px;
+    --fs-label: 11px;
+
+    /* Motion */
+    --easing: cubic-bezier(0.16, 1, 0.3, 1);
+    --t-fast: 0.18s;
+    --t-base: 0.32s;
+    --t-slow: 0.6s;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg-deep);
+    color: var(--foreground);
+    font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100%;
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: var(--sp-5);
+    background:
+      radial-gradient(900px 600px at 50% -10%, rgba(94,106,210,0.10), transparent 60%),
+      var(--bg-deep);
+  }
+
+  /* ---------- Phone frame ---------- */
+  .phone {
+    position: relative;
+    width: 100%;
+    max-width: 390px;
+    height: min(844px, calc(100vh - 48px));
+    min-height: 640px;
+    border-radius: 44px;
+    background: linear-gradient(180deg, #0a0a0f 0%, #020203 100%);
+    border: 1px solid var(--border);
+    box-shadow:
+      0 0 0 8px #070708,
+      0 0 0 9px rgba(255,255,255,0.04),
+      0 40px 90px rgba(0,0,0,0.7);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    isolation: isolate;
+  }
+
+  /* Ambient animated blobs */
+  .ambient { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(48px);
+    opacity: 0.5;
+    will-change: transform;
+  }
+  .blob.b1 {
+    width: 260px; height: 260px; top: -60px; left: -70px;
+    background: radial-gradient(circle, rgba(94,106,210,0.55), transparent 70%);
+    animation: drift1 16s var(--easing) infinite alternate;
+  }
+  .blob.b2 {
+    width: 220px; height: 220px; top: 30%; right: -90px;
+    background: radial-gradient(circle, rgba(124,136,236,0.4), transparent 70%);
+    animation: drift2 19s var(--easing) infinite alternate;
+  }
+  .blob.b3 {
+    width: 200px; height: 200px; bottom: 10%; left: -60px;
+    background: radial-gradient(circle, rgba(202,138,4,0.18), transparent 70%);
+    animation: drift3 22s var(--easing) infinite alternate;
+  }
+  @keyframes drift1 { from { transform: translate(0,0); } to { transform: translate(40px, 60px); } }
+  @keyframes drift2 { from { transform: translate(0,0); } to { transform: translate(-50px, 40px); } }
+  @keyframes drift3 { from { transform: translate(0,0); } to { transform: translate(50px, -40px); } }
+
+  /* ---------- Status bar ---------- */
+  .statusbar {
+    position: relative; z-index: 3;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px var(--sp-5) 6px;
+    font-size: var(--fs-label); font-weight: 600; letter-spacing: 0.4px;
+    color: var(--foreground);
+  }
+  .statusbar .icons { display: flex; gap: 6px; align-items: center; }
+  .statusbar svg { display: block; }
+
+  /* ---------- Header (frosted) ---------- */
+  header {
+    position: relative; z-index: 3;
+    padding: var(--sp-2) var(--sp-5) var(--sp-4);
+    background: rgba(10,10,12,0.55);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border-bottom: 1px solid var(--border);
+  }
+  .header-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
+  .brand { display: flex; align-items: center; gap: var(--sp-2); }
+  .brand-mark {
+    width: 34px; height: 34px; border-radius: 11px;
+    display: grid; place-items: center;
+    background: linear-gradient(140deg, var(--accent), #3d47a0);
+    box-shadow: 0 4px 16px var(--accent-glow);
+  }
+  .brand-name {
+    font-size: var(--fs-h2); font-weight: 700; letter-spacing: -0.3px;
+    background: linear-gradient(180deg, #ffffff, rgba(255,255,255,0.72));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .icon-btn {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: grid; place-items: center;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--foreground); cursor: pointer;
+    transition: transform var(--t-fast) var(--easing), background var(--t-fast), border-color var(--t-fast);
+  }
+  .icon-btn:hover { background: var(--surface-2); border-color: rgba(255,255,255,0.16); }
+  .icon-btn:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
+  .icon-btn:active { transform: scale(0.97); }
+
+  /* ---------- Scroll area ---------- */
+  main {
+    position: relative; z-index: 2;
+    flex: 1; min-height: 0;
+    overflow-y: auto;
+    padding: var(--sp-5) var(--sp-5) 120px;
+    scrollbar-width: none;
+  }
+  main::-webkit-scrollbar { display: none; }
+
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: var(--sp-3);
+  }
+  .eyebrow {
+    font-size: var(--fs-label); font-weight: 500; letter-spacing: 1.2px;
+    text-transform: uppercase; color: var(--accent-bright);
+  }
+  h1.display {
+    font-size: var(--fs-display); font-weight: 700; letter-spacing: -1px;
+    line-height: 1.08; margin: 6px 0 4px;
+  }
+  .sub { color: var(--foreground-muted); font-size: var(--fs-body); line-height: 1.5; }
+  .see-all {
+    font-size: var(--fs-sm); font-weight: 500; color: var(--foreground-muted);
+    background: none; border: none; cursor: pointer; padding: 4px;
+    transition: color var(--t-fast);
+  }
+  .see-all:hover { color: var(--foreground); }
+  .see-all:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; border-radius: 6px; }
+
+  /* ---------- Hero feature card ---------- */
+  .hero {
+    position: relative; margin-top: var(--sp-5);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    aspect-ratio: 16 / 11;
+    background:
+      radial-gradient(120% 90% at 80% 0%, rgba(94,106,210,0.35), transparent 55%),
+      linear-gradient(160deg, #1b1b30 0%, #0a0a0c 70%);
+    box-shadow: var(--shadow-card);
+  }
+  .hero::before {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), transparent 30%);
+    pointer-events: none;
+  }
+  .hero-poster {
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
+    opacity: 0.9;
+  }
+  .hero-poster svg { width: 70%; height: 70%; }
+  .hero-overlay {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    padding: var(--sp-5) var(--sp-4) var(--sp-4);
+    background: linear-gradient(0deg, rgba(2,2,3,0.92) 10%, rgba(2,2,3,0.4) 60%, transparent);
+  }
+  .badge-row { display: flex; gap: var(--sp-2); align-items: center; margin-bottom: var(--sp-2); flex-wrap: wrap; }
+  .badge {
+    font-size: var(--fs-label); font-weight: 600; letter-spacing: 0.6px;
+    padding: 4px 9px; border-radius: var(--radius-pill);
+    background: var(--surface); border: 1px solid var(--border); color: var(--foreground);
+  }
+  .badge.gold { color: var(--gold); border-color: rgba(202,138,4,0.35); background: rgba(202,138,4,0.12); }
+  .hero-title { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 2px; }
+  .hero-meta { font-size: var(--fs-sm); color: var(--foreground-muted); }
+
+  /* Primary CTA */
+  .play-row { display: flex; gap: var(--sp-3); margin-top: var(--sp-4); }
+  .btn-primary {
+    flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
+    height: 50px; border-radius: var(--radius);
+    background: linear-gradient(180deg, var(--accent-bright), var(--accent));
+    color: #fff; font-size: var(--fs-body); font-weight: 600; letter-spacing: 0.2px;
+    border: none; cursor: pointer;
+    box-shadow: var(--shadow-glow);
+    transition: transform var(--t-fast) var(--easing), box-shadow var(--t-base) var(--easing), filter var(--t-fast);
+  }
+  .btn-primary:hover { filter: brightness(1.06); box-shadow: 0 10px 36px var(--accent-glow); }
+  .btn-primary:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+  .btn-primary:active { transform: scale(0.97); }
+  .btn-ghost {
+    width: 50px; height: 50px; border-radius: var(--radius);
+    display: grid; place-items: center;
+    background: var(--surface); border: 1px solid var(--border); color: var(--foreground);
+    cursor: pointer;
+    transition: transform var(--t-fast) var(--easing), background var(--t-fast), border-color var(--t-fast);
+  }
+  .btn-ghost:hover { background: var(--surface-2); border-color: rgba(255,255,255,0.16); }
+  .btn-ghost:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
+  .btn-ghost:active { transform: scale(0.97); }
+
+  /* ---------- Genre chips ---------- */
+  .chips {
+    display: flex; gap: var(--sp-2); margin-top: var(--sp-6);
+    overflow-x: auto; padding-bottom: 4px; scrollbar-width: none;
+  }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: 0 0 auto;
+    font-size: var(--fs-sm); font-weight: 500;
+    padding: 8px 16px; border-radius: var(--radius-pill);
+    background: var(--surface); border: 1px solid var(--border); color: var(--foreground-muted);
+    cursor: pointer; white-space: nowrap;
+    transition: all var(--t-fast) var(--easing);
+  }
+  .chip:hover { color: var(--foreground); border-color: rgba(255,255,255,0.16); }
+  .chip:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
+  .chip[aria-pressed="true"] {
+    background: linear-gradient(180deg, var(--accent-bright), var(--accent));
+    color: #fff; border-color: transparent;
+    box-shadow: 0 4px 16px var(--accent-glow);
+  }
+
+  /* ---------- Continue watching ---------- */
+  .row-scroll {
+    display: flex; gap: var(--sp-3); margin-top: var(--sp-3);
+    overflow-x: auto; padding-bottom: 6px; scrollbar-width: none;
+  }
+  .row-scroll::-webkit-scrollbar { display: none; }
+  .mini {
+    flex: 0 0 152px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    overflow: hidden; cursor: pointer;
+    transition: transform var(--t-fast) var(--easing), border-color var(--t-fast);
+  }
+  .mini:hover { border-color: rgba(255,255,255,0.18); }
+  .mini:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
+  .mini:active { transform: scale(0.97); }
+  .mini-art {
+    position: relative; aspect-ratio: 16/10;
+    display: grid; place-items: center;
+    background: linear-gradient(150deg, #1b1b30, #0a0a0c);
+  }
+  .mini-art svg { width: 46px; height: 46px; opacity: 0.85; }
+  .progress {
+    position: absolute; left: 10px; right: 10px; bottom: 10px;
+    height: 4px; border-radius: 4px; background: rgba(255,255,255,0.18); overflow: hidden;
+  }
+  .progress > i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent-bright), var(--accent)); }
+  .mini-body { padding: 10px 12px 12px; }
+  .mini-title { font-size: var(--fs-sm); font-weight: 600; letter-spacing: -0.1px; }
+  .mini-sub { font-size: var(--fs-label); color: var(--foreground-muted); margin-top: 3px; letter-spacing: 0.3px; }
+
+  /* ---------- List section ---------- */
+  .list { margin-top: var(--sp-6); display: flex; flex-direction: column; gap: var(--sp-3); }
+  .list-item {
+    display: flex; align-items: center; gap: var(--sp-3);
+    padding: var(--sp-3);
+    border-radius: var(--radius);
+    background: var(--surface); border: 1px solid var(--border);
+    cursor: pointer;
+    transition: transform var(--t-fast) var(--easing), background var(--t-fast), border-color var(--t-fast);
+  }
+  .list-item:hover { background: var(--surface-2); border-color: rgba(255,255,255,0.16); }
+  .list-item:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
+  .list-item:active { transform: scale(0.985); }
+  .rank { font-size: 26px; font-weight: 700; color: var(--foreground-muted); width: 26px; text-align: center; letter-spacing: -1px; }
+  .thumb {
+    width: 54px; height: 54px; border-radius: 12px; flex: 0 0 auto;
+    display: grid; place-items: center;
+    background: linear-gradient(150deg, #1b1b30, #0a0a0c);
+    border: 1px solid var(--border);
+  }
+  .thumb svg { width: 26px; height: 26px; opacity: 0.85; }
+  .li-text { flex: 1; min-width: 0; }
+  .li-title { font-size: var(--fs-body); font-weight: 600; letter-spacing: -0.2px; }
+  .li-meta { font-size: var(--fs-sm); color: var(--foreground-muted); margin-top: 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rating { display: inline-flex; align-items: center; gap: 4px; color: var(--gold); font-size: var(--fs-sm); font-weight: 600; }
+
+  /* ---------- Tab bar (frosted) ---------- */
+  nav.tabbar {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 5;
+    display: flex; justify-content: space-around; align-items: center;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    background: rgba(10,10,12,0.6);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border-top: 1px solid var(--border);
+  }
+  .tab {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    background: none; border: none; cursor: pointer;
+    color: var(--foreground-muted); font-size: 10px; font-weight: 500; letter-spacing: 0.3px;
+    padding: 6px 10px; border-radius: 12px;
+    transition: color var(--t-fast) var(--easing), transform var(--t-fast) var(--easing);
+  }
+  .tab svg { width: 24px; height: 24px; }
+  .tab:hover { color: var(--foreground); }
+  .tab:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
+  .tab:active { transform: scale(0.94); }
+  .tab[aria-current="page"] { color: var(--accent-bright); }
+  .tab[aria-current="page"]::after {
+    content: ""; position: absolute; bottom: -2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .blob { animation: none !important; }
+    * { transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="phone" role="application" aria-label="Lumina cinema app">
+    <div class="ambient" aria-hidden="true">
+      <span class="blob b1"></span>
+      <span class="blob b2"></span>
+      <span class="blob b3"></span>
+    </div>
+
+    <!-- Status bar -->
+    <div class="statusbar" aria-hidden="true">
+      <span>9:41</span>
+      <span class="icons">
+        <svg width="17" height="12" viewBox="0 0 17 12" fill="none"><rect x="0" y="7" width="3" height="5" rx="1" fill="currentColor"/><rect x="4.5" y="4.5" width="3" height="7.5" rx="1" fill="currentColor"/><rect x="9" y="2" width="3" height="10" rx="1" fill="currentColor"/><rect x="13.5" y="0" width="3" height="12" rx="1" fill="currentColor" opacity="0.4"/></svg>
+        <svg width="22" height="12" viewBox="0 0 22 12" fill="none"><rect x="0.5" y="0.5" width="18" height="11" rx="3" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="13" height="8" rx="1.5" fill="currentColor"/><rect x="20" y="4" width="1.5" height="4" rx="0.75" fill="currentColor" opacity="0.5"/></svg>
+      </span>
+    </div>
+
+    <!-- Header -->
+    <header>
+      <div class="header-row">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 4.5v15l13-7.5L5 4.5z" fill="#fff"/></svg>
+          </span>
+          <span class="brand-name">Lumina</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="icon-btn" aria-label="Search">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+          <button class="icon-btn" aria-label="Your profile">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8.5" r="3.5" stroke="currentColor" stroke-width="2"/><path d="M5 20c0-3.5 3.1-6 7-6s7 2.5 7 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <p class="eyebrow">Tonight's premiere</p>
+      <h1 class="display">Featured&nbsp;Cinema</h1>
+      <p class="sub">Curated in 4K Dolby Vision. Pick up where you left off.</p>
+
+      <!-- Hero -->
+      <section class="hero" aria-label="Featured title: Aurora Drift">
+        <div class="hero-poster" aria-hidden="true">
+          <svg viewBox="0 0 200 200" fill="none">
+            <defs>
+              <linearGradient id="hg" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#7C88EC"/>
+                <stop offset="1" stop-color="#312E81"/>
+              </linearGradient>
+            </defs>
+            <circle cx="100" cy="78" r="52" stroke="url(#hg)" stroke-width="2.5" opacity="0.9"/>
+            <circle cx="100" cy="78" r="30" fill="url(#hg)" opacity="0.5"/>
+            <path d="M30 150 Q100 110 170 150" stroke="#7C88EC" stroke-width="2.5" opacity="0.6" fill="none"/>
+            <path d="M20 168 Q100 128 180 168" stroke="#CA8A04" stroke-width="2" opacity="0.4" fill="none"/>
+          </svg>
+        </div>
+        <div class="hero-overlay">
+          <div class="badge-row">
+            <span class="badge gold">NEW</span>
+            <span class="badge">4K · HDR</span>
+            <span class="badge">Sci-Fi</span>
+          </div>
+          <h2 class="hero-title">Aurora Drift</h2>
+          <p class="hero-meta">2026 · 2h 14m · 96% match</p>
+          <div class="play-row">
+            <button class="btn-primary" id="playBtn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 4.5v15l13-7.5L6 4.5z" fill="currentColor"/></svg>
+              Play now
+            </button>
+            <button class="btn-ghost" aria-label="Add to watchlist">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+            <button class="btn-ghost" aria-label="More info">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 11v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="7.8" r="1.2" fill="currentColor"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Genre chips -->
+      <div class="chips" role="group" aria-label="Browse by genre">
+        <button class="chip" aria-pressed="true">All</button>
+        <button class="chip" aria-pressed="false">Thriller</button>
+        <button class="chip" aria-pressed="false">Drama</button>
+        <button class="chip" aria-pressed="false">Sci-Fi</button>
+        <button class="chip" aria-pressed="false">Docs</button>
+        <button class="chip" aria-pressed="false">Anime</button>
+      </div>
+
+      <!-- Continue watching -->
+      <section aria-label="Continue watching">
+        <div class="section-head" style="margin-top:32px;">
+          <h2 style="font-size:var(--fs-h2);font-weight:600;letter-spacing:-0.3px;">Continue watching</h2>
+          <button class="see-all">See all</button>
+        </div>
+        <div class="row-scroll">
+          <article class="mini" tabindex="0" aria-label="Neon Harbor, episode 4, 62% watched">
+            <div class="mini-art">
+              <svg viewBox="0 0 48 48" fill="none"><rect x="8" y="14" width="32" height="20" rx="3" stroke="#7C88EC" stroke-width="2"/><path d="M20 21v6l6-3-6-3z" fill="#7C88EC"/></svg>
+              <div class="progress"><i style="width:62%"></i></div>
+            </div>
+            <div class="mini-body"><div class="mini-title">Neon Harbor</div><div class="mini-sub">S2 · E4</div></div>
+          </article>
+          <article class="mini" tabindex="0" aria-label="Glass City, 28% watched">
+            <div class="mini-art">
+              <svg viewBox="0 0 48 48" fill="none"><path d="M14 34V18l10-6 10 6v16" stroke="#CA8A04" stroke-width="2" fill="none"/><path d="M20 34v-8h8v8" stroke="#CA8A04" stroke-width="2"/></svg>
+              <div class="progress"><i style="width:28%"></i></div>
+            </div>
+            <div class="mini-body"><div class="mini-title">Glass City</div><div class="mini-sub">Film · 1h 52m</div></div>
+          </article>
+          <article class="mini" tabindex="0" aria-label="The Long Quiet, 85% watched">
+            <div class="mini-art">
+              <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="11" stroke="#7C88EC" stroke-width="2"/><path d="M24 17v7l5 3" stroke="#7C88EC" stroke-width="2" stroke-linecap="round"/></svg>
+              <div class="progress"><i style="width:85%"></i></div>
+            </div>
+            <div class="mini-body"><div class="mini-title">The Long Quiet</div><div class="mini-sub">S1 · E9</div></div>
+          </article>
+        </div>
+      </section>
+
+      <!-- Trending list -->
+      <section class="list" aria-label="Trending this week">
+        <div class="section-head" style="margin-top:8px;">
+          <h2 style="font-size:var(--fs-h2);font-weight:600;letter-spacing:-0.3px;">Trending now</h2>
+          <button class="see-all">See all</button>
+        </div>
+        <article class="list-item" tabindex="0">
+          <span class="rank">1</span>
+          <span class="thumb" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 4.5v15l13-7.5L5 4.5z" fill="#7C88EC"/></svg></span>
+          <div class="li-text">
+            <div class="li-title">Midnight Protocol</div>
+            <div class="li-meta">Thriller · 2026 · <span class="rating"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.6 1.4 6.8L12 17.8 6 21l1.4-6.8L2.3 9.6l6.9-.7L12 2z"/></svg>4.9</span></div>
+          </div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 6l6 6-6 6" stroke="#8A8F98" stroke-width="2" stroke-linecap="round"/></svg>
+        </article>
+        <article class="list-item" tabindex="0">
+          <span class="rank">2</span>
+          <span class="thumb" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="7" width="16" height="11" rx="2" stroke="#CA8A04" stroke-width="2"/><path d="M10 11v3l3-1.5L10 11z" fill="#CA8A04"/></svg></span>
+          <div class="li-text">
+            <div class="li-title">Echoes of Tomorrow</div>
+            <div class="li-meta">Sci-Fi · 2025 · <span class="rating"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.6 1.4 6.8L12 17.8 6 21l1.4-6.8L2.3 9.6l6.9-.7L12 2z"/></svg>4.7</span></div>
+          </div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 6l6 6-6 6" stroke="#8A8F98" stroke-width="2" stroke-linecap="round"/></svg>
+        </article>
+        <article class="list-item" tabindex="0">
+          <span class="rank">3</span>
+          <span class="thumb" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="#7C88EC" stroke-width="2"/><path d="M12 8v8M8 12h8" stroke="#7C88EC" stroke-width="2" stroke-linecap="round"/></svg></span>
+          <div class="li-text">
+            <div class="li-title">Silent Frequencies</div>
+            <div class="li-meta">Documentary · 2026 · <span class="rating"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.6 1.4 6.8L12 17.8 6 21l1.4-6.8L2.3 9.6l6.9-.7L12 2z"/></svg>4.6</span></div>
+          </div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 6l6 6-6 6" stroke="#8A8F98" stroke-width="2" stroke-linecap="round"/></svg>
+        </article>
+      </section>
+    </main>
+
+    <!-- Tab bar -->
+    <nav class="tabbar" aria-label="Primary">
+      <button class="tab" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-5h-6v5H5a1 1 0 0 1-1-1v-8z" fill="currentColor"/></svg>
+        Home
+      </button>
+      <button class="tab">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Discover
+      </button>
+      <button class="tab">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 4h12v16l-6-4-6 4V4z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        Saved
+      </button>
+      <button class="tab">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="2"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Profile
+      </button>
+    </nav>
+  </div>
+
+  <script>
+    // Genre chip single-select (pressed state)
+    document.querySelectorAll('.chip').forEach(function (c) {
+      c.addEventListener('click', function () {
+        document.querySelectorAll('.chip').forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
+        c.setAttribute('aria-pressed', 'true');
+      });
+    });
+    // Tab bar selection
+    document.querySelectorAll('.tab').forEach(function (t) {
+      t.addEventListener('click', function () {
+        document.querySelectorAll('.tab').forEach(function (x) { x.removeAttribute('aria-current'); });
+        t.setAttribute('aria-current', 'page');
+      });
+    });
+  </script>
+</body>
+</html>

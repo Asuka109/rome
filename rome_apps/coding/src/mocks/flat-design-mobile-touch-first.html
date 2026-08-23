@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pulse — Flat Design Mobile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Palette from styles.csv Design System Variables */
+    --bg: #FFFFFF;
+    --surface: #F3F4F6;
+    --fg: #111827;
+    --primary: #3B82F6;
+    --primary-tint: #DBEAFE;
+    --secondary: #10B981;
+    --secondary-tint: #D1FAE5;
+    --accent: #F59E0B;
+    --accent-tint: #FEF3C7;
+    --border: #E5E7EB;
+    --muted-fg: #6B7280;
+    --on-color: #FFFFFF;
+
+    /* Radius */
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-pill: 999px;
+
+    /* Flat = zero elevation */
+    --shadow: none;
+    --elevation: 0;
+
+    /* Touch */
+    --touch-target: 48px;
+
+    /* 4pt spacing system */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 16px;
+    --sp-4: 24px;
+    --sp-5: 32px;
+    --sp-6: 48px;
+
+    /* Type scale */
+    --fs-display: 34px;
+    --fs-h1: 26px;
+    --fs-h2: 20px;
+    --fs-body: 16px;
+    --fs-sub: 18px;
+    --fs-label: 12px;
+
+    /* Motion */
+    --press: 120ms cubic-bezier(0.2, 0, 0, 1);
+    --ease: 200ms cubic-bezier(0.2, 0, 0, 1);
+
+    --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: var(--font);
+    color: var(--fg);
+    background:
+      radial-gradient(circle at 12% 8%, var(--primary-tint) 0, transparent 38%),
+      radial-gradient(circle at 88% 92%, var(--secondary-tint) 0, transparent 38%),
+      #E8EBF0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--sp-4);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 100%;
+    max-width: 412px;
+    background: var(--bg);
+    border-radius: 36px;
+    border: 8px solid var(--fg);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: min(860px, calc(100vh - 48px));
+  }
+
+  @media (max-width: 460px) {
+    body { padding: 0; }
+    .phone {
+      max-width: 100%;
+      height: 100vh;
+      border-radius: 0;
+      border: none;
+    }
+  }
+
+  /* Status bar */
+  .statusbar {
+    height: 44px;
+    flex: 0 0 auto;
+    background: var(--primary);
+    color: var(--on-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--sp-4);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+  }
+  .statusbar .sig { display: flex; gap: 5px; align-items: center; }
+  .statusbar .bar { width: 3px; background: var(--on-color); border-radius: 1px; }
+  .statusbar .bar:nth-child(1){ height: 6px; }
+  .statusbar .bar:nth-child(2){ height: 9px; }
+  .statusbar .bar:nth-child(3){ height: 12px; }
+  .statusbar .bar:nth-child(4){ height: 15px; }
+
+  /* Scroll region */
+  .screen {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* HERO color block */
+  .hero {
+    background: var(--primary);
+    color: var(--on-color);
+    padding: var(--sp-4) var(--sp-4) var(--sp-5);
+    position: relative;
+    overflow: hidden;
+  }
+  /* Geometric low-opacity shape overlays */
+  .hero .shape {
+    position: absolute;
+    opacity: 0.12;
+    background: var(--on-color);
+    pointer-events: none;
+  }
+  .hero .shape.c1 { width: 180px; height: 180px; border-radius: var(--radius-pill); top: -70px; right: -50px; }
+  .hero .shape.c2 { width: 90px; height: 90px; border-radius: 18px; bottom: -30px; left: 30px; transform: rotate(28deg); }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    z-index: 1;
+    margin-bottom: var(--sp-4);
+  }
+  .topbar .greet .label {
+    font-size: var(--fs-label);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.85;
+  }
+  .topbar .greet h1 {
+    font-size: var(--fs-h1);
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-top: var(--sp-1);
+  }
+  .avatar {
+    width: var(--touch-target);
+    height: var(--touch-target);
+    border-radius: var(--radius-pill);
+    background: var(--secondary);
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: 16px;
+    color: var(--on-color);
+    flex: 0 0 auto;
+  }
+
+  /* Hero ring stat */
+  .ringcard {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+  }
+  .ring { flex: 0 0 auto; width: 120px; height: 120px; }
+  .ring .track { stroke: rgba(255,255,255,0.25); }
+  .ring .prog {
+    stroke: var(--on-color);
+    stroke-linecap: round;
+    transition: stroke-dashoffset var(--ease);
+  }
+  .ring-center {
+    fill: var(--on-color);
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .ringcopy .big {
+    font-size: var(--fs-display);
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+  .ringcopy .unit { font-size: var(--fs-body); font-weight: 600; opacity: 0.9; }
+  .ringcopy p { margin-top: var(--sp-2); font-size: 14px; font-weight: 600; opacity: 0.9; }
+
+  /* Quick stat row over white */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--sp-2);
+    padding: var(--sp-4);
+    background: var(--bg);
+  }
+  .stat {
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    padding: var(--sp-3);
+    text-align: left;
+  }
+  .iconbox {
+    width: 40px; height: 40px;
+    border-radius: var(--radius-sm);
+    display: grid; place-items: center;
+    margin-bottom: var(--sp-2);
+  }
+  .iconbox svg { width: 22px; height: 22px; stroke-width: 2.5; }
+  .iconbox.blue { background: var(--primary); color: var(--on-color); }
+  .iconbox.green { background: var(--secondary); color: var(--on-color); }
+  .iconbox.amber { background: var(--accent); color: var(--on-color); }
+  .stat .num { font-size: var(--fs-h2); font-weight: 800; letter-spacing: -0.5px; }
+  .stat .cap { font-size: var(--fs-label); font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted-fg); margin-top: 2px; }
+
+  /* Section header */
+  .section { padding: var(--sp-3) var(--sp-4) 0; }
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: var(--sp-3);
+  }
+  .section-head h2 { font-size: var(--fs-h2); font-weight: 800; letter-spacing: -0.5px; }
+  .section-head a {
+    font-size: 13px; font-weight: 700; color: var(--primary);
+    text-decoration: none; padding: var(--sp-1) var(--sp-2);
+    border-radius: var(--radius-sm);
+  }
+  .section-head a:hover { background: var(--primary-tint); }
+  .section-head a:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+
+  /* Activity list cards */
+  .activity { display: flex; flex-direction: column; gap: var(--sp-2); }
+  .act {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    padding: var(--sp-3);
+    min-height: var(--touch-target);
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: transform var(--press), background var(--press);
+    color: inherit;
+    font-family: inherit;
+  }
+  .act:hover { background: var(--primary-tint); }
+  .act:active { transform: scale(0.97); }
+  .act:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+  .act .iconbox { margin-bottom: 0; flex: 0 0 auto; width: 44px; height: 44px; }
+  .act .meta { flex: 1 1 auto; min-width: 0; }
+  .act .meta .title { font-size: var(--fs-body); font-weight: 700; }
+  .act .meta .sub { font-size: 13px; font-weight: 600; color: var(--muted-fg); margin-top: 2px; }
+  .act .val { font-weight: 800; font-size: var(--fs-body); letter-spacing: -0.3px; flex: 0 0 auto; }
+  .act .val.green { color: var(--secondary); }
+  .act .val.amber { color: var(--accent); }
+  .act .val.blue { color: var(--primary); }
+
+  /* Featured plan block — full-width green color block */
+  .plan {
+    margin: var(--sp-4) var(--sp-4) 0;
+    background: var(--secondary);
+    color: var(--on-color);
+    border-radius: var(--radius-md);
+    padding: var(--sp-4);
+    position: relative;
+    overflow: hidden;
+  }
+  .plan .shape {
+    position: absolute; opacity: 0.14; background: var(--on-color);
+    width: 130px; height: 130px; border-radius: 22px;
+    transform: rotate(22deg); top: -40px; right: -30px; pointer-events: none;
+  }
+  .plan .tag {
+    display: inline-block;
+    font-size: var(--fs-label);
+    font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    background: rgba(255,255,255,0.2);
+    padding: var(--sp-1) var(--sp-2);
+    border-radius: var(--radius-pill);
+    position: relative; z-index: 1;
+  }
+  .plan h3 { position: relative; z-index: 1; font-size: var(--fs-h1); font-weight: 800; letter-spacing: -0.5px; margin-top: var(--sp-2); }
+  .plan p { position: relative; z-index: 1; font-size: 14px; font-weight: 600; opacity: 0.92; margin-top: var(--sp-1); }
+
+  /* Primary CTA with thick border for featured */
+  .cta {
+    position: relative; z-index: 1;
+    margin-top: var(--sp-3);
+    height: 56px;
+    width: 100%;
+    border: 4px solid var(--on-color);
+    background: transparent;
+    color: var(--on-color);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: var(--fs-body);
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: var(--sp-2);
+    transition: transform var(--press), background var(--press), color var(--press);
+  }
+  .cta svg { width: 20px; height: 20px; stroke-width: 2.5; }
+  .cta:hover { background: var(--on-color); color: var(--secondary); }
+  .cta:active { transform: scale(0.97); }
+  .cta:focus-visible { outline: 3px solid var(--fg); outline-offset: 3px; }
+
+  .pad-bottom { height: var(--sp-6); }
+
+  /* Bottom tabs — solid fill, no floating, no shadow */
+  .tabs {
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: var(--bg);
+    border-top: 2px solid var(--border);
+  }
+  .tab {
+    border: none;
+    background: transparent;
+    color: var(--muted-fg);
+    font-family: inherit;
+    min-height: 60px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    transition: color var(--press), transform var(--press);
+  }
+  .tab svg { width: 24px; height: 24px; stroke-width: 2.5; }
+  .tab:active { transform: scale(0.97); }
+  .tab:focus-visible { outline: 3px solid var(--primary); outline-offset: -3px; }
+  .tab[aria-current="page"] { color: var(--primary); }
+  .tab.add { color: var(--on-color); }
+  .tab.add .addbox {
+    width: 44px; height: 44px;
+    background: var(--accent);
+    border-radius: var(--radius-md);
+    display: grid; place-items: center;
+    color: var(--on-color);
+  }
+  .tab.add:active .addbox { transform: scale(0.94); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+    .act:active, .cta:active, .tab:active, .tab.add:active .addbox { transform: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="phone">
+    <div class="statusbar" aria-hidden="true">
+      <span>9:41</span>
+      <span class="sig">
+        <span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span>
+      </span>
+    </div>
+
+    <div class="screen">
+      <header class="hero">
+        <span class="shape c1"></span>
+        <span class="shape c2"></span>
+
+        <div class="topbar">
+          <div class="greet">
+            <div class="label">Tuesday, May 30</div>
+            <h1>Hi, Maya</h1>
+          </div>
+          <div class="avatar" aria-label="Maya's profile">MR</div>
+        </div>
+
+        <div class="ringcard">
+          <svg class="ring" viewBox="0 0 120 120" role="img" aria-label="Daily goal 78 percent complete">
+            <circle class="track" cx="60" cy="60" r="50" fill="none" stroke-width="12" />
+            <circle class="prog" cx="60" cy="60" r="50" fill="none" stroke-width="12"
+              stroke-dasharray="314" stroke-dashoffset="69" transform="rotate(-90 60 60)" />
+            <text class="ring-center" x="60" y="66" text-anchor="middle" font-size="24">78%</text>
+          </svg>
+          <div class="ringcopy">
+            <div class="big">7,842<span class="unit"> / 10k</span></div>
+            <p>Steps today — keep moving!</p>
+          </div>
+        </div>
+      </header>
+
+      <main>
+        <section class="stats" aria-label="Today's summary">
+          <div class="stat">
+            <div class="iconbox blue" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/></svg>
+            </div>
+            <div class="num">412</div>
+            <div class="cap">kcal</div>
+          </div>
+          <div class="stat">
+            <div class="iconbox green" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 14c1.5-1.6 3-3.5 3-5.5A3.5 3.5 0 0 0 18.5 5c-1.4 0-2.6.7-3.5 1.8C14.1 5.7 12.9 5 11.5 5A3.5 3.5 0 0 0 8 8.5c0 2 1.5 3.9 3 5.5l4 4 4-4Z"/></svg>
+            </div>
+            <div class="num">128</div>
+            <div class="cap">bpm</div>
+          </div>
+          <div class="stat">
+            <div class="iconbox amber" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            </div>
+            <div class="num">52</div>
+            <div class="cap">min</div>
+          </div>
+        </section>
+
+        <section class="section" aria-label="Recent activity">
+          <div class="section-head">
+            <h2>Activity</h2>
+            <a href="#" tabindex="0">See all</a>
+          </div>
+          <div class="activity">
+            <button class="act" type="button">
+              <span class="iconbox green" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 17l5-5 4 4 7-8"/><path d="M14 8h6v6"/></svg>
+              </span>
+              <span class="meta">
+                <span class="title">Morning Run</span>
+                <span class="sub">6:20 AM · 5.2 km · 28 min</span>
+              </span>
+              <span class="val green">+248</span>
+            </button>
+            <button class="act" type="button">
+              <span class="iconbox blue" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><path d="M6 18 9 9h5l3 9M9 9l2-4h4"/></svg>
+              </span>
+              <span class="meta">
+                <span class="title">City Cycle</span>
+                <span class="sub">12:05 PM · 14.8 km · 41 min</span>
+              </span>
+              <span class="val blue">+164</span>
+            </button>
+            <button class="act" type="button">
+              <span class="iconbox amber" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 6l4 4M14 14l4 4M3 9l3-3M18 15l3-3"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+              </span>
+              <span class="meta">
+                <span class="title">Strength Set</span>
+                <span class="sub">7:40 PM · Upper body · 22 min</span>
+              </span>
+              <span class="val amber">+98</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="plan" aria-label="Recommended plan">
+          <span class="shape" aria-hidden="true"></span>
+          <span class="tag">New plan</span>
+          <h3>21-Day Core Reset</h3>
+          <p>Daily 12-minute sessions built around your activity streak.</p>
+          <button class="cta" type="button">
+            Start program
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </section>
+
+        <div class="pad-bottom" aria-hidden="true"></div>
+      </main>
+    </div>
+
+    <nav class="tabs" aria-label="Primary">
+      <button class="tab" type="button" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 10 12 3l8 7"/><path d="M6 9v11h12V9"/></svg>
+        Home
+      </button>
+      <button class="tab" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19V5M4 19h16M8 16v-5M12 16V8M16 16v-8M20 16v-3"/></svg>
+        Stats
+      </button>
+      <button class="tab add" type="button" aria-label="Log workout">
+        <span class="addbox" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg>
+        </span>
+      </button>
+      <button class="tab" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+        Profile
+      </button>
+    </nav>
+  </div>
+
+  <script>
+    // Light interactivity: tab selection state. Visuals are static otherwise.
+    document.querySelectorAll('.tab:not(.add)').forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        document.querySelectorAll('.tab').forEach(function (t) { t.removeAttribute('aria-current'); });
+        tab.setAttribute('aria-current', 'page');
+      });
+    });
+  </script>
+</body>
+</html>

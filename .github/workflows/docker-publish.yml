@@ -1,0 +1,228 @@
+name: Docker Hub Publish
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  IMAGE_NAME: yunfanye/rome
+
+jobs:
+  build:
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          lfs: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Prepare platform metadata
+        id: platform
+        run: |
+          platform="${{ matrix.platform }}"
+          echo "pair=${platform//\//-}" >> "$GITHUB_OUTPUT"
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          # Tag rules here only feed the OCI labels on the per-arch digest
+          # pushes; the publish job owns the real tag set (including latest).
+          tags: |
+            type=semver,pattern={{version}}
+          flavor: |
+            latest=false
+
+      - name: Prepare Docker runtime workspace
+        run: node scripts/docker/prepare-runtime-workspace.mjs
+
+      - name: Compute build metadata
+        id: build_meta
+        run: |
+          echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+          # The release tag freezes the semver (v stripped) into the image so the
+          # runtime reports the version matching its docker tag. The gate below is
+          # the single producer-side validation for ROME_VERSION: a v* tag that
+          # isn't strict semver (vMAJOR.MINOR.PATCH with optional -prerelease;
+          # +buildmeta is rejected because docker tags can't contain "+") fails
+          # the publish before any image exists.
+          version="${GITHUB_REF#refs/tags/v}"
+          semver='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*)?$'
+          if [[ ! "$version" =~ $semver ]]; then
+            echo "::error::Tag '${GITHUB_REF#refs/tags/}' is not strict semver; refusing to publish."
+            exit 1
+          fi
+          # Enforce tag immutability: refuse to republish a semver tag that
+          # already exists in the registry (rerun after a successful publish,
+          # or a force-moved git tag). "Not found" is the only proceed path —
+          # any other inspect failure is fatal so we never publish blind.
+          ref="${IMAGE_NAME}:${version}"
+          if out=$(docker buildx imagetools inspect "$ref" 2>&1); then
+            echo "::error::${ref} already exists; semver tags are immutable — cut a new version."
+            exit 1
+          elif ! grep -qiE 'not found|manifest unknown|no such manifest' <<< "$out"; then
+            echo "::error::Could not verify ${ref} is unpublished: ${out}"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Start disk probe
+        run: scripts/docker/probe-build-disk.sh start
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .docker/rome-runtime-workspace
+          file: .docker/rome-runtime-workspace/Dockerfile
+          platforms: ${{ matrix.platform }}
+          outputs: type=image,name=${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true,compression=zstd,compression-level=9,force-compression=true,oci-mediatypes=true
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            ROME_DOCKER_APP_CODE_MODE=compiled
+            ROME_VERSION=${{ steps.build_meta.outputs.version }}
+            ROME_BUILD_SHA=${{ steps.build_meta.outputs.sha }}
+            ROME_BUILD_TIME=${{ steps.build_meta.outputs.time }}
+            ROME_GA_MEASUREMENT_ID=${{ secrets.ROME_GA_MEASUREMENT_ID }}
+          cache-from: type=gha,scope=rome-runtime-${{ steps.platform.outputs.pair }}
+          cache-to: type=gha,mode=min,scope=rome-runtime-${{ steps.platform.outputs.pair }}
+
+      # Runs on failure too, though an ENOSPC kill takes the whole job log with
+      # it — see the header of probe-build-disk.sh. The signal this earns is
+      # from the legs that survive.
+      - name: Report disk usage
+        if: always()
+        run: scripts/docker/probe-build-disk.sh report
+
+      - name: Upload disk probe
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: disk-probe-${{ steps.platform.outputs.pair }}
+          path: /tmp/build-disk-probe.tsv
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v7
+        with:
+          name: digests-${{ steps.platform.outputs.pair }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    permissions:
+      contents: read
+
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Download digests
+        uses: actions/download-artifact@v7
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Decide whether latest moves
+        id: latest_check
+        run: |
+          # `latest` must always point at the highest stable version, so a
+          # backport (e.g. v0.4.10 published after 0.5.0) must not roll it
+          # back. Compare this release against every stable semver tag already
+          # in the registry; prereleases never move latest. curl -f fails the
+          # job on registry errors rather than guessing.
+          version="${GITHUB_REF#refs/tags/v}"
+          move=false
+          if [[ "$version" != *-* ]]; then
+            url="https://hub.docker.com/v2/repositories/${IMAGE_NAME}/tags?page_size=100"
+            existing=""
+            while [[ -n "$url" && "$url" != "null" ]]; do
+              page=$(curl -fsSL "$url")
+              existing+=$(jq -r '.results[].name' <<< "$page")$'\n'
+              url=$(jq -r '.next' <<< "$page")
+            done
+            stable='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
+            highest=$({ grep -E "$stable" <<< "$existing" || true; echo "$version"; } | sort -V | tail -1)
+            [[ "$highest" == "$version" ]] && move=true
+          fi
+          echo "move_latest=$move" >> "$GITHUB_OUTPUT"
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          # Releases push the immutable semver tag (no v prefix); no mutable
+          # major/minor aliases — Rome Cloud resolves versions by listing the
+          # semver tags. `latest` is owned entirely by the latest_check step
+          # (flavor latest=false disables the action's own auto behavior).
+          tags: |
+            type=semver,pattern={{version}}
+            type=raw,value=latest,enable=${{ steps.latest_check.outputs.move_latest }}
+          flavor: |
+            latest=false
+
+      - name: Create multi-arch manifest
+        working-directory: /tmp/digests
+        env:
+          DOCKER_METADATA_OUTPUT_JSON: ${{ steps.meta.outputs.json }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+        run: |
+          # Zero tags means the metadata rules didn't match this ref — fail loudly
+          # rather than pushing a manifest under a guessed tag.
+          tag_args=()
+          while IFS= read -r tag; do
+            tag_args+=(-t "$tag")
+          done < <(jq -r '(.tags // [])[]' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+          if [[ ${#tag_args[@]} -eq 0 ]]; then
+            echo "::error::metadata-action produced no tags for this ref; refusing to publish."
+            exit 1
+          fi
+
+          sources=()
+          for digest in *; do
+            sources+=("${IMAGE_NAME}@sha256:${digest}")
+          done
+
+          docker buildx imagetools create "${tag_args[@]}" "${sources[@]}"

@@ -1,0 +1,9 @@
+name: test-sentinel
+description: Test sentinel agent for triaging messages.
+model: haiku
+permissionMode: bypassPermissions
+tools:
+  - Read
+  - Glob
+systemPromptPrefix: |
+  You are a test sentinel. Triage incoming messages: REPLY, ESCALATE, or IGNORE.

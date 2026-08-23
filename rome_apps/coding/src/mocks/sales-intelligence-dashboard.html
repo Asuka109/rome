@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Helix Revenue — Sales Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Surface palette (dark BI) */
+    --bg: #020617;
+    --bg-grad: radial-gradient(1200px 600px at 80% -10%, #0c1530 0%, #020617 55%);
+    --card: #0E1223;
+    --card-2: #11172c;
+    --primary: #0F172A;
+    --secondary: #1E293B;
+    --fg: #F8FAFC;
+    --muted: #1A1E2F;
+    --muted-fg: #94A3B8;
+    --border: #334155;
+    --border-soft: #1f2940;
+
+    /* Sales status semantics (from CSV) */
+    --won: #22C55E;
+    --lost: #EF4444;
+    --progress: #3B82F6;
+    --blocked: #F59E0B;
+    --quota-met: #FFD700;
+    --quota-missed: #64748B;
+
+    /* Leaderboard ranks */
+    --rank-1: #FFD700;
+    --rank-2: #C0C0C0;
+    --rank-3: #CD7F32;
+
+    /* Gauge */
+    --gauge-track: #1f2940;
+    --gauge-fill: #22C55E;
+
+    /* Radius */
+    --r-sm: 8px;
+    --r-md: 12px;
+    --r-lg: 18px;
+    --r-pill: 999px;
+
+    /* Shadow */
+    --shadow-1: 0 1px 0 rgba(255,255,255,0.03) inset, 0 8px 24px rgba(2,6,23,0.55);
+    --shadow-2: 0 0 0 1px var(--border-soft), 0 18px 40px rgba(2,6,23,0.6);
+    --glow-won: 0 0 0 1px rgba(34,197,94,0.35), 0 8px 28px rgba(34,197,94,0.18);
+
+    /* Spacing scale */
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px;
+    --s-5: 24px; --s-6: 32px; --s-7: 48px;
+
+    /* Type scale */
+    --font-sans: 'Fira Sans', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    --font-mono: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --t-xs: 11px; --t-sm: 12px; --t-md: 14px; --t-lg: 18px;
+    --t-xl: 24px; --t-2xl: 34px;
+
+    /* Motion */
+    --ease: cubic-bezier(.22,.61,.36,1);
+    --dur-fast: 140ms;
+    --dur: 280ms;
+    --dur-slow: 700ms;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    background-image: var(--bg-grad);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-size: var(--t-md);
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  .num { font-family: var(--font-mono); font-feature-settings: "tnum" 1; }
+
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; }
+
+  /* ---------- Layout shell ---------- */
+  .shell {
+    display: grid;
+    grid-template-columns: 248px 1fr;
+    min-height: 100vh;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    background: linear-gradient(180deg, #0a1124 0%, #070d1c 100%);
+    border-right: 1px solid var(--border-soft);
+    padding: var(--s-5) var(--s-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-5);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+  .brand {
+    display: flex; align-items: center; gap: var(--s-3);
+    font-weight: 700; font-size: var(--t-lg); letter-spacing: -0.01em;
+  }
+  .brand .logo {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--won), #15803d);
+    display: grid; place-items: center;
+    box-shadow: var(--glow-won);
+    flex: 0 0 auto;
+  }
+  .brand small { display:block; font-size: var(--t-xs); font-weight:400; color: var(--muted-fg); letter-spacing: .04em; }
+
+  .nav { display: flex; flex-direction: column; gap: 2px; }
+  .nav-label { font-size: var(--t-xs); text-transform: uppercase; letter-spacing: .12em; color: var(--muted-fg); padding: 0 var(--s-3); margin-bottom: var(--s-2); }
+  .nav a {
+    display: flex; align-items: center; gap: var(--s-3);
+    padding: 10px var(--s-3); border-radius: var(--r-sm);
+    color: var(--muted-fg); font-size: var(--t-md); font-weight: 500;
+    transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  }
+  .nav a svg { width: 18px; height: 18px; flex: 0 0 auto; }
+  .nav a:hover { background: var(--muted); color: var(--fg); }
+  .nav a.active { background: rgba(34,197,94,0.10); color: var(--fg); box-shadow: inset 3px 0 0 var(--won); }
+  .nav a:focus-visible { outline: 2px solid var(--won); outline-offset: 2px; }
+
+  .quota-mini {
+    margin-top: auto;
+    background: var(--card-2);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--r-md);
+    padding: var(--s-4);
+  }
+  .quota-mini h4 { margin: 0 0 var(--s-2); font-size: var(--t-xs); text-transform: uppercase; letter-spacing: .1em; color: var(--muted-fg); }
+  .bar { height: 8px; border-radius: var(--r-pill); background: var(--gauge-track); overflow: hidden; }
+  .bar > span { display:block; height:100%; border-radius: var(--r-pill); background: linear-gradient(90deg, var(--won), var(--quota-met)); width: 0; transition: width var(--dur-slow) var(--ease); }
+
+  /* ---------- Main ---------- */
+  .main { display: flex; flex-direction: column; min-width: 0; }
+
+  .topbar {
+    display: flex; align-items: center; gap: var(--s-4);
+    padding: var(--s-4) var(--s-6);
+    border-bottom: 1px solid var(--border-soft);
+    background: rgba(2,6,23,0.6);
+    backdrop-filter: blur(8px);
+    position: sticky; top: 0; z-index: 5;
+  }
+  .topbar h1 { font-size: var(--t-xl); margin: 0; font-weight: 600; letter-spacing: -0.02em; }
+  .topbar .sub { color: var(--muted-fg); font-size: var(--t-sm); }
+  .spacer { flex: 1; }
+
+  .search {
+    display: flex; align-items: center; gap: var(--s-2);
+    background: var(--card-2); border: 1px solid var(--border-soft);
+    border-radius: var(--r-pill); padding: 8px 14px; color: var(--muted-fg);
+    min-width: 0;
+  }
+  .search input {
+    background: transparent; border: none; outline: none; color: var(--fg);
+    font-family: var(--font-sans); font-size: var(--t-sm); width: 160px;
+  }
+  .search:focus-within { border-color: var(--won); color: var(--fg); }
+  .search svg { width: 16px; height: 16px; flex: 0 0 auto; }
+
+  .seg { display: flex; background: var(--card-2); border: 1px solid var(--border-soft); border-radius: var(--r-pill); padding: 3px; }
+  .seg button {
+    border: none; background: transparent; color: var(--muted-fg);
+    font-size: var(--t-sm); font-weight: 500; padding: 6px 14px; border-radius: var(--r-pill);
+    transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  }
+  .seg button[aria-pressed="true"] { background: var(--won); color: #04210f; }
+  .seg button:focus-visible { outline: 2px solid var(--won); outline-offset: 2px; }
+
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: var(--s-2);
+    background: linear-gradient(180deg, #2ee06b, #16a34a);
+    color: #04210f; font-weight: 600; font-size: var(--t-sm);
+    border: none; padding: 10px 16px; border-radius: var(--r-pill);
+    box-shadow: var(--glow-won);
+    transition: transform var(--dur-fast) var(--ease), filter var(--dur-fast) var(--ease);
+  }
+  .btn-primary svg { width: 16px; height: 16px; }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-primary:active { transform: translateY(1px) scale(.99); }
+  .btn-primary:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%; flex: 0 0 auto;
+    background: linear-gradient(135deg, #3B82F6, #1e3a8a);
+    display: grid; place-items: center; font-weight: 600; font-size: var(--t-sm);
+    border: 1px solid var(--border-soft);
+  }
+
+  .content { padding: var(--s-6); display: flex; flex-direction: column; gap: var(--s-5); }
+
+  /* KPI row */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s-4); }
+  .kpi {
+    background: var(--card); border: 1px solid var(--border-soft);
+    border-radius: var(--r-md); padding: var(--s-4) var(--s-5);
+    box-shadow: var(--shadow-1); position: relative; overflow: hidden;
+  }
+  .kpi::before { content:""; position:absolute; inset:0 auto 0 0; width:3px; background: var(--accent-c, var(--won)); }
+  .kpi .lbl { font-size: var(--t-xs); text-transform: uppercase; letter-spacing: .1em; color: var(--muted-fg); }
+  .kpi .val { font-size: var(--t-2xl); font-weight: 700; margin-top: var(--s-2); letter-spacing: -0.02em; }
+  .kpi .delta { display: inline-flex; align-items: center; gap: 4px; font-size: var(--t-sm); margin-top: var(--s-2); font-family: var(--font-mono); }
+  .kpi .delta svg { width: 14px; height: 14px; }
+  .up { color: var(--won); }
+  .down { color: var(--lost); }
+
+  .grid-2 { display: grid; grid-template-columns: 1.6fr 1fr; gap: var(--s-5); align-items: start; }
+
+  .panel {
+    background: var(--card); border: 1px solid var(--border-soft);
+    border-radius: var(--r-lg); box-shadow: var(--shadow-1);
+    display: flex; flex-direction: column;
+  }
+  .panel-head {
+    display: flex; align-items: center; gap: var(--s-3);
+    padding: var(--s-4) var(--s-5); border-bottom: 1px solid var(--border-soft);
+  }
+  .panel-head h2 { margin: 0; font-size: var(--t-lg); font-weight: 600; letter-spacing: -0.01em; }
+  .panel-head .meta { color: var(--muted-fg); font-size: var(--t-sm); }
+  .panel-body { padding: var(--s-5); }
+
+  .chip {
+    font-size: var(--t-xs); font-family: var(--font-mono); font-weight: 600;
+    padding: 3px 9px; border-radius: var(--r-pill); letter-spacing: .02em;
+    border: 1px solid transparent;
+  }
+  .chip.won { color: var(--won); background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.3); }
+  .chip.progress { color: var(--progress); background: rgba(59,130,246,.12); border-color: rgba(59,130,246,.3); }
+  .chip.blocked { color: var(--blocked); background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.3); }
+  .chip.lost { color: var(--lost); background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.3); }
+
+  /* Pipeline funnel */
+  .funnel { display: flex; flex-direction: column; gap: var(--s-3); }
+  .funnel-row { display: grid; grid-template-columns: 140px 1fr 96px; align-items: center; gap: var(--s-4); }
+  .funnel-row .stage { font-size: var(--t-sm); color: var(--muted-fg); }
+  .funnel-track { height: 30px; border-radius: var(--r-sm); background: var(--gauge-track); overflow: hidden; position: relative; }
+  .funnel-track > span {
+    display: block; height: 100%; border-radius: var(--r-sm);
+    background: linear-gradient(90deg, #2563eb, #22c55e);
+    width: 0; transition: width var(--dur-slow) var(--ease);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+  }
+  .funnel-row .amt { text-align: right; font-family: var(--font-mono); font-size: var(--t-sm); font-weight: 600; }
+  .funnel-row:nth-child(2) .funnel-track > span { background: linear-gradient(90deg,#1d4ed8,#3b82f6); }
+  .funnel-row:nth-child(3) .funnel-track > span { background: linear-gradient(90deg,#0ea5e9,#22d3ee); }
+  .funnel-row:nth-child(4) .funnel-track > span { background: linear-gradient(90deg,#f59e0b,#fde047); }
+  .funnel-row:nth-child(5) .funnel-track > span { background: linear-gradient(90deg,#16a34a,#22c55e); }
+
+  /* Gauges */
+  .gauges { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-5); }
+  .gauge { text-align: center; }
+  .gauge svg { width: 100%; height: auto; max-width: 150px; }
+  .gauge .gval { font-size: var(--t-xl); font-weight: 700; }
+  .gauge .glbl { font-size: var(--t-xs); color: var(--muted-fg); text-transform: uppercase; letter-spacing: .1em; }
+  .gauge-arc { transition: stroke-dashoffset var(--dur-slow) var(--ease); }
+
+  /* Kanban */
+  .kanban { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-4); }
+  .col { display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; }
+  .col-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); font-size: var(--t-sm); font-weight: 600; color: var(--muted-fg); }
+  .col-head .count { background: var(--muted); border-radius: var(--r-pill); padding: 1px 9px; font-family: var(--font-mono); font-size: var(--t-xs); }
+  .deal {
+    background: var(--card-2); border: 1px solid var(--border-soft);
+    border-left: 3px solid var(--progress);
+    border-radius: var(--r-sm); padding: var(--s-3) var(--s-4);
+    transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+  }
+  .deal:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
+  .deal:focus-visible { outline: 2px solid var(--won); outline-offset: 2px; }
+  .deal.s-progress { border-left-color: var(--progress); }
+  .deal.s-blocked { border-left-color: var(--blocked); }
+  .deal.s-won { border-left-color: var(--won); }
+  .deal .co { font-weight: 600; font-size: var(--t-md); }
+  .deal .row { display: flex; align-items: center; justify-content: space-between; margin-top: var(--s-2); }
+  .deal .val { font-family: var(--font-mono); font-weight: 600; }
+  .deal .who { font-size: var(--t-xs); color: var(--muted-fg); }
+
+  /* Leaderboard */
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left; font-size: var(--t-xs); text-transform: uppercase;
+    letter-spacing: .08em; color: var(--muted-fg); font-weight: 600;
+    padding: 0 var(--s-3) var(--s-3); border-bottom: 1px solid var(--border-soft);
+  }
+  thead th:last-child, td:last-child { text-align: right; }
+  tbody td { padding: var(--s-3); border-bottom: 1px solid var(--border-soft); font-size: var(--t-md); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr { transition: background var(--dur-fast) var(--ease); }
+  tbody tr:hover { background: var(--card-2); }
+  .rank { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; font-family: var(--font-mono); font-weight: 700; font-size: var(--t-sm); background: var(--muted); color: var(--muted-fg); }
+  .rank.r1 { background: rgba(255,215,0,.16); color: var(--rank-1); box-shadow: 0 0 0 1px rgba(255,215,0,.4); }
+  .rank.r2 { background: rgba(192,192,192,.16); color: var(--rank-2); box-shadow: 0 0 0 1px rgba(192,192,192,.4); }
+  .rank.r3 { background: rgba(205,127,50,.16); color: var(--rank-3); box-shadow: 0 0 0 1px rgba(205,127,50,.4); }
+  .rep { display: flex; align-items: center; gap: var(--s-3); }
+  .rep .av { width: 28px; height: 28px; border-radius: 50%; flex: 0 0 auto; display: grid; place-items: center; font-size: var(--t-xs); font-weight: 600; color: #04210f; }
+  .attain { font-family: var(--font-mono); font-weight: 600; }
+
+  /* Timeline */
+  .timeline { display: flex; flex-direction: column; gap: 0; position: relative; }
+  .tl-item { display: grid; grid-template-columns: 22px 1fr; gap: var(--s-3); padding-bottom: var(--s-4); position: relative; }
+  .tl-item:not(:last-child)::before { content:""; position: absolute; left: 10px; top: 20px; bottom: 0; width: 2px; background: var(--border-soft); }
+  .tl-dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 4px; border: 2px solid var(--bg); }
+  .tl-dot.won { background: var(--won); box-shadow: 0 0 0 3px rgba(34,197,94,.18); }
+  .tl-dot.progress { background: var(--progress); }
+  .tl-dot.blocked { background: var(--blocked); }
+  .tl-dot.lost { background: var(--lost); }
+  .tl-body .t { font-size: var(--t-md); }
+  .tl-body .t b { font-weight: 600; }
+  .tl-body .ts { font-size: var(--t-xs); color: var(--muted-fg); font-family: var(--font-mono); margin-top: 2px; }
+
+  /* Live blink */
+  .live { display: inline-flex; align-items: center; gap: 6px; font-size: var(--t-xs); color: var(--won); font-family: var(--font-mono); }
+  .live .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--won); animation: pulse 1.8s var(--ease) infinite; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,.5); } 50% { box-shadow: 0 0 0 6px rgba(34,197,94,0); } }
+
+  .menu-btn { display: none; background: var(--card-2); border: 1px solid var(--border-soft); color: var(--fg); width: 40px; height: 40px; border-radius: var(--r-sm); align-items:center; justify-content:center; }
+  .menu-btn svg { width: 20px; height: 20px; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 1100px) {
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+    .grid-2 { grid-template-columns: 1fr; }
+    .kanban { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 860px) {
+    .shell { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .menu-btn { display: inline-flex; }
+    .search { display: none; }
+  }
+  @media (max-width: 560px) {
+    .content { padding: var(--s-4); }
+    .topbar { padding: var(--s-3) var(--s-4); flex-wrap: wrap; }
+    .topbar h1 { font-size: var(--t-lg); }
+    .kpis { grid-template-columns: 1fr 1fr; gap: var(--s-3); }
+    .kpi { padding: var(--s-3) var(--s-4); }
+    .kpi .val { font-size: var(--t-xl); }
+    .funnel-row { grid-template-columns: 92px 1fr 72px; gap: var(--s-2); }
+    .gauges { grid-template-columns: 1fr 1fr; }
+    .seg { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <!-- Sidebar -->
+  <aside class="sidebar" aria-label="Primary">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#04210f" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-9"/><path d="M21 7v5h-5"/></svg>
+      </span>
+      <span>Helix<small>Revenue Intelligence</small></span>
+    </div>
+
+    <nav class="nav" aria-label="Sections">
+      <span class="nav-label">Workspace</span>
+      <a href="#" class="active" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+        Overview
+      </a>
+      <a href="#pipeline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 8v6l-4 2v-8z"/></svg>
+        Pipeline
+      </a>
+      <a href="#deals">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>
+        Deals
+      </a>
+      <a href="#leaderboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 4h3v2a3 3 0 0 1-3 3M7 4H4v2a3 3 0 0 0 3 3"/></svg>
+        Leaderboard
+      </a>
+      <a href="#forecast">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
+        Forecast
+      </a>
+      <span class="nav-label" style="margin-top:var(--s-4)">Territories</span>
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6l7-3 8 3 7-3v15l-7 3-8-3-7 3z"/><path d="M8 3v15M16 6v15"/></svg>
+        Regions
+      </a>
+    </nav>
+
+    <div class="quota-mini">
+      <h4>Team Quota — Q2</h4>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:var(--s-2)">
+        <span class="num" style="font-size:var(--t-lg);font-weight:700">$4.18M</span>
+        <span class="num" style="color:var(--muted-fg);font-size:var(--t-sm)">/ $5.00M</span>
+      </div>
+      <div class="bar"><span data-fill="84"></span></div>
+      <div style="margin-top:var(--s-2);font-size:var(--t-xs);color:var(--muted-fg)" class="num">84% attained · 22 days left</div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <button class="menu-btn" aria-label="Open navigation">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <div>
+        <h1>Sales Overview</h1>
+        <div class="sub num">Q2 FY26 · Closing 30 Jun · <span class="live"><span class="pulse" aria-hidden="true"></span>Live</span></div>
+      </div>
+      <div class="spacer"></div>
+      <label class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
+        <input type="search" placeholder="Search deals, reps…" aria-label="Search" />
+      </label>
+      <div class="seg" role="group" aria-label="Date range">
+        <button>30D</button>
+        <button aria-pressed="true">QTD</button>
+        <button>YTD</button>
+      </div>
+      <button class="btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        New Deal
+      </button>
+      <span class="avatar" title="Dana Okafor">DO</span>
+    </header>
+
+    <main class="content">
+      <!-- KPIs -->
+      <section class="kpis" aria-label="Key metrics">
+        <article class="kpi" style="--accent-c:var(--won)">
+          <div class="lbl">Closed Won (QTD)</div>
+          <div class="val num">$2.94M</div>
+          <div class="delta up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 15l7-7 7 7"/></svg>+18.2% vs Q1</div>
+        </article>
+        <article class="kpi" style="--accent-c:var(--progress)">
+          <div class="lbl">Open Pipeline</div>
+          <div class="val num">$8.62M</div>
+          <div class="delta up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 15l7-7 7 7"/></svg>+6.4% coverage</div>
+        </article>
+        <article class="kpi" style="--accent-c:var(--quota-met)">
+          <div class="lbl">Win Rate</div>
+          <div class="val num">31.7%</div>
+          <div class="delta down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M19 9l-7 7-7-7"/></svg>-2.1% vs target</div>
+        </article>
+        <article class="kpi" style="--accent-c:var(--blocked)">
+          <div class="lbl">Avg Deal Cycle</div>
+          <div class="val num">47d</div>
+          <div class="delta up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 15l7-7 7 7"/></svg>6 days faster</div>
+        </article>
+      </section>
+
+      <!-- Pipeline + Gauges -->
+      <section class="grid-2" id="pipeline">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Pipeline Funnel</h2>
+            <div class="spacer"></div>
+            <span class="meta num">5 stages · 214 deals</span>
+          </div>
+          <div class="panel-body">
+            <div class="funnel">
+              <div class="funnel-row"><span class="stage">Prospecting</span><div class="funnel-track"><span data-fill="100"></span></div><span class="amt">$12.4M</span></div>
+              <div class="funnel-row"><span class="stage">Qualified</span><div class="funnel-track"><span data-fill="74"></span></div><span class="amt">$9.18M</span></div>
+              <div class="funnel-row"><span class="stage">Proposal</span><div class="funnel-track"><span data-fill="52"></span></div><span class="amt">$6.45M</span></div>
+              <div class="funnel-row"><span class="stage">Negotiation</span><div class="funnel-track"><span data-fill="34"></span></div><span class="amt">$4.21M</span></div>
+              <div class="funnel-row"><span class="stage">Closed Won</span><div class="funnel-track"><span data-fill="24"></span></div><span class="amt">$2.94M</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" id="forecast">
+          <div class="panel-head"><h2>Quota Gauges</h2></div>
+          <div class="panel-body">
+            <div class="gauges">
+              <div class="gauge">
+                <svg viewBox="0 0 120 72" role="img" aria-label="Attainment 84 percent">
+                  <path d="M10 66 A50 50 0 0 1 110 66" fill="none" stroke="var(--gauge-track)" stroke-width="11" stroke-linecap="round"/>
+                  <path class="gauge-arc" d="M10 66 A50 50 0 0 1 110 66" fill="none" stroke="var(--won)" stroke-width="11" stroke-linecap="round" stroke-dasharray="157" stroke-dashoffset="157" data-arc="84"/>
+                </svg>
+                <div class="gval num">84%</div>
+                <div class="glbl">Attainment</div>
+              </div>
+              <div class="gauge">
+                <svg viewBox="0 0 120 72" role="img" aria-label="Forecast accuracy 92 percent">
+                  <path d="M10 66 A50 50 0 0 1 110 66" fill="none" stroke="var(--gauge-track)" stroke-width="11" stroke-linecap="round"/>
+                  <path class="gauge-arc" d="M10 66 A50 50 0 0 1 110 66" fill="none" stroke="var(--quota-met)" stroke-width="11" stroke-linecap="round" stroke-dasharray="157" stroke-dashoffset="157" data-arc="92"/>
+                </svg>
+                <div class="gval num">92%</div>
+                <div class="glbl">Forecast Acc.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Kanban -->
+      <section class="panel" id="deals">
+        <div class="panel-head">
+          <h2>Active Deals</h2>
+          <div class="spacer"></div>
+          <span class="chip won">Won 24</span>
+          <span class="chip progress">Open 142</span>
+          <span class="chip blocked">At risk 9</span>
+        </div>
+        <div class="panel-body">
+          <div class="kanban">
+            <div class="col">
+              <div class="col-head"><span style="color:var(--progress)">Proposal</span><span class="count">3</span></div>
+              <article class="deal s-progress" tabindex="0">
+                <div class="co">Northwind Logistics</div>
+                <div class="row"><span class="val">$320K</span><span class="chip progress">68%</span></div>
+                <div class="who">A. Mensah · closes Jun 14</div>
+              </article>
+              <article class="deal s-progress" tabindex="0">
+                <div class="co">Vertex Health</div>
+                <div class="row"><span class="val">$184K</span><span class="chip progress">55%</span></div>
+                <div class="who">R. Patel · closes Jun 22</div>
+              </article>
+              <article class="deal s-progress" tabindex="0">
+                <div class="co">Cobalt Studio</div>
+                <div class="row"><span class="val">$96K</span><span class="chip progress">61%</span></div>
+                <div class="who">D. Okafor · closes Jun 09</div>
+              </article>
+            </div>
+            <div class="col">
+              <div class="col-head"><span style="color:var(--blocked)">At Risk</span><span class="count">2</span></div>
+              <article class="deal s-blocked" tabindex="0">
+                <div class="co">Stratos Manufacturing</div>
+                <div class="row"><span class="val">$512K</span><span class="chip blocked">stalled 14d</span></div>
+                <div class="who">L. Nguyen · closes Jun 30</div>
+              </article>
+              <article class="deal s-blocked" tabindex="0">
+                <div class="co">Halcyon Retail</div>
+                <div class="row"><span class="val">$240K</span><span class="chip blocked">no champion</span></div>
+                <div class="who">A. Mensah · closes Jul 04</div>
+              </article>
+            </div>
+            <div class="col">
+              <div class="col-head"><span style="color:var(--won)">Closed Won</span><span class="count">3</span></div>
+              <article class="deal s-won" tabindex="0">
+                <div class="co">Meridian Bank</div>
+                <div class="row"><span class="val">$640K</span><span class="chip won">signed</span></div>
+                <div class="who">R. Patel · closed May 28</div>
+              </article>
+              <article class="deal s-won" tabindex="0">
+                <div class="co">Apex Energy</div>
+                <div class="row"><span class="val">$430K</span><span class="chip won">signed</span></div>
+                <div class="who">L. Nguyen · closed May 21</div>
+              </article>
+              <article class="deal s-won" tabindex="0">
+                <div class="co">Lumen Media</div>
+                <div class="row"><span class="val">$128K</span><span class="chip won">signed</span></div>
+                <div class="who">D. Okafor · closed May 19</div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Leaderboard + Timeline -->
+      <section class="grid-2">
+        <div class="panel" id="leaderboard">
+          <div class="panel-head"><h2>Rep Leaderboard</h2><div class="spacer"></div><span class="meta num">Quota attainment</span></div>
+          <div class="panel-body" style="padding-top:var(--s-3)">
+            <table>
+              <thead>
+                <tr><th>#</th><th>Rep</th><th>Closed</th><th>Attain</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="rank r1">1</span></td>
+                  <td><span class="rep"><span class="av" style="background:linear-gradient(135deg,#fde047,#f59e0b)">RP</span>Reza Patel</span></td>
+                  <td class="num">$1.07M</td>
+                  <td><span class="attain up">128%</span></td>
+                </tr>
+                <tr>
+                  <td><span class="rank r2">2</span></td>
+                  <td><span class="rep"><span class="av" style="background:linear-gradient(135deg,#22c55e,#15803d)">LN</span>Linh Nguyen</span></td>
+                  <td class="num">$0.94M</td>
+                  <td><span class="attain up">112%</span></td>
+                </tr>
+                <tr>
+                  <td><span class="rank r3">3</span></td>
+                  <td><span class="rep"><span class="av" style="background:linear-gradient(135deg,#60a5fa,#1d4ed8)">AM</span>Ama Mensah</span></td>
+                  <td class="num">$0.81M</td>
+                  <td><span class="attain up">101%</span></td>
+                </tr>
+                <tr>
+                  <td><span class="rank">4</span></td>
+                  <td><span class="rep"><span class="av" style="background:linear-gradient(135deg,#a78bfa,#6d28d9)">DO</span>Dana Okafor</span></td>
+                  <td class="num">$0.66M</td>
+                  <td><span class="attain" style="color:var(--quota-missed)">88%</span></td>
+                </tr>
+                <tr>
+                  <td><span class="rank">5</span></td>
+                  <td><span class="rep"><span class="av" style="background:linear-gradient(135deg,#f87171,#b91c1c)">SK</span>Sven Karlsson</span></td>
+                  <td class="num">$0.50M</td>
+                  <td><span class="attain down">74%</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>Activity</h2><div class="spacer"></div><span class="live"><span class="pulse" aria-hidden="true"></span>Live feed</span></div>
+          <div class="panel-body">
+            <div class="timeline">
+              <div class="tl-item"><span class="tl-dot won" aria-hidden="true"></span><div class="tl-body"><div class="t"><b>Meridian Bank</b> moved to Closed Won — $640K</div><div class="ts">Reza Patel · 4 min ago</div></div></div>
+              <div class="tl-item"><span class="tl-dot progress" aria-hidden="true"></span><div class="tl-body"><div class="t"><b>Northwind Logistics</b> advanced to Negotiation</div><div class="ts">Ama Mensah · 26 min ago</div></div></div>
+              <div class="tl-item"><span class="tl-dot blocked" aria-hidden="true"></span><div class="tl-body"><div class="t"><b>Stratos Mfg.</b> flagged at risk — no activity 14d</div><div class="ts">System · 1 hr ago</div></div></div>
+              <div class="tl-item"><span class="tl-dot progress" aria-hidden="true"></span><div class="tl-body"><div class="t"><b>Vertex Health</b> proposal sent to procurement</div><div class="ts">Reza Patel · 2 hr ago</div></div></div>
+              <div class="tl-item"><span class="tl-dot lost" aria-hidden="true"></span><div class="tl-body"><div class="t"><b>Orbit Freight</b> marked Closed Lost — budget cut</div><div class="ts">Sven Karlsson · 3 hr ago</div></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+  // Animate bars, funnel tracks, and gauge arcs on load (respecting reduced motion).
+  (function () {
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function run() {
+      document.querySelectorAll('[data-fill]').forEach(function (el) {
+        el.style.width = el.getAttribute('data-fill') + '%';
+      });
+      document.querySelectorAll('[data-arc]').forEach(function (el) {
+        var pct = parseFloat(el.getAttribute('data-arc'));
+        var len = 157; // half-circumference for r=50
+        el.style.strokeDashoffset = String(len - (len * pct / 100));
+      });
+    }
+    if (reduce) {
+      // Apply final state instantly without transitions.
+      document.querySelectorAll('[data-fill],[data-arc]').forEach(function (el) { el.style.transition = 'none'; });
+      run();
+    } else {
+      requestAnimationFrame(function () { setTimeout(run, 120); });
+    }
+
+    // Date range segmented control
+    document.querySelectorAll('.seg button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        b.parentElement.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
+        b.setAttribute('aria-pressed', 'true');
+      });
+    });
+  })();
+</script>
+</body>
+</html>

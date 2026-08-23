@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scribbly — Hand-Drawn Journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Color tokens (from CSV Design System Variables) */
+    --bg:#FDFBF7;          /* warm paper */
+    --paper-old:#E5E0D8;   /* old paper */
+    --card:#FFFFFF;
+    --text:#2D2D2D;        /* pencil black */
+    --text-soft:#5a564f;
+    --accent-red:#FF4D4D;  /* red marker */
+    --accent-blue:#2D5DA1; /* blue ballpoint */
+    --postit:#FFF9C4;      /* post-it yellow */
+    --border:#2D2D2D;
+
+    /* Structure tokens */
+    --border-width:3px;
+    --shadow-offset-x:4px;
+    --shadow-offset-y:4px;
+    --hard-shadow:var(--shadow-offset-x) var(--shadow-offset-y) 0 var(--border);
+    --hard-shadow-sm:2px 2px 0 var(--border);
+
+    /* Wobbly radii */
+    --r-a:15px 25px 20px 10px;
+    --r-b:22px 10px 18px 26px;
+    --r-pill:18px 14px 16px 20px / 22px 18px 14px 16px;
+
+    /* Type scale */
+    --font-heading:'Kalam', system-ui, cursive;
+    --font-body:'Patrick Hand', system-ui, cursive;
+    --fs-display:34px;
+    --fs-h2:24px;
+    --fs-h3:19px;
+    --fs-body:17px;
+    --fs-meta:14px;
+
+    /* Spacing */
+    --sp-1:6px; --sp-2:10px; --sp-3:16px; --sp-4:22px; --sp-5:30px;
+
+    /* Motion */
+    --t-fast:120ms ease-out;
+    --t:200ms cubic-bezier(.34,1.56,.64,1);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--font-body);
+    color:var(--text);
+    background-color:var(--bg);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(45,45,45,.06) 1px, transparent 0),
+      radial-gradient(circle at 12px 16px, rgba(45,45,45,.04) 1px, transparent 0);
+    background-size:22px 22px, 30px 30px;
+    -webkit-font-smoothing:antialiased;
+    display:flex;
+    justify-content:center;
+    min-height:100vh;
+    padding:clamp(0px,3vw,40px);
+    font-size:var(--fs-body);
+    line-height:1.45;
+  }
+
+  /* Phone frame */
+  .phone{
+    width:100%;
+    max-width:420px;
+    background:var(--card);
+    border:var(--border-width) solid var(--border);
+    border-radius:34px 30px 34px 30px;
+    box-shadow:var(--shadow-offset-x) var(--shadow-offset-y) 0 var(--border), 10px 12px 0 rgba(45,45,45,.12);
+    overflow:hidden;
+    position:relative;
+    display:flex;
+    flex-direction:column;
+  }
+
+  /* decorative torn-tape across the very top */
+  .tape{
+    position:absolute; z-index:5; pointer-events:none;
+    width:120px; height:34px;
+    background:rgba(255,249,196,.82);
+    border:1px dashed rgba(45,45,45,.4);
+    top:-6px; left:50%; transform:translateX(-50%) rotate(-2deg);
+    opacity:.9;
+  }
+
+  header.appbar{
+    background:var(--bg);
+    border-bottom:var(--border-width) dashed var(--border);
+    padding:var(--sp-4) var(--sp-3) var(--sp-3);
+    position:relative;
+  }
+  .statusrow{
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:var(--font-body); font-size:var(--fs-meta); color:var(--text-soft);
+    margin-bottom:var(--sp-3);
+  }
+  .statusrow .dots{display:flex; gap:4px; align-items:center;}
+  .statusrow .dots span{width:7px;height:7px;border-radius:50%;background:var(--text);display:inline-block;}
+
+  .brandrow{display:flex; align-items:center; justify-content:space-between; gap:var(--sp-2);}
+  .brand{display:flex; align-items:center; gap:10px;}
+  .brand .logo{
+    width:46px;height:46px;flex:0 0 auto;
+    border:var(--border-width) solid var(--border);
+    border-radius:var(--r-b);
+    background:var(--postit);
+    display:grid;place-items:center;
+    transform:rotate(-3deg);
+    box-shadow:var(--hard-shadow-sm);
+  }
+  .brand h1{
+    font-family:var(--font-heading); font-weight:700;
+    font-size:var(--fs-display); margin:0; line-height:.95;
+    letter-spacing:.5px;
+  }
+  .brand .sub{font-size:var(--fs-meta); color:var(--text-soft); margin-top:2px;}
+
+  .iconbtn{
+    width:48px;height:48px;flex:0 0 auto;
+    border:var(--border-width) solid var(--border);
+    background:var(--card);
+    border-radius:var(--r-a);
+    display:grid;place-items:center;
+    cursor:pointer; color:var(--text);
+    box-shadow:var(--hard-shadow-sm);
+    transition:transform var(--t-fast), box-shadow var(--t-fast);
+  }
+  .iconbtn:hover{transform:rotate(2deg);}
+  .iconbtn:focus-visible{outline:3px solid var(--accent-blue); outline-offset:2px;}
+  .iconbtn:active{transform:translate(2px,2px); box-shadow:0 0 0 var(--border);}
+
+  main{padding:var(--sp-4) var(--sp-3) calc(var(--sp-5) + 70px); display:flex; flex-direction:column; gap:var(--sp-4);}
+
+  /* Mood / streak banner */
+  .streak{
+    position:relative;
+    background:var(--card);
+    border:var(--border-width) solid var(--border);
+    border-radius:var(--r-a);
+    box-shadow:var(--hard-shadow);
+    padding:var(--sp-3) var(--sp-4);
+    transform:rotate(-1deg);
+  }
+  .streak::after{ /* tack */
+    content:""; position:absolute; top:-9px; left:24px;
+    width:16px;height:16px;border-radius:50%;
+    background:var(--accent-red);
+    border:2px solid var(--border);
+    box-shadow:1px 2px 0 rgba(45,45,45,.4);
+  }
+  .streak h2{font-family:var(--font-heading);font-weight:700;font-size:var(--fs-h2);margin:0 0 4px;}
+  .streak .row{display:flex; gap:6px; margin-top:var(--sp-2); flex-wrap:wrap;}
+  .day{
+    width:36px;height:36px;flex:0 0 auto;
+    border:2px solid var(--border); border-radius:14px 8px 16px 10px;
+    display:grid;place-items:center;
+    font-family:var(--font-heading); font-size:14px; font-weight:700;
+    background:var(--card);
+  }
+  .day.done{background:var(--postit); transform:rotate(2deg);}
+  .day.today{background:var(--accent-red); color:var(--card); border-color:var(--border); transform:rotate(-2deg);}
+
+  /* Section heading with scribble underline */
+  .sectionhead{display:flex; align-items:baseline; justify-content:space-between; gap:var(--sp-2);}
+  .sectionhead h2{
+    font-family:var(--font-heading); font-weight:700; font-size:var(--fs-h2);
+    margin:0; position:relative; display:inline-block;
+  }
+  .sectionhead .scribble{display:block; margin-top:-6px; color:var(--accent-red);}
+  .sectionhead a{
+    font-family:var(--font-body); font-size:var(--fs-meta); color:var(--accent-blue);
+    text-decoration:none; border-bottom:2px solid var(--accent-blue);
+    cursor:pointer;
+  }
+  .sectionhead a:hover{color:var(--accent-red);border-color:var(--accent-red);}
+  .sectionhead a:focus-visible{outline:3px solid var(--accent-blue);outline-offset:2px;}
+
+  /* Entry cards */
+  .entries{display:flex; flex-direction:column; gap:var(--sp-4);}
+  .entry{
+    position:relative;
+    background:var(--card);
+    border:var(--border-width) solid var(--border);
+    border-radius:var(--r-a);
+    box-shadow:var(--hard-shadow);
+    padding:var(--sp-3) var(--sp-3) var(--sp-3) calc(var(--sp-3) + 8px);
+    transition:transform var(--t), box-shadow var(--t);
+    cursor:pointer;
+  }
+  .entry:nth-child(odd){transform:rotate(1deg);}
+  .entry:nth-child(even){transform:rotate(-1deg);}
+  .entry:hover{transform:rotate(0deg) translateY(-2px); box-shadow:6px 7px 0 var(--border);}
+  .entry:focus-visible{outline:3px solid var(--accent-blue); outline-offset:3px;}
+  .entry:active{transform:translate(var(--shadow-offset-x),var(--shadow-offset-y)); box-shadow:0 0 0 var(--border);}
+  .entry .spine{position:absolute; left:0; top:10px; bottom:10px; width:5px; border-radius:6px; background:var(--accent-red);}
+  .entry.blue .spine{background:var(--accent-blue);}
+  .entry.yellow .spine{background:#e9c84a;}
+  .entry .ehead{display:flex; align-items:center; justify-content:space-between; gap:var(--sp-2);}
+  .entry h3{font-family:var(--font-heading);font-weight:700;font-size:var(--fs-h3);margin:0;}
+  .entry .when{font-size:var(--fs-meta); color:var(--text-soft); white-space:nowrap;}
+  .entry p{margin:8px 0 10px; color:var(--text-soft);}
+  .tags{display:flex; gap:8px; flex-wrap:wrap;}
+  .tag{
+    font-family:var(--font-body); font-size:var(--fs-meta);
+    border:2px solid var(--border); border-radius:var(--r-pill);
+    padding:2px 12px; background:var(--bg);
+    display:inline-flex; align-items:center; gap:5px;
+  }
+  .tag.y{background:var(--postit);}
+  .tag .mood{display:inline-flex;}
+
+  /* Quick prompt / mood chips */
+  .moodpick{
+    background:var(--paper-old);
+    border:var(--border-width) dashed var(--border);
+    border-radius:var(--r-b);
+    padding:var(--sp-3);
+  }
+  .moodpick p{margin:0 0 var(--sp-2); font-family:var(--font-heading); font-weight:700;}
+  .chips{display:flex; gap:8px; flex-wrap:wrap;}
+  .chip{
+    border:var(--border-width) solid var(--border); background:var(--card);
+    border-radius:var(--r-pill); padding:8px 14px;
+    font-family:var(--font-body); font-size:var(--fs-body); cursor:pointer;
+    min-height:44px; display:inline-flex; align-items:center; gap:8px;
+    box-shadow:var(--hard-shadow-sm);
+    transition:transform var(--t-fast), background var(--t-fast), box-shadow var(--t-fast);
+  }
+  .chip:hover{transform:rotate(-2deg);}
+  .chip:focus-visible{outline:3px solid var(--accent-blue);outline-offset:2px;}
+  .chip[aria-pressed="true"]{background:var(--postit); transform:rotate(2deg); box-shadow:0 0 0 var(--border) inset;}
+  .chip:active{transform:translate(2px,2px); box-shadow:0 0 0 var(--border);}
+
+  /* Primary CTA (post-it) */
+  .cta-wrap{position:relative;}
+  .cta{
+    width:100%;
+    min-height:56px;
+    font-family:var(--font-heading); font-weight:700; font-size:var(--fs-h3);
+    color:var(--text);
+    background:var(--postit);
+    border:var(--border-width) solid var(--border);
+    border-radius:var(--r-a);
+    box-shadow:var(--hard-shadow);
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    transition:transform var(--t-fast), box-shadow var(--t-fast);
+  }
+  .cta:hover{transform:translate(-1px,-1px); box-shadow:6px 7px 0 var(--border);}
+  .cta:focus-visible{outline:3px solid var(--accent-blue); outline-offset:3px;}
+  .cta:active{transform:translate(var(--shadow-offset-x),var(--shadow-offset-y)); box-shadow:0 0 0 var(--border);}
+
+  /* Bottom nav */
+  nav.tabbar{
+    position:absolute; left:0; right:0; bottom:0;
+    background:var(--bg);
+    border-top:var(--border-width) dashed var(--border);
+    display:flex; justify-content:space-around; align-items:center;
+    padding:8px 6px calc(8px + env(safe-area-inset-bottom,0));
+  }
+  .tab{
+    border:none; background:none; cursor:pointer;
+    font-family:var(--font-body); font-size:13px; color:var(--text-soft);
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    padding:6px 10px; min-width:48px; min-height:48px;
+    border-radius:14px 10px 12px 10px;
+    transition:color var(--t-fast), transform var(--t-fast);
+  }
+  .tab svg{stroke:var(--text-soft);}
+  .tab[aria-current="page"]{color:var(--accent-red);}
+  .tab[aria-current="page"] svg{stroke:var(--accent-red);}
+  .tab[aria-current="page"]::after{
+    content:""; width:22px; height:4px; background:var(--accent-red);
+    border-radius:4px; display:block; transform:rotate(-1deg);
+  }
+  .tab:hover{transform:translateY(-2px);}
+  .tab:focus-visible{outline:3px solid var(--accent-blue); outline-offset:2px;}
+
+  .jiggle{animation:jiggle 360ms ease-in-out;}
+  @keyframes jiggle{0%,100%{transform:rotate(0)}20%{transform:rotate(-2deg)}40%{transform:rotate(2deg)}60%{transform:rotate(-2deg)}80%{transform:rotate(2deg)}}
+
+  @media (max-width:380px){
+    :root{--fs-display:30px;--fs-h2:21px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important; animation:none !important;}
+    .entry,.streak,.brand .logo,.day{transform:none !important;}
+  }
+</style>
+</head>
+<body>
+  <div class="phone">
+    <span class="tape" aria-hidden="true"></span>
+
+    <header class="appbar">
+      <div class="statusrow">
+        <span>9:41</span>
+        <span class="dots" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>Mon, May 30</span>
+      </div>
+      <div class="brandrow">
+        <div class="brand">
+          <span class="logo" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D2D2D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 17.5 14 6.5l3.5 3.5L6.5 21H3z"/>
+              <path d="M14 6.5 16 4.5a1.4 1.4 0 0 1 2 0l1.5 1.5a1.4 1.4 0 0 1 0 2L17.5 10"/>
+            </svg>
+          </span>
+          <div>
+            <h1>Scribbly</h1>
+            <div class="sub">your messy little diary</div>
+          </div>
+        </div>
+        <button class="iconbtn" aria-label="Search entries">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <!-- Streak -->
+      <section class="streak" aria-labelledby="streak-h">
+        <h2 id="streak-h">7-day scribble streak!</h2>
+        <p style="margin:2px 0 0;color:var(--text-soft);font-size:var(--fs-meta);">keep the pen moving — you're on a roll</p>
+        <div class="row" aria-label="Last seven days of journaling">
+          <span class="day done">M</span>
+          <span class="day done">T</span>
+          <span class="day done">W</span>
+          <span class="day done">T</span>
+          <span class="day done">F</span>
+          <span class="day done">S</span>
+          <span class="day today" aria-current="date">S</span>
+        </div>
+      </section>
+
+      <!-- Mood picker -->
+      <section class="moodpick" aria-labelledby="mood-h">
+        <p id="mood-h">how's today feeling?</p>
+        <div class="chips" role="group" aria-label="Pick a mood">
+          <button class="chip" aria-pressed="true">
+            <span class="mood" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2D2D2D" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/></svg>
+            </span>Good</button>
+          <button class="chip" aria-pressed="false">
+            <span class="mood" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2D2D2D" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8 13h8"/><path d="M9 9h.01M15 9h.01"/></svg>
+            </span>Meh</button>
+          <button class="chip" aria-pressed="false">
+            <span class="mood" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2D2D2D" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8 15s1.5-2 4-2 4 2 4 2"/><path d="M9 9h.01M15 9h.01"/></svg>
+            </span>Low</button>
+          <button class="chip" aria-pressed="false">
+            <span class="mood" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2D2D2D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"/></svg>
+            </span>Buzzing</button>
+        </div>
+      </section>
+
+      <!-- Entries -->
+      <div class="sectionhead">
+        <h2>recent pages
+          <svg class="scribble" width="120" height="10" viewBox="0 0 120 10" fill="none" aria-hidden="true">
+            <path d="M2 6c14-5 28 4 42-1s28-5 42 1 26-3 32-4" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </h2>
+        <a href="#" tabindex="0">see all</a>
+      </div>
+
+      <section class="entries" aria-label="Recent journal entries">
+        <article class="entry" tabindex="0">
+          <span class="spine" aria-hidden="true"></span>
+          <div class="ehead">
+            <h3>Morning coffee thoughts</h3>
+            <span class="when">8:12 am</span>
+          </div>
+          <p>Watched the rain hit the window for a while. Decided I'd finally start that little garden on the balcony.</p>
+          <div class="tags">
+            <span class="tag y">calm</span>
+            <span class="tag">#mornings</span>
+            <span class="tag">3 min read</span>
+          </div>
+        </article>
+
+        <article class="entry blue" tabindex="0">
+          <span class="spine" aria-hidden="true"></span>
+          <div class="ehead">
+            <h3>Sketchbook ideas</h3>
+            <span class="when">yesterday</span>
+          </div>
+          <p>Doodled a tiny city made of mushrooms. The roads were all wobbly on purpose. Might turn it into a print.</p>
+          <div class="tags">
+            <span class="tag">#drawing</span>
+            <span class="tag">12 photos</span>
+          </div>
+        </article>
+
+        <article class="entry yellow" tabindex="0">
+          <span class="spine" aria-hidden="true"></span>
+          <div class="ehead">
+            <h3>Sunday reset list</h3>
+            <span class="when">2 days ago</span>
+          </div>
+          <p>Laundry, water the plants, call grandma, plan one fun thing for the week. Small wins still count.</p>
+          <div class="tags">
+            <span class="tag y">checklist</span>
+            <span class="tag">#routine</span>
+          </div>
+        </article>
+      </section>
+
+      <!-- Primary CTA -->
+      <div class="cta-wrap">
+        <button class="cta" id="newEntry">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          Start a new page
+        </button>
+      </div>
+    </main>
+
+    <nav class="tabbar" aria-label="Primary">
+      <button class="tab" aria-current="page">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h13a3 3 0 0 1 3 3v9H7a3 3 0 0 1-3-3z"/><path d="M4 6v12"/></svg>
+        Journal
+      </button>
+      <button class="tab">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>
+        Calendar
+      </button>
+      <button class="tab">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 7v5c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7z"/></svg>
+        Insights
+      </button>
+      <button class="tab">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+        Me
+      </button>
+    </nav>
+  </div>
+
+  <script>
+    // Mood chip single-select toggle
+    document.querySelectorAll('.chips .chip').forEach(function(chip){
+      chip.addEventListener('click', function(){
+        document.querySelectorAll('.chips .chip').forEach(function(c){c.setAttribute('aria-pressed','false');});
+        chip.setAttribute('aria-pressed','true');
+      });
+    });
+
+    // CTA: playful jiggle feedback (decorative; disabled under reduced-motion via CSS)
+    var cta = document.getElementById('newEntry');
+    cta.addEventListener('click', function(){
+      cta.classList.remove('jiggle');
+      void cta.offsetWidth;
+      cta.classList.add('jiggle');
+    });
+
+    // Bottom-nav active state
+    document.querySelectorAll('.tabbar .tab').forEach(function(tab){
+      tab.addEventListener('click', function(){
+        document.querySelectorAll('.tabbar .tab').forEach(function(t){t.removeAttribute('aria-current');});
+        tab.setAttribute('aria-current','page');
+      });
+    });
+  </script>
+</body>
+</html>

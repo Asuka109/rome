@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NEXUS // Decker OS — Cyberpunk Mobile HUD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Color tokens — from Design System Variables */
+    --bg: #0A0A0F;
+    --card: #12121A;
+    --fg: #E0E0E0;
+    --muted: #1C1C2E;
+    --accent: #00FF88;     /* neon green */
+    --accent2: #FF00FF;    /* neon magenta */
+    --accent3: #00D4FF;    /* cyber cyan */
+    --border: #2A2A3A;
+    --destructive: #FF3366;
+    --fg-dim: #8A8AA0;
+
+    /* Radius — chamfered, so square base */
+    --radius: 0px;
+    --chamfer: 14px;
+
+    /* Spacing scale */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 24px;
+    --sp-6: 32px;
+
+    /* Typography */
+    --font-heading: 'Orbitron', 'Arial Narrow', sans-serif;
+    --font-body: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    --fs-h1: 30px;
+    --fs-h2: 20px;
+    --fs-section: 14px;
+    --fs-body: 13px;
+    --fs-label: 10px;
+
+    /* Shadow / glow */
+    --glow-accent: 0 0 0 1px rgba(0,255,136,.5), 0 0 18px rgba(0,255,136,.35);
+    --glow-magenta: 0 0 18px rgba(255,0,255,.35);
+    --glow-cyan: 0 0 18px rgba(0,212,255,.30);
+    --shadow-card: 0 10px 30px rgba(0,0,0,.55);
+
+    /* Motion */
+    --t-fast: 120ms;
+    --t-base: 220ms;
+    --ease: cubic-bezier(.2,.7,.2,1);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    background:
+      radial-gradient(900px 600px at 80% -10%, rgba(255,0,255,.10), transparent 60%),
+      radial-gradient(900px 700px at -10% 110%, rgba(0,212,255,.10), transparent 60%),
+      radial-gradient(700px 500px at 50% 50%, rgba(0,255,136,.05), transparent 70%),
+      var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: var(--fs-body);
+    letter-spacing: .4px;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--sp-5) var(--sp-3);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Global CRT flicker on the whole shell */
+  @keyframes crtFlicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .985; }
+    52% { opacity: .97; }
+  }
+
+  /* ===== Phone frame ===== */
+  .phone {
+    position: relative;
+    width: 100%;
+    max-width: 390px;
+    aspect-ratio: 390 / 844;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-card), 0 0 0 1px rgba(0,255,136,.06);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: crtFlicker 6s steps(60) infinite;
+    /* chamfered phone corners */
+    clip-path: polygon(
+      26px 0, 100% 0, 100% calc(100% - 26px),
+      calc(100% - 26px) 100%, 0 100%, 0 26px
+    );
+  }
+  @media (max-width: 420px) {
+    .phone { aspect-ratio: auto; min-height: 100vh; max-width: 100%; }
+    body { padding: 0; }
+  }
+
+  /* Scanline overlay */
+  .scanlines {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 50;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(0,0,0,.10) 3px,
+      rgba(0,0,0,.10) 3px
+    );
+    mix-blend-mode: multiply;
+  }
+  .vignette {
+    position: absolute; inset: 0; pointer-events: none; z-index: 49;
+    background: radial-gradient(120% 80% at 50% 50%, transparent 55%, rgba(0,0,0,.55));
+  }
+
+  /* ===== Status bar ===== */
+  .statusbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: var(--sp-2) var(--sp-4) var(--sp-1);
+    font-family: var(--font-body);
+    font-size: var(--fs-label);
+    letter-spacing: 1.5px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  .statusbar .sys-icons { display: flex; gap: 6px; align-items: center; }
+  .statusbar svg { width: 14px; height: 14px; display: block; }
+
+  /* ===== App header / nav ===== */
+  header.app-head {
+    padding: var(--sp-2) var(--sp-4) var(--sp-3);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .brandrow {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--sp-3);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand .logo {
+    width: 34px; height: 34px; flex: none;
+    color: var(--accent);
+    filter: drop-shadow(0 0 6px rgba(0,255,136,.5));
+  }
+  .brand h1 {
+    font-family: var(--font-heading);
+    font-weight: 900;
+    font-size: 18px;
+    letter-spacing: 3px;
+    margin: 0;
+    text-transform: uppercase;
+    color: var(--fg);
+  }
+  .brand .sub {
+    display: block;
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--accent3);
+    margin-top: 2px;
+  }
+  .iconbtn {
+    --c: var(--accent3);
+    appearance: none; border: 1px solid var(--border); background: var(--muted);
+    color: var(--c); width: 38px; height: 38px;
+    display: grid; place-items: center; cursor: pointer;
+    clip-path: polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+    transition: box-shadow var(--t-base) var(--ease), transform var(--t-fast) var(--ease), border-color var(--t-base);
+  }
+  .iconbtn svg { width: 18px; height: 18px; }
+  .iconbtn:hover { border-color: var(--c); box-shadow: 0 0 14px rgba(0,212,255,.35); }
+  .iconbtn:focus-visible { outline: 2px solid var(--accent3); outline-offset: 2px; }
+  .iconbtn:active { transform: scale(.95); }
+  .notif-dot { position: relative; }
+  .notif-dot::after {
+    content: ""; position: absolute; top: 5px; right: 5px;
+    width: 7px; height: 7px; background: var(--destructive);
+    box-shadow: 0 0 8px var(--destructive);
+  }
+
+  /* ===== Main scroll area ===== */
+  main {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: var(--sp-4) var(--sp-4) var(--sp-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  main::-webkit-scrollbar { width: 5px; }
+  main::-webkit-scrollbar-thumb { background: var(--border); }
+
+  /* HUD card with corner brackets */
+  .hud {
+    position: relative;
+    background:
+      linear-gradient(160deg, rgba(0,212,255,.05), transparent 45%),
+      var(--card);
+    border: 1px solid var(--border);
+    padding: var(--sp-4);
+    clip-path: polygon(
+      var(--chamfer) 0, 100% 0, 100% calc(100% - var(--chamfer)),
+      calc(100% - var(--chamfer)) 100%, 0 100%, 0 var(--chamfer)
+    );
+  }
+  .hud::before, .hud::after {
+    content: ""; position: absolute; width: 16px; height: 16px;
+    border: 1px solid var(--accent); pointer-events: none;
+  }
+  .hud::before { top: 7px; left: 7px; border-right: none; border-bottom: none; }
+  .hud::after { bottom: 7px; right: 7px; border-left: none; border-top: none; }
+
+  .label {
+    font-size: var(--fs-label); letter-spacing: 2px; text-transform: uppercase;
+    color: var(--fg-dim); margin: 0 0 var(--sp-1);
+  }
+  .label .blink { color: var(--accent); }
+
+  /* Balance card (hero) */
+  .balance .topline {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: var(--sp-3);
+  }
+  .chip {
+    font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+    padding: 3px 8px; border: 1px solid var(--accent);
+    color: var(--accent);
+    clip-path: polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+  }
+  .bignum {
+    font-family: var(--font-heading); font-weight: 900;
+    font-size: var(--fs-h1); letter-spacing: 1px; line-height: 1;
+    color: var(--fg);
+    text-shadow: 0 0 18px rgba(0,255,136,.25);
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .bignum .unit { font-family: var(--font-body); font-size: 13px; color: var(--accent); font-weight: 700; }
+  .delta {
+    margin-top: var(--sp-2); display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--accent);
+  }
+  .delta.down { color: var(--destructive); }
+  .delta svg { width: 13px; height: 13px; }
+
+  /* sparkline */
+  .spark { margin-top: var(--sp-3); width: 100%; height: 56px; display: block; }
+
+  /* Stat grid */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+  .stat .v {
+    font-family: var(--font-heading); font-weight: 700; font-size: var(--fs-h2);
+    letter-spacing: 1px; line-height: 1.1;
+  }
+  .stat .v.green { color: var(--accent); }
+  .stat .v.cyan { color: var(--accent3); }
+  .stat .v.magenta { color: var(--accent2); }
+  .stat .meta { font-size: 11px; color: var(--fg-dim); margin-top: 4px; }
+
+  /* meter bars */
+  .meter { height: 6px; background: var(--muted); margin-top: 8px; position: relative; overflow: hidden; }
+  .meter > span {
+    position: absolute; inset: 0 auto 0 0; display: block;
+    background: linear-gradient(90deg, var(--accent3), var(--accent));
+    box-shadow: 0 0 10px rgba(0,255,136,.5);
+  }
+
+  /* Section title */
+  .sec-title {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--font-heading); font-weight: 700;
+    font-size: var(--fs-section); letter-spacing: 2px; text-transform: uppercase;
+    color: var(--fg); margin: var(--sp-1) 0 0;
+  }
+  .sec-title svg { width: 16px; height: 16px; color: var(--accent3); }
+  .sec-title .more { margin-left: auto; font-family: var(--font-body); font-size: 10px; color: var(--accent3); letter-spacing: 1px; }
+
+  /* Asset / activity list */
+  ul.feed { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+  ul.feed li {
+    display: flex; align-items: center; gap: var(--sp-3);
+    padding: var(--sp-3) 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  ul.feed li:last-child { border-bottom: none; }
+  .tok {
+    width: 34px; height: 34px; flex: none; display: grid; place-items: center;
+    border: 1px solid var(--border); background: var(--muted);
+    clip-path: polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+  }
+  .tok svg { width: 18px; height: 18px; }
+  .feed .name { font-weight: 500; color: var(--fg); }
+  .feed .symb { font-size: 10px; color: var(--fg-dim); letter-spacing: 1px; }
+  .feed .right { margin-left: auto; text-align: right; }
+  .feed .amt { color: var(--fg); }
+  .feed .pct { font-size: 11px; }
+  .pct.up { color: var(--accent); } .pct.down { color: var(--destructive); }
+  .grow { flex: 1 1 auto; min-width: 0; }
+  .grow .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Terminal / prompt input */
+  .terminal {
+    display: flex; align-items: center; gap: 8px;
+    border: 1px solid var(--border); background: #0c0c14;
+    padding: 10px 12px;
+    clip-path: polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+  }
+  .terminal .prompt { color: var(--accent); font-weight: 700; }
+  .terminal input {
+    flex: 1 1 auto; min-width: 0;
+    background: transparent; border: none; color: var(--fg);
+    font-family: var(--font-body); font-size: var(--fs-body); letter-spacing: .5px;
+    padding: 0;
+  }
+  .terminal input::placeholder { color: var(--fg-dim); }
+  .terminal input:focus { outline: none; }
+  .cursor {
+    width: 8px; height: 16px; background: var(--accent); flex: none;
+    box-shadow: 0 0 8px rgba(0,255,136,.6);
+    animation: caret 1s steps(1) infinite;
+  }
+  @keyframes caret { 50% { opacity: 0; } }
+
+  /* Primary CTA */
+  .cta {
+    appearance: none; cursor: pointer; width: 100%;
+    font-family: var(--font-heading); font-weight: 700;
+    font-size: 13px; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--bg); background: var(--accent);
+    border: none; padding: 14px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    clip-path: polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px);
+    box-shadow: var(--glow-accent);
+    transition: transform var(--t-fast) var(--ease), box-shadow var(--t-base) var(--ease), filter var(--t-base);
+  }
+  .cta svg { width: 16px; height: 16px; }
+  .cta:hover { filter: brightness(1.08); box-shadow: 0 0 0 1px var(--accent), 0 0 26px rgba(0,255,136,.55); }
+  .cta:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+  .cta:active { transform: scale(.98); animation: glitch .25s steps(2) 1; }
+  @keyframes glitch {
+    0% { transform: scale(.98) translateX(0); }
+    33% { transform: scale(.98) translateX(-2px); }
+    66% { transform: scale(.98) translateX(2px); }
+    100% { transform: scale(.98) translateX(0); }
+  }
+
+  .cta.ghost {
+    color: var(--accent3); background: transparent;
+    border: 1px solid var(--accent3); box-shadow: none;
+  }
+  .cta.ghost:hover { box-shadow: var(--glow-cyan); filter: none; }
+  .cta.ghost:focus-visible { outline-color: var(--accent3); }
+
+  .action-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+
+  /* ===== Bottom tab nav ===== */
+  nav.tabbar {
+    flex: none;
+    display: flex; align-items: stretch; justify-content: space-around;
+    border-top: 1px solid var(--border);
+    background: rgba(12,12,20,.92);
+    padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+  nav.tabbar a {
+    flex: 1 1 0; text-decoration: none; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 6px 2px; color: var(--fg-dim);
+    font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
+    transition: color var(--t-base);
+  }
+  nav.tabbar a svg { width: 22px; height: 22px; }
+  nav.tabbar a:hover { color: var(--fg); }
+  nav.tabbar a:focus-visible { outline: 2px solid var(--accent3); outline-offset: -2px; }
+  nav.tabbar a[aria-current="page"] { color: var(--accent); }
+  nav.tabbar a[aria-current="page"] svg { filter: drop-shadow(0 0 6px rgba(0,255,136,.6)); }
+  nav.tabbar a[aria-current="page"]::after {
+    content: ""; width: 18px; height: 2px; background: var(--accent);
+    box-shadow: 0 0 8px var(--accent); margin-top: 1px;
+  }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .phone { animation: none; }
+    .cursor { animation: none; }
+    .cta:active { animation: none; }
+    * { transition-duration: 1ms !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="phone" role="application" aria-label="Nexus Decker OS wallet companion">
+    <div class="scanlines" aria-hidden="true"></div>
+    <div class="vignette" aria-hidden="true"></div>
+
+    <!-- System status bar -->
+    <div class="statusbar" aria-hidden="true">
+      <span>09:41</span>
+      <span class="sys-icons">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18h2M8 14h2M13 9h2M18 4h2"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13a10 10 0 0 1 14 0M8.5 16.5a5 5 0 0 1 7 0M12 20h.01"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="18" height="10" rx="1"/><path d="M22 11v2"/><rect x="4" y="9" width="12" height="6" fill="currentColor" stroke="none"/></svg>
+      </span>
+    </div>
+
+    <!-- App header -->
+    <header class="app-head">
+      <div class="brandrow">
+        <div class="brand">
+          <svg class="logo" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M16 2 28 9v14L16 30 4 23V9z"/>
+            <path d="M16 8 22 11.5v8L16 23l-6-3.5v-8z" fill="rgba(0,255,136,.12)"/>
+            <circle cx="16" cy="16" r="2.4" fill="currentColor" stroke="none"/>
+          </svg>
+          <span>
+            <h1>NEXUS</h1>
+            <span class="sub">DECKER&nbsp;OS&nbsp;v4.2</span>
+          </span>
+        </div>
+        <button class="iconbtn notif-dot" type="button" aria-label="3 new alerts">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <!-- HERO: net balance -->
+      <section class="hud balance" aria-labelledby="bal-label">
+        <div class="topline">
+          <p class="label" id="bal-label">NET&nbsp;HOLDINGS&nbsp;<span class="blink">// LIVE</span></p>
+          <span class="chip">MAINNET</span>
+        </div>
+        <div class="bignum">142,860<span class="unit">¤NXC</span></div>
+        <span class="delta">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M9 7h8v8"/></svg>
+          +6,204 ¤ &nbsp;//&nbsp; +4.54% / 24H
+        </span>
+        <svg class="spark" viewBox="0 0 320 56" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#00FF88" stop-opacity=".35"/>
+              <stop offset="1" stop-color="#00FF88" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M0 44 L40 38 L80 42 L120 28 L160 32 L200 18 L240 24 L280 10 L320 6 L320 56 L0 56 Z" fill="url(#sg)"/>
+          <path d="M0 44 L40 38 L80 42 L120 28 L160 32 L200 18 L240 24 L280 10 L320 6" fill="none" stroke="#00FF88" stroke-width="2" vector-effect="non-scaling-stroke"/>
+        </svg>
+      </section>
+
+      <!-- Quick stats -->
+      <section class="hud" aria-label="System telemetry">
+        <div class="stat-grid">
+          <div class="stat">
+            <p class="label">STAKED&nbsp;YIELD</p>
+            <div class="v green">18.2%</div>
+            <div class="meta">APR / 90D LOCK</div>
+            <div class="meter"><span style="width:72%"></span></div>
+          </div>
+          <div class="stat">
+            <p class="label">NODE&nbsp;UPTIME</p>
+            <div class="v cyan">99.4%</div>
+            <div class="meta">UPLINK STABLE</div>
+            <div class="meter"><span style="width:94%"></span></div>
+          </div>
+          <div class="stat">
+            <p class="label">GAS&nbsp;INDEX</p>
+            <div class="v magenta">12&nbsp;GWEI</div>
+            <div class="meta">LOW CONGESTION</div>
+            <div class="meter"><span style="width:22%"></span></div>
+          </div>
+          <div class="stat">
+            <p class="label">THREAT&nbsp;LVL</p>
+            <div class="v green">SECURE</div>
+            <div class="meta">0 ANOMALIES</div>
+            <div class="meter"><span style="width:8%"></span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Asset list -->
+      <h2 class="sec-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
+        ASSETS
+        <a class="more" href="#" aria-label="View full asset ledger">[ LEDGER ]</a>
+      </h2>
+      <section class="hud" aria-label="Asset holdings">
+        <ul class="feed">
+          <li>
+            <span class="tok" style="color:var(--accent)" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 7v10l8 5 8-5V7z"/><path d="M12 7v10M8 9.5 16 14.5M16 9.5 8 14.5"/></svg>
+            </span>
+            <span class="grow">
+              <div class="name">Nexus Core</div>
+              <div class="symb">NXC</div>
+            </span>
+            <span class="right">
+              <div class="amt">88,400</div>
+              <div class="pct up">+5.1%</div>
+            </span>
+          </li>
+          <li>
+            <span class="tok" style="color:var(--accent3)" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M8.5 9.5h5a2 2 0 0 1 0 4h-5M8.5 12h6"/></svg>
+            </span>
+            <span class="grow">
+              <div class="name">Helix Stable</div>
+              <div class="symb">HLX</div>
+            </span>
+            <span class="right">
+              <div class="amt">41,020</div>
+              <div class="pct up">+0.2%</div>
+            </span>
+          </li>
+          <li>
+            <span class="tok" style="color:var(--accent2)" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 7l8-5 8 5M4 17l8 5 8-5"/></svg>
+            </span>
+            <span class="grow">
+              <div class="name">Glitch Token</div>
+              <div class="symb">GLCH</div>
+            </span>
+            <span class="right">
+              <div class="amt">13,440</div>
+              <div class="pct down">-2.8%</div>
+            </span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Terminal command input -->
+      <h2 class="sec-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M7 9l3 3-3 3M13 15h4"/></svg>
+        COMMAND
+      </h2>
+      <form class="terminal" role="search" onsubmit="return false">
+        <label class="sr-only" for="cmd">Run wallet command</label>
+        <span class="prompt" aria-hidden="true">&gt;</span>
+        <input id="cmd" type="text" inputmode="text" placeholder="swap nxc → hlx --amount 500" autocomplete="off" spellcheck="false" />
+        <span class="cursor" aria-hidden="true"></span>
+      </form>
+
+      <!-- Primary actions -->
+      <div class="action-row">
+        <button class="cta" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+          SEND
+        </button>
+        <button class="cta ghost" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+          RECEIVE
+        </button>
+      </div>
+    </main>
+
+    <!-- Bottom tab bar -->
+    <nav class="tabbar" aria-label="Primary">
+      <a href="#" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/></svg>
+        HUD
+      </a>
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V9M10 19V5M16 19v-8M22 19H2"/></svg>
+        MARKETS
+      </a>
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5V8l-9-5-9 5v8l9 5 6-3.3"/><path d="M3 8l9 5 9-5M12 13v9"/></svg>
+        VAULT
+      </a>
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+        DECKER
+      </a>
+    </nav>
+  </div>
+</body>
+</html>

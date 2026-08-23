@@ -1,0 +1,7 @@
+name: publish_event
+type: system
+description: Publish a domain event onto Rome's in-memory event bus. Any routine with a matching event-bus trigger (same eventName) fires with the supplied payload. Useful for testing event-bus routines and as a producer surface until app-native producers are wired.
+complexity: simple
+speed: fast
+reliability: high
+sideEffects: write

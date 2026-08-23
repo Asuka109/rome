@@ -1,0 +1,8 @@
+name: email_inbound
+type: system
+description: Internal transport entry point for inbound email. Called only by the connector when it transports an AgentMail relay deposit (x-rome-mail-source = agentmail) into core; verifies the per-inbox HMAC and hands the event to the EmailAdapter. Not agent-callable.
+complexity: simple
+speed: fast
+reliability: high
+sideEffects: write
+webhook: true

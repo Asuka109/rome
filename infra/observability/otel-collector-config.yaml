@@ -1,0 +1,109 @@
+# OpenTelemetry Collector config — shared by dev and prod.
+#
+# Both environments run this exact config (mounted into the otel-collector
+# container by compose). Backend points at the collector on :4318 (OTLP HTTP);
+# the collector forwards traces, metrics, and logs to a remote ClickStack /
+# ClickHouse instance using credentials supplied via env vars.
+#
+# Required env vars (set in `.env.collector` next to docker-compose.yml in
+# prod, or in the worktree root for dev — never in the shared `.env`, since
+# that one is forwarded into the Rome container):
+#   CLICKHOUSE_ENDPOINT   — e.g. https://xxxxxxxxxx.us-west-2.aws.clickhouse.cloud:8443
+#   CLICKHOUSE_USERNAME   — e.g. default
+#   CLICKHOUSE_PASSWORD   — secret
+#   CLICKHOUSE_DATABASE   — optional, defaults to `default`
+#
+# Per-instance scoping happens upstream: every span / log / metric carries
+# `service.instance.id` (worktree slug in dev, tenant slug in prod), so a
+# single ClickStack target safely hosts every Rome instance.
+#
+# Image upgrade policy: the collector image is pinned in both compose files.
+# Bump quarterly, re-validate this config with `otelcol-contrib validate
+# --config=/etc/otelcol/config.yaml`, and watch the contrib-distro release
+# notes for clickhouse-exporter schema changes.
+
+extensions:
+  # Exposes /health on :13133 — wired to the container HEALTHCHECK in compose
+  # so `docker compose ps` reflects whether the storage path is up. Rome does
+  # NOT depend on this health gate (preserves the "Rome never blocks on the
+  # obs stack" invariant); it's an operator signal only.
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+        include_metadata: true
+      http:
+        endpoint: 0.0.0.0:4318
+        include_metadata: true
+        # No CORS: this receiver is reachable only from co-located Rome
+        # containers on the docker bridge network; Rome's OTLP exporter is
+        # server-side Node, not a browser. If we ever add browser-issued
+        # OTLP (e.g. for a frontend session-replay client), scope
+        # allowed_origins to the known UI host(s) — never `*`.
+
+processors:
+  # Cap memory before the collector starts dropping data, so a backpressure
+  # spike from ClickHouse doesn't OOM the host. Limits sized for the prod VM
+  # (HyperDX's recommended baseline); adjust if the box has <2 GiB free.
+  memory_limiter:
+    check_interval: 5s
+    limit_mib: 1500
+    spike_limit_mib: 512
+  # Defaults are intentional: 200ms timeout, 8192 max items per batch — well
+  # below Rome's expected emission rate, so end-to-end latency stays sub-second
+  # without over-batching small dev workloads.
+  batch:
+
+exporters:
+  clickhouse:
+    endpoint: ${env:CLICKHOUSE_ENDPOINT}
+    username: ${env:CLICKHOUSE_USERNAME}
+    password: ${env:CLICKHOUSE_PASSWORD}
+    database: ${env:CLICKHOUSE_DATABASE:-default}
+    ttl: 720h
+    timeout: 5s
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+
+service:
+  telemetry:
+    metrics:
+      # Keep exporter failure counters queryable from the private Docker
+      # network after suppressing per-attempt retry logs.
+      level: normal
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
+                without_type_suffix: true
+                without_units: true
+    logs:
+      # Retry attempts are already reflected in the collector's exporter
+      # failure metrics. Keep stderr for warnings and terminal export errors
+      # instead of emitting one INFO line (often with a very long endpoint)
+      # for every retry attempt during a downstream outage.
+      level: warn
+      encoding: json
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [clickhouse]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [clickhouse]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [clickhouse]

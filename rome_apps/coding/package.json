@@ -1,0 +1,21 @@
+{
+  "name": "@rome/app-coding",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "rome dev",
+    "build": "rome build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@rome-os/app-runtime": "latest",
+    "@rome-os/app-web-sdk": "^0.2.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "typescript": "^5.9.3"
+  }
+}

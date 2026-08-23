@@ -1,0 +1,6 @@
+{
+  "name": "rome-yelp",
+  "description": "Rome OpenCLI commands for logged-out Yelp search and discovery",
+  "version": "0.1.0",
+  "opencli": ">=1.8.0"
+}

@@ -1,0 +1,17 @@
+The font files in this directory are licensed under the SIL Open Font License,
+Version 1.1, which permits embedding and redistribution provided this notice
+travels with them.
+
+  Funnel Sans      Copyright (c) 2024, Dalton Maag Ltd
+                   https://github.com/googlefonts/funnel
+  Petrona          Copyright (c) 2013, Ingo Preuss / preussTYPE
+                   https://github.com/preusstype/petrona
+  IBM Plex Mono    Copyright (c) 2017, IBM Corp.
+                   https://github.com/IBM/plex
+
+Full licence text: https://openfontlicense.org/open-font-license-official-text/
+
+These are the same three families the dashboard loads (see the `--rome-font-*`
+tokens in packages/web/src/globals.css). Only the latin subset and only the
+weights the report renders are vendored here; each file is the woff2 published
+by the corresponding @fontsource package at version 5.3.0.

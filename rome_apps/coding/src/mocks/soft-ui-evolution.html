@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aura — Wellness Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;500;600;700&family=Varela+Round&display=swap" rel="stylesheet" />
+<style>
+  /* ============ Soft UI Evolution — Design Tokens ============ */
+  :root {
+    /* Color — improved-contrast pastels with clear hierarchy */
+    --c-bg: #F4F7FC;
+    --c-bg-grad-a: #EEF3FB;
+    --c-bg-grad-b: #FBF0F6;
+    --c-surface: #FFFFFF;
+    --c-surface-sunken: #EDF1F9;
+    --c-fg: #1B2440;
+    --c-fg-muted: #5A6685;
+    --c-fg-soft: #8893AE;
+
+    --c-primary: #4F7CF0;      /* evolved soft blue */
+    --c-primary-strong: #3A63D6;
+    --c-on-primary: #FFFFFF;
+    --c-pink: #F06FA0;         /* evolved soft pink */
+    --c-pink-soft: #FFE3EE;
+    --c-green: #2FA67A;        /* evolved soft green (AA) */
+    --c-green-soft: #DCF4EA;
+    --c-amber: #C77A12;
+    --c-amber-soft: #FBEBD0;
+    --c-violet: #8B6FE0;
+    --c-violet-soft: #EBE5FB;
+
+    --c-border: #E1E8F4;
+    --c-ring: #4F7CF0;
+
+    /* Radius — 8-12px per spec */
+    --r-sm: 8px;
+    --r-md: 12px;
+    --r-lg: 18px;
+    --r-xl: 26px;
+    --r-pill: 999px;
+
+    /* Shadow — softer than flat, clearer than neumorphism (multi-layer) */
+    --shadow-soft: 0 2px 4px rgba(27,36,64,0.05), 0 8px 22px rgba(27,36,64,0.07);
+    --shadow-raised: 0 4px 8px rgba(27,36,64,0.07), 0 16px 36px rgba(27,36,64,0.10);
+    --shadow-inset: inset 0 1px 2px rgba(27,36,64,0.06), inset 0 -1px 1px rgba(255,255,255,0.7);
+    --shadow-focus: 0 0 0 3px rgba(79,124,240,0.35);
+
+    /* Spacing scale */
+    --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+    --s-5: 24px; --s-6: 32px; --s-7: 48px;
+
+    /* Typography */
+    --font-head: "Varela Round", system-ui, sans-serif;
+    --font-body: "Nunito Sans", system-ui, -apple-system, sans-serif;
+    --t-xs: 0.75rem; --t-sm: 0.875rem; --t-base: 1rem;
+    --t-lg: 1.25rem; --t-xl: 1.6rem; --t-2xl: 2.1rem;
+
+    /* Motion — modern 200-300ms */
+    --dur: 240ms;
+    --ease: cubic-bezier(.4,.14,.3,1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    font-family: var(--font-body);
+    color: var(--c-fg);
+    background:
+      radial-gradient(1200px 600px at 85% -10%, var(--c-bg-grad-b), transparent 60%),
+      radial-gradient(900px 500px at -5% 10%, var(--c-bg-grad-a), transparent 55%),
+      var(--c-bg);
+    min-height: 100vh;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4 { font-family: var(--font-head); font-weight: 400; line-height: 1.2; color: var(--c-fg); }
+
+  a { color: inherit; text-decoration: none; }
+  svg { display: block; }
+
+  :focus-visible { outline: 3px solid var(--c-ring); outline-offset: 2px; border-radius: var(--r-sm); }
+
+  /* ============ App Shell ============ */
+  .app {
+    display: grid;
+    grid-template-columns: 248px 1fr;
+    gap: var(--s-5);
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: var(--s-5);
+  }
+
+  /* ============ Sidebar ============ */
+  .sidebar {
+    position: sticky;
+    top: var(--s-5);
+    align-self: start;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-soft);
+    padding: var(--s-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-5);
+  }
+
+  .brand { display: flex; align-items: center; gap: var(--s-3); }
+  .brand-mark {
+    width: 42px; height: 42px; border-radius: var(--r-md);
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--c-primary), var(--c-violet));
+    box-shadow: var(--shadow-soft);
+    color: var(--c-on-primary);
+  }
+  .brand-name { font-family: var(--font-head); font-size: var(--t-lg); }
+  .brand-sub { font-size: var(--t-xs); color: var(--c-fg-soft); letter-spacing: .04em; text-transform: uppercase; }
+
+  .nav { display: flex; flex-direction: column; gap: var(--s-1); }
+  .nav-label { font-size: var(--t-xs); color: var(--c-fg-soft); text-transform: uppercase; letter-spacing: .08em; margin: var(--s-2) var(--s-2) var(--s-1); }
+  .nav-item {
+    display: flex; align-items: center; gap: var(--s-3);
+    padding: var(--s-3);
+    border-radius: var(--r-md);
+    color: var(--c-fg-muted);
+    font-weight: 600; font-size: var(--t-sm);
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  .nav-item svg { width: 20px; height: 20px; flex: none; }
+  .nav-item:hover { background: var(--c-surface-sunken); color: var(--c-fg); transform: translateX(2px); }
+  .nav-item:active { transform: translateX(2px) scale(.98); }
+  .nav-item.active {
+    color: var(--c-primary-strong);
+    background: linear-gradient(135deg, rgba(79,124,240,.12), rgba(139,111,224,.12));
+    box-shadow: var(--shadow-inset);
+  }
+
+  .upgrade {
+    margin-top: auto;
+    border-radius: var(--r-lg);
+    padding: var(--s-4);
+    background: linear-gradient(150deg, var(--c-violet-soft), var(--c-pink-soft));
+    box-shadow: var(--shadow-inset);
+  }
+  .upgrade h4 { font-size: var(--t-base); margin-bottom: var(--s-1); }
+  .upgrade p { font-size: var(--t-xs); color: var(--c-fg-muted); margin-bottom: var(--s-3); }
+
+  /* ============ Main ============ */
+  .main { display: flex; flex-direction: column; gap: var(--s-5); min-width: 0; }
+
+  .topbar {
+    display: flex; align-items: center; gap: var(--s-4);
+    flex-wrap: wrap;
+  }
+  .topbar .greeting { min-width: 0; flex: 1 1 240px; }
+  .topbar .greeting h1 { font-size: var(--t-2xl); }
+  .topbar .greeting p { color: var(--c-fg-muted); font-size: var(--t-sm); margin-top: var(--s-1); }
+
+  .search {
+    display: flex; align-items: center; gap: var(--s-2);
+    background: var(--c-surface); border: 1px solid var(--c-border);
+    border-radius: var(--r-pill); padding: var(--s-2) var(--s-4);
+    box-shadow: var(--shadow-inset);
+    flex: 0 1 260px;
+  }
+  .search svg { width: 18px; height: 18px; color: var(--c-fg-soft); flex: none; }
+  .search input {
+    border: none; background: transparent; outline: none;
+    font-family: var(--font-body); font-size: var(--t-sm); color: var(--c-fg);
+    width: 100%;
+  }
+  .search input::placeholder { color: var(--c-fg-soft); }
+
+  .icon-btn {
+    width: 44px; height: 44px; flex: none;
+    display: grid; place-items: center;
+    border-radius: var(--r-md);
+    background: var(--c-surface); border: 1px solid var(--c-border);
+    box-shadow: var(--shadow-soft);
+    color: var(--c-fg-muted);
+    cursor: pointer;
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), color var(--dur) var(--ease);
+    position: relative;
+  }
+  .icon-btn svg { width: 20px; height: 20px; }
+  .icon-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-raised); color: var(--c-primary-strong); }
+  .icon-btn:active { transform: translateY(0) scale(.96); box-shadow: var(--shadow-inset); }
+  .icon-btn .dot { position: absolute; top: 9px; right: 10px; width: 9px; height: 9px; border-radius: 50%; background: var(--c-pink); border: 2px solid var(--c-surface); }
+
+  .avatar {
+    width: 44px; height: 44px; flex: none; border-radius: var(--r-md);
+    background: linear-gradient(135deg, var(--c-pink), var(--c-amber));
+    display: grid; place-items: center; color: #fff; font-family: var(--font-head); font-size: var(--t-base);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .btn {
+    font-family: var(--font-body); font-weight: 700; font-size: var(--t-sm);
+    border: none; cursor: pointer;
+    display: inline-flex; align-items: center; gap: var(--s-2);
+    padding: var(--s-3) var(--s-5);
+    border-radius: var(--r-pill);
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .btn svg { width: 18px; height: 18px; }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--c-primary), var(--c-primary-strong));
+    color: var(--c-on-primary);
+    box-shadow: var(--shadow-soft);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: var(--shadow-raised); }
+  .btn-primary:active { transform: translateY(0) scale(.98); box-shadow: var(--shadow-inset); }
+
+  /* Stats grid */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s-4); }
+  .stat {
+    background: var(--c-surface); border: 1px solid var(--c-border);
+    border-radius: var(--r-lg); padding: var(--s-5);
+    box-shadow: var(--shadow-soft);
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .stat:hover { transform: translateY(-3px); box-shadow: var(--shadow-raised); }
+  .stat-top { display: flex; align-items: center; justify-content: space-between; }
+  .stat-ico { width: 40px; height: 40px; border-radius: var(--r-md); display: grid; place-items: center; box-shadow: var(--shadow-inset); }
+  .stat-ico svg { width: 20px; height: 20px; }
+  .i-blue { background: rgba(79,124,240,.14); color: var(--c-primary-strong); }
+  .i-pink { background: var(--c-pink-soft); color: #C24A7C; }
+  .i-green { background: var(--c-green-soft); color: var(--c-green); }
+  .i-violet { background: var(--c-violet-soft); color: #6B4FD0; }
+  .stat-label { font-size: var(--t-sm); color: var(--c-fg-muted); margin-top: var(--s-4); font-weight: 600; }
+  .stat-value { font-family: var(--font-head); font-size: var(--t-xl); margin-top: var(--s-1); }
+  .trend { display: inline-flex; align-items: center; gap: 4px; font-size: var(--t-xs); font-weight: 700; padding: 2px 8px; border-radius: var(--r-pill); }
+  .trend svg { width: 13px; height: 13px; }
+  .trend-up { background: var(--c-green-soft); color: var(--c-green); }
+  .trend-down { background: var(--c-amber-soft); color: var(--c-amber); }
+
+  /* Content grid */
+  .grid { display: grid; grid-template-columns: 1.7fr 1fr; gap: var(--s-5); align-items: start; }
+
+  .card {
+    background: var(--c-surface); border: 1px solid var(--c-border);
+    border-radius: var(--r-xl); padding: var(--s-5);
+    box-shadow: var(--shadow-soft);
+  }
+  .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--s-5); gap: var(--s-3); }
+  .card-head h2 { font-size: var(--t-lg); }
+  .card-head .sub { font-size: var(--t-xs); color: var(--c-fg-soft); }
+
+  .seg { display: inline-flex; background: var(--c-surface-sunken); border-radius: var(--r-pill); padding: 3px; box-shadow: var(--shadow-inset); }
+  .seg button {
+    border: none; background: transparent; cursor: pointer;
+    font-family: var(--font-body); font-weight: 700; font-size: var(--t-xs);
+    color: var(--c-fg-muted); padding: 6px 14px; border-radius: var(--r-pill);
+    transition: all var(--dur) var(--ease);
+  }
+  .seg button.on { background: var(--c-surface); color: var(--c-primary-strong); box-shadow: var(--shadow-soft); }
+  .seg button:hover:not(.on) { color: var(--c-fg); }
+
+  /* Chart */
+  .chart-wrap { position: relative; }
+  .chart { width: 100%; height: auto; aspect-ratio: 16 / 7; }
+  .chart .area path:first-child { animation: rise var(--dur) var(--ease) both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .legend { display: flex; gap: var(--s-5); margin-top: var(--s-4); flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: var(--s-2); font-size: var(--t-xs); color: var(--c-fg-muted); font-weight: 600; }
+  .legend i { width: 12px; height: 12px; border-radius: 4px; }
+
+  /* Rings card */
+  .rings { display: flex; flex-direction: column; gap: var(--s-5); }
+  .ring-row { display: flex; align-items: center; gap: var(--s-4); }
+  .ring-svg { width: 84px; height: 84px; flex: none; }
+  .ring-svg circle { fill: none; stroke-width: 9; stroke-linecap: round; transform: rotate(-90deg); transform-origin: center; }
+  .ring-meta h4 { font-size: var(--t-base); }
+  .ring-meta p { font-size: var(--t-xs); color: var(--c-fg-muted); }
+  .ring-pct { font-family: var(--font-head); font-size: var(--t-lg); }
+
+  /* Schedule list */
+  .sched { display: flex; flex-direction: column; gap: var(--s-3); }
+  .sched-item {
+    display: flex; align-items: center; gap: var(--s-4);
+    padding: var(--s-3); border-radius: var(--r-md);
+    background: var(--c-surface-sunken); box-shadow: var(--shadow-inset);
+    transition: transform var(--dur) var(--ease);
+  }
+  .sched-item:hover { transform: translateX(3px); }
+  .sched-dot { width: 10px; height: 40px; border-radius: var(--r-pill); flex: none; }
+  .sched-body { flex: 1; min-width: 0; }
+  .sched-body h4 { font-size: var(--t-sm); }
+  .sched-body p { font-size: var(--t-xs); color: var(--c-fg-muted); }
+  .sched-time { font-size: var(--t-xs); font-weight: 700; color: var(--c-fg-muted); white-space: nowrap; }
+  .chip { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: var(--r-pill); }
+
+  .full { grid-column: 1 / -1; }
+
+  /* footer note */
+  .foot { text-align: center; font-size: var(--t-xs); color: var(--c-fg-soft); padding-bottom: var(--s-4); }
+
+  /* skip link */
+  .skip { position: absolute; left: -9999px; top: 0; background: var(--c-primary); color: #fff; padding: var(--s-3) var(--s-4); border-radius: var(--r-md); z-index: 50; }
+  .skip:focus { left: var(--s-4); top: var(--s-4); }
+
+  /* ============ Responsive ============ */
+  @media (max-width: 1080px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 880px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar {
+      position: static;
+      flex-direction: row; flex-wrap: wrap; align-items: center;
+      gap: var(--s-4);
+    }
+    .nav { flex-direction: row; flex-wrap: wrap; flex: 1 1 100%; }
+    .nav-label { display: none; }
+    .nav-item { padding: var(--s-2) var(--s-3); }
+    .upgrade { margin-top: 0; flex: 1 1 100%; }
+  }
+  @media (max-width: 560px) {
+    .app { padding: var(--s-3); gap: var(--s-4); }
+    .stats { grid-template-columns: 1fr; }
+    .topbar .greeting h1 { font-size: var(--t-xl); }
+    .search { flex: 1 1 100%; order: 3; }
+    .nav-item span.lbl { display: none; }
+    .nav-item { width: 44px; height: 44px; justify-content: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="app">
+
+    <!-- Sidebar -->
+    <header class="sidebar" aria-label="Primary">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.35-9.5-9C1 9 2.5 5 6.5 5c2 0 3.5 1.5 5.5 3.5C14 6.5 15.5 5 17.5 5 21.5 5 23 9 21.5 12 19 16.65 12 21 12 21z"/></svg>
+        </div>
+        <div>
+          <div class="brand-name">Aura</div>
+          <div class="brand-sub">Wellness OS</div>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="Main navigation">
+        <span class="nav-label">Overview</span>
+        <a class="nav-item active" href="#main" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+          <span class="lbl">Dashboard</span>
+        </a>
+        <a class="nav-item" href="#main">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>
+          <span class="lbl">Activity</span>
+        </a>
+        <a class="nav-item" href="#main">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.35-9.5-9C1 9 2.5 5 6.5 5c2 0 3.5 1.5 5.5 3.5C14 6.5 15.5 5 17.5 5 21.5 5 23 9 21.5 12 19 16.65 12 21 12 21z"/></svg>
+          <span class="lbl">Heart</span>
+        </a>
+        <a class="nav-item" href="#main">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0-6 6c0 4 6 12 6 12s6-8 6-12a6 6 0 0 0-6-6z"/><circle cx="12" cy="9" r="2"/></svg>
+          <span class="lbl">Sleep</span>
+        </a>
+        <span class="nav-label">Manage</span>
+        <a class="nav-item" href="#main">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 6.5a3 3 0 0 1 0 5M19 20a5 5 0 0 0-3-4.6"/></svg>
+          <span class="lbl">Coaches</span>
+        </a>
+        <a class="nav-item" href="#main">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg>
+          <span class="lbl">Settings</span>
+        </a>
+      </nav>
+
+      <div class="upgrade">
+        <h4>Aura Plus</h4>
+        <p>Unlock guided programs and clinician-grade reports.</p>
+        <button class="btn btn-primary" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.4 5.3L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.7L12 3z"/></svg>
+          Upgrade
+        </button>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="main" id="main">
+      <!-- Topbar -->
+      <div class="topbar">
+        <div class="greeting">
+          <h1>Good morning, Mira</h1>
+          <p>Friday, May 30 — your recovery is trending up this week.</p>
+        </div>
+        <form class="search" role="search" onsubmit="return false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
+          <input type="search" aria-label="Search metrics" placeholder="Search metrics, goals…" />
+        </form>
+        <button class="icon-btn" type="button" aria-label="Notifications">
+          <span class="dot" aria-hidden="true"></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg>
+        </button>
+        <div class="avatar" aria-label="Mira Patel" role="img">MP</div>
+      </div>
+
+      <!-- Stats -->
+      <section class="stats" aria-label="Key metrics">
+        <article class="stat">
+          <div class="stat-top">
+            <div class="stat-ico i-pink" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h3l2-5 3 10 2.5-7 1.5 4h6"/></svg></div>
+            <span class="trend trend-up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>4%</span>
+          </div>
+          <div class="stat-label">Resting Heart Rate</div>
+          <div class="stat-value">58 <span style="font-size:var(--t-sm);color:var(--c-fg-soft)">bpm</span></div>
+        </article>
+        <article class="stat">
+          <div class="stat-top">
+            <div class="stat-ico i-green" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+            <span class="trend trend-up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>12%</span>
+          </div>
+          <div class="stat-label">Sleep Quality</div>
+          <div class="stat-value">7h 42m</div>
+        </article>
+        <article class="stat">
+          <div class="stat-top">
+            <div class="stat-ico i-blue" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19l5-5 4 3 7-9"/></svg></div>
+            <span class="trend trend-up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>9%</span>
+          </div>
+          <div class="stat-label">Active Minutes</div>
+          <div class="stat-value">84 <span style="font-size:var(--t-sm);color:var(--c-fg-soft)">min</span></div>
+        </article>
+        <article class="stat">
+          <div class="stat-top">
+            <div class="stat-ico i-violet" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 8l7-5 7 5"/><path d="M5 8v8l7 5 7-5V8"/></svg></div>
+            <span class="trend trend-down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>2%</span>
+          </div>
+          <div class="stat-label">Stress Load</div>
+          <div class="stat-value">Low</div>
+        </article>
+      </section>
+
+      <!-- Main grid -->
+      <div class="grid">
+        <!-- Chart card -->
+        <section class="card" aria-label="Recovery trend">
+          <div class="card-head">
+            <div>
+              <h2>Recovery Trend</h2>
+              <span class="sub">Heart rate variability, last 7 days</span>
+            </div>
+            <div class="seg" role="tablist" aria-label="Time range">
+              <button type="button" role="tab">Day</button>
+              <button type="button" role="tab" class="on" aria-selected="true">Week</button>
+              <button type="button" role="tab">Month</button>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <svg class="chart" viewBox="0 0 560 245" role="img" aria-label="Line chart showing recovery rising over the past seven days">
+              <defs>
+                <linearGradient id="fill1" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#4F7CF0" stop-opacity="0.28"/>
+                  <stop offset="100%" stop-color="#4F7CF0" stop-opacity="0"/>
+                </linearGradient>
+                <linearGradient id="line1" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#4F7CF0"/>
+                  <stop offset="100%" stop-color="#8B6FE0"/>
+                </linearGradient>
+              </defs>
+              <!-- grid -->
+              <g stroke="#E1E8F4" stroke-width="1">
+                <line x1="40" y1="40" x2="540" y2="40"/>
+                <line x1="40" y1="95" x2="540" y2="95"/>
+                <line x1="40" y1="150" x2="540" y2="150"/>
+                <line x1="40" y1="205" x2="540" y2="205"/>
+              </g>
+              <g class="area">
+                <path d="M40 165 L120 150 L200 175 L280 120 L360 135 L440 85 L520 70 L520 205 L40 205 Z" fill="url(#fill1)"/>
+                <path d="M40 165 L120 150 L200 175 L280 120 L360 135 L440 85 L520 70" fill="none" stroke="url(#line1)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              </g>
+              <!-- points -->
+              <g fill="#fff" stroke="#4F7CF0" stroke-width="3">
+                <circle cx="40" cy="165" r="5"/><circle cx="120" cy="150" r="5"/><circle cx="200" cy="175" r="5"/>
+                <circle cx="280" cy="120" r="5"/><circle cx="360" cy="135" r="5"/><circle cx="440" cy="85" r="5"/>
+                <circle cx="520" cy="70" r="6" stroke="#8B6FE0"/>
+              </g>
+              <g fill="#8893AE" font-size="13" font-family="Nunito Sans, sans-serif" text-anchor="middle">
+                <text x="40" y="228">Sat</text><text x="120" y="228">Sun</text><text x="200" y="228">Mon</text>
+                <text x="280" y="228">Tue</text><text x="360" y="228">Wed</text><text x="440" y="228">Thu</text><text x="520" y="228">Fri</text>
+              </g>
+            </svg>
+          </div>
+          <div class="legend">
+            <span><i style="background:linear-gradient(135deg,#4F7CF0,#8B6FE0)"></i>HRV (ms)</span>
+            <span><i style="background:#DCF4EA;border:2px solid #2FA67A"></i>Target zone</span>
+          </div>
+        </section>
+
+        <!-- Daily goals rings -->
+        <section class="card" aria-label="Daily goals">
+          <div class="card-head"><h2>Today's Goals</h2></div>
+          <div class="rings">
+            <div class="ring-row">
+              <svg class="ring-svg" viewBox="0 0 100 100" role="img" aria-label="Move goal 82 percent complete">
+                <circle cx="50" cy="50" r="40" stroke="#EDF1F9"/>
+                <circle cx="50" cy="50" r="40" stroke="#F06FA0" stroke-dasharray="251.2" stroke-dashoffset="45"/>
+              </svg>
+              <div class="ring-meta">
+                <span class="ring-pct">82%</span>
+                <h4>Move</h4>
+                <p>410 / 500 kcal</p>
+              </div>
+            </div>
+            <div class="ring-row">
+              <svg class="ring-svg" viewBox="0 0 100 100" role="img" aria-label="Exercise goal 68 percent complete">
+                <circle cx="50" cy="50" r="40" stroke="#EDF1F9"/>
+                <circle cx="50" cy="50" r="40" stroke="#2FA67A" stroke-dasharray="251.2" stroke-dashoffset="80"/>
+              </svg>
+              <div class="ring-meta">
+                <span class="ring-pct">68%</span>
+                <h4>Exercise</h4>
+                <p>34 / 50 min</p>
+              </div>
+            </div>
+            <div class="ring-row">
+              <svg class="ring-svg" viewBox="0 0 100 100" role="img" aria-label="Mindfulness goal 95 percent complete">
+                <circle cx="50" cy="50" r="40" stroke="#EDF1F9"/>
+                <circle cx="50" cy="50" r="40" stroke="#8B6FE0" stroke-dasharray="251.2" stroke-dashoffset="12"/>
+              </svg>
+              <div class="ring-meta">
+                <span class="ring-pct">95%</span>
+                <h4>Mindfulness</h4>
+                <p>19 / 20 min</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Schedule full width -->
+        <section class="card full" aria-label="Today's plan">
+          <div class="card-head">
+            <div>
+              <h2>Today's Plan</h2>
+              <span class="sub">3 sessions scheduled</span>
+            </div>
+            <button class="btn btn-primary" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+              Add session
+            </button>
+          </div>
+          <div class="sched">
+            <div class="sched-item">
+              <span class="sched-dot" style="background:#2FA67A"></span>
+              <div class="sched-body">
+                <h4>Morning Mobility Flow</h4>
+                <p>Guided · Coach Lena</p>
+              </div>
+              <span class="chip i-green">Done</span>
+              <span class="sched-time">7:00 AM</span>
+            </div>
+            <div class="sched-item">
+              <span class="sched-dot" style="background:#4F7CF0"></span>
+              <div class="sched-body">
+                <h4>Zone 2 Cardio</h4>
+                <p>Outdoor run · 5.2 km target</p>
+              </div>
+              <span class="chip i-blue">Up next</span>
+              <span class="sched-time">12:30 PM</span>
+            </div>
+            <div class="sched-item">
+              <span class="sched-dot" style="background:#8B6FE0"></span>
+              <div class="sched-body">
+                <h4>Evening Wind-down</h4>
+                <p>Breathwork · 10 min</p>
+              </div>
+              <span class="chip i-violet">Planned</span>
+              <span class="sched-time">9:15 PM</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <p class="foot">Synced with 4 devices · Last update 8:42 AM</p>
+    </main>
+  </div>
+</body>
+</html>

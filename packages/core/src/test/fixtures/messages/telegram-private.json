@@ -1,0 +1,26 @@
+{
+  "id": "tg-msg-001",
+  "channel": "telegram",
+  "channelUserId": "tg-user-123",
+  "displayName": "Telegram User",
+  "threadId": "tg-thread-private-001",
+  "threadType": "private",
+  "timestamp": "2026-01-15T10:00:00Z",
+  "text": "Hello from Telegram private chat",
+  "attachments": [],
+  "rawEvent": {
+    "message": {
+      "message_id": 42,
+      "from": {
+        "id": 123456,
+        "first_name": "Telegram",
+        "last_name": "User"
+      },
+      "chat": {
+        "id": 123456,
+        "type": "private"
+      },
+      "text": "Hello from Telegram private chat"
+    }
+  }
+}

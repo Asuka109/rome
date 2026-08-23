@@ -1,0 +1,14 @@
+name: show_app
+type: system
+description: >-
+  Place an available app's widget on the guardian's workspace (the freegrid) so
+  they can glance at it beside the chat. appId may name an installed app or a
+  host-owned app such as Sessions. Pass appId (and optionally a route + scalar
+  params to address a screen). Fire-and-forget: it returns immediately and needs
+  no input from the guardian — keep going. One tile per app; calling again
+  retargets the same tile. Put structured data in the app's session storage, not
+  in params.
+complexity: simple
+speed: fast
+reliability: high
+sideEffects: read-only

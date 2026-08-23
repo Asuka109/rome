@@ -1,0 +1,7 @@
+name: message_handler
+type: system
+description: Routes incoming channel messages to the appropriate agent
+complexity: complex
+speed: slow
+reliability: high
+sideEffects: write

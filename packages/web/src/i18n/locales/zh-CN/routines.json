@@ -1,0 +1,282 @@
+{
+  "header": {
+    "title": "例程",
+    "subtitle": "当触发条件满足时自动运行动作的自动化任务。",
+    "createButton": "创建例程"
+  },
+  "loading": "正在加载例程...",
+  "stats": {
+    "total": "总计",
+    "active": "已启用",
+    "paused": "已暂停",
+    "failingCount": "{{n}} 个失败",
+    "failingAria": "查看 {{n}} 个失败的例程",
+    "nextUp": "下一个",
+    "noUpcoming": "暂无即将到来的运行",
+    "etaOverdue": "已到点"
+  },
+  "trigger": {
+    "schedule": "定时",
+    "event-bus": "事件",
+    "manual": "手动"
+  },
+  "filter": {
+    "all": "全部例程",
+    "active": "已启用",
+    "disabled": "已暂停",
+    "failing": "失败",
+    "schedule": "定时",
+    "eventBus": "事件",
+    "manual": "手动"
+  },
+  "relativeDetailed": {
+    "starting": "即将开始",
+    "inMinutes": "{{minutes}} 分钟后",
+    "inHours": "{{hours}} 小时后",
+    "inHoursMinutes": "{{hours}} 小时 {{minutes}} 分钟后",
+    "inDays": "{{days}} 天后",
+    "inDaysHours": "{{days}} 天 {{hours}} 小时后"
+  },
+  "tabs": {
+    "timeline": "时间轴",
+    "calendar": "日历",
+    "list": "列表",
+    "viewLabel": "例程视图"
+  },
+  "timeline": {
+    "scheduleOnly": "时间轴视图仅适用于定时类型的例程。"
+  },
+  "calendar": {
+    "scheduleOnly": "日历视图仅适用于定时类型的例程。",
+    "noRoutinesThisDay": "当天没有例程",
+    "selectedHeading": "{{year}} 年 {{month}} {{day}} 日",
+    "monthYear": "{{year}} 年 {{month}}",
+    "prevMonth": "上一月",
+    "nextMonth": "下一月",
+    "months": {
+      "0": "1 月",
+      "1": "2 月",
+      "2": "3 月",
+      "3": "4 月",
+      "4": "5 月",
+      "5": "6 月",
+      "6": "7 月",
+      "7": "8 月",
+      "8": "9 月",
+      "9": "10 月",
+      "10": "11 月",
+      "11": "12 月"
+    },
+    "dayShort": {
+      "0": "日",
+      "1": "一",
+      "2": "二",
+      "3": "三",
+      "4": "四",
+      "5": "五",
+      "6": "六"
+    }
+  },
+  "now": "现在",
+  "routine": {
+    "badgeDisabled": "已暂停",
+    "statusActive": "已启用",
+    "statusDisabled": "已暂停",
+    "noNextRun": "无下次执行",
+    "noRoutinesScheduled": "暂无例程",
+    "disable": "禁用",
+    "enable": "启用",
+    "delete": "删除",
+    "confirm": "确认",
+    "cancel": "取消"
+  },
+  "schedule": {
+    "subtypeOneOff": "单次",
+    "subtypeRecurring": "周期"
+  },
+  "table": {
+    "filterPlaceholder": "筛选例程...",
+    "empty": "暂无例程",
+    "emptyFiltered": "未匹配到例程"
+  },
+  "datetime": {
+    "missing": "—"
+  },
+  "modal": {
+    "title": "创建例程",
+    "submit": "创建例程",
+    "submitting": "创建中...",
+    "cancel": "取消",
+    "triggerDescriptions": {
+      "schedule": "按时间触发——单次日期或周期规则。",
+      "event-bus": "当内部事件总线上有匹配事件时触发。",
+      "manual": "不会自动触发——只能在此处手动运行。"
+    },
+    "fields": {
+      "triggerType": "触发类型",
+      "name": "名称",
+      "scheduleSubtype": "频率",
+      "timezone": "时区",
+      "localTime": "本地时间",
+      "startDate": "日期",
+      "frequency": "频率",
+      "daysOfWeek": "星期",
+      "dayOfMonth": "每月几号",
+      "eventName": "事件名",
+      "sourcePattern": "来源匹配（可选）",
+      "actionName": "动作名称",
+      "argsJson": "参数（JSON 对象）"
+    },
+    "placeholders": {
+      "name": "每日站会提醒",
+      "startDate": "选择日期",
+      "eventName": "action:completed",
+      "sourcePattern": "deploy_*",
+      "actionName": "send_reminder",
+      "argsJson": "{\"message\": \"该开站会了！\"}"
+    },
+    "hints": {
+      "eventName": "常见事件包括 action:completed、action:failed、message:received、approval:resolved、routine:fired。",
+      "sourcePattern": "可选通配符，用于匹配事件的来源（例如动作名）；留空匹配全部。",
+      "manual": "此例程没有自动触发器，仅在你点击「立即运行」时执行。"
+    },
+    "actionPicker": {
+      "placeholder": "选择一个动作…",
+      "searchPlaceholder": "搜索动作…",
+      "empty": "没有匹配的动作",
+      "loading": "正在加载动作…",
+      "loadFailed": "加载动作列表失败",
+      "listUnavailable": "无法加载动作列表——请手动输入动作名。",
+      "needsApproval": "需要审批",
+      "required": "必填",
+      "noArgs": "此动作不需要参数，填 {} 即可。",
+      "oneOf": "可选值：",
+      "insertTemplate": "填入示例参数",
+      "argsValid": "参数符合 {{name}} 的要求"
+    },
+    "errors": {
+      "nameRequired": "名称和动作不能为空",
+      "unknownAction": "「{{name}}」不是已注册的动作——请从列表中选择",
+      "argMissing": "缺少必填参数「{{name}}」",
+      "argType": "参数「{{name}}」应为 {{expected}}",
+      "argUnknown": "此动作不接受名为「{{name}}」的参数",
+      "argSchema": "参数「{{path}}」{{message}}",
+      "invalidJson": "参数 JSON 格式无效",
+      "argsObject": "参数必须是 JSON 对象，不能是数组或基础类型",
+      "eventNameRequired": "事件名不能为空",
+      "startDateRequired": "单次执行需要选择日期",
+      "weekdayRequired": "至少选择一天",
+      "dayOfMonthRequired": "每月几号需在 1 到 31 之间",
+      "createFailed": "创建例程失败",
+      "networkError": "网络错误"
+    }
+  },
+  "run": {
+    "now": "现在运行",
+    "ariaLabel": "立即运行 {{name}}",
+    "loadingLabel": "正在运行 {{name}}"
+  },
+  "stop": {
+    "now": "停止",
+    "ariaLabel": "停止 {{name}}",
+    "loadingLabel": "正在停止 {{name}}"
+  },
+  "errors": {
+    "toggleFailed": "更新例程失败",
+    "deleteFailed": "删除例程失败",
+    "runFailed": "运行例程失败",
+    "stopFailed": "停止例程失败",
+    "networkError": "网络错误",
+    "dismiss": "关闭",
+    "loadFailed": "加载例程失败",
+    "retry": "重试"
+  },
+  "frequencies": {
+    "DAILY": "每天",
+    "WEEKLY": "每周",
+    "MONTHLY": "每月"
+  },
+  "weekdays": {
+    "MO": "周一",
+    "TU": "周二",
+    "WE": "周三",
+    "TH": "周四",
+    "FR": "周五",
+    "SA": "周六",
+    "SU": "周日"
+  },
+  "sections": {
+    "schedule": {
+      "title": "按时间",
+      "subtitle": "这些会在固定时间运行"
+    },
+    "event": {
+      "title": "当某事发生时",
+      "subtitle": "没有固定时间——它们会等待，然后运行"
+    },
+    "manual": {
+      "title": "手动运行",
+      "subtitle": "没有触发条件——只有点击「立即运行」时才会执行"
+    },
+    "done": {
+      "title": "已完成",
+      "subtitle": "已经运行过的一次性任务"
+    }
+  },
+  "done": {
+    "badge": "已完成",
+    "ranAt": "运行于 {{when}}"
+  },
+  "toggle": {
+    "on": "开",
+    "off": "关",
+    "ariaLabel": "开启或关闭 {{name}}"
+  },
+  "status": {
+    "active": "运行中",
+    "running": "正在执行",
+    "paused": "已暂停",
+    "failed": "失败"
+  },
+  "failedLine": "上次运行失败 · {{when}}",
+  "footer": {
+    "next": "下次运行 {{when}}",
+    "ran": "运行于 {{when}}",
+    "runningNow": "正在运行",
+    "noUpcoming": "暂无即将运行"
+  },
+  "history": {
+    "toggle": "历史",
+    "loading": "正在加载历史...",
+    "error": "无法加载历史。",
+    "empty": "尚未运行。",
+    "ran": "运行于 {{when}}",
+    "running": "正在运行",
+    "pending": "运行于 {{when}}，等待批准",
+    "cancelled": "已取消 {{when}}"
+  },
+  "menu": {
+    "ariaLabel": "例程选项"
+  },
+  "delete": {
+    "menuItem": "删除",
+    "dialogTitle": "删除此例程？",
+    "dialogBody": "这将停止其运行并永久删除。此操作无法撤销。",
+    "confirm": "删除",
+    "cancel": "保留"
+  },
+  "managed": {
+    "badge": "由 {{app}} 管理",
+    "deleteDisabled": "由 {{app}} 管理 — 请在该应用中删除"
+  },
+  "detail": {
+    "view": "查看详情",
+    "back": "全部例程",
+    "notFound": "未找到例程。",
+    "runHistory": "运行历史",
+    "trace": "执行追踪",
+    "traceLoading": "正在加载追踪…",
+    "traceError": "无法加载执行追踪。",
+    "noTrace": "此次运行未记录执行。"
+  }
+}

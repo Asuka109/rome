@@ -1,0 +1,30 @@
+formatVersion: 2
+id: morning-brief
+version: 0.1.0
+description: A runnable example workflow — a "morning brief" that gathers, scores, summarizes, and drafts, showing the plain-TypeScript control-flow patterns.
+icon: assets/icon.svg
+appRoot: dist
+
+# A minimal run page: trigger the workflow, show its result, and list recent
+# runs. A structure diagram and per-node progress are a separate, deferred surface.
+web:
+  manifest: web/manifest.json
+  displayName: Morning Brief
+  navLabel: Morning Brief
+
+api:
+  entry: api/index
+
+# Per-app SQLite DB (Drizzle ORM): the run-history table the run action writes a
+# row to per invocation. This is the ONE table the workflow shell owns — the
+# workflow code in definition.ts never touches a DB. Schema in src/db/schema.ts,
+# migrations shipped under src/db/migrations (regenerate with `pnpm db:generate`).
+db:
+  migrations: db/migrations
+  tablePrefix: morning_brief
+
+# One action runs the workflow and returns its result. Control flow is authored
+# inline in src/workflow/definition.ts and reaches reusable work (including
+# `system:summon`) via ctx.runAction — there are no per-step actions to register here.
+actions:
+  - actions/run

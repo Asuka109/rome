@@ -1,0 +1,472 @@
+/* ============================================
+   CDP Remote Control — Chrome-like UI Styles
+   ============================================ */
+
+/* --- CSS Custom Properties (Theme System) --- */
+
+:root,
+[data-theme="dark"] {
+  --bg-primary: #202124;
+  --bg-secondary: #292b2e;
+  --bg-tertiary: #35363a;
+  --bg-active-tab: #35363a;
+  --bg-inactive-tab: #202124;
+  --bg-hover: #3c4043;
+  --bg-nav: #292b2e;
+  --bg-url-bar: #35363a;
+  --bg-url-bar-focus: #1a1a1c;
+  --bg-canvas: #0e0e0e;
+  --bg-settings: #292b2e;
+  --text-primary: #e8eaed;
+  --text-secondary: #9aa0a6;
+  --text-tab-active: #e8eaed;
+  --text-tab-inactive: #9aa0a6;
+  --border-color: #3c4043;
+  --border-tab: #3c4043;
+  --accent: #8ab4f8;
+  --accent-hover: #aecbfa;
+  --close-hover: #5f6368;
+  --close-hover-bg: rgba(232, 234, 237, 0.1);
+  --shadow-settings: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --status-connected: #34a853;
+  --status-connecting: #fbbc04;
+  --status-disconnected: #ea4335;
+  --tab-new-animation: tabSlideIn 0.2s ease-out;
+}
+
+[data-theme="light"] {
+  --bg-primary: #dee1e6;
+  --bg-secondary: #e8eaed;
+  --bg-tertiary: #fff;
+  --bg-active-tab: #fff;
+  --bg-inactive-tab: #dee1e6;
+  --bg-hover: #d2d5d9;
+  --bg-nav: #f1f3f4;
+  --bg-url-bar: #e8eaed;
+  --bg-url-bar-focus: #fff;
+  --bg-canvas: #f8f9fa;
+  --bg-settings: #fff;
+  --text-primary: #202124;
+  --text-secondary: #5f6368;
+  --text-tab-active: #202124;
+  --text-tab-inactive: #5f6368;
+  --border-color: #dadce0;
+  --border-tab: #dadce0;
+  --accent: #1a73e8;
+  --accent-hover: #174ea6;
+  --close-hover: #9aa0a6;
+  --close-hover-bg: rgba(0, 0, 0, 0.06);
+  --shadow-settings: 0 4px 16px rgba(0, 0, 0, 0.15);
+  --status-connected: #34a853;
+  --status-connecting: #f9ab00;
+  --status-disconnected: #d93025;
+  --tab-new-animation: tabSlideIn 0.2s ease-out;
+}
+
+/* --- Reset & Base --- */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* --- Tab Bar --- */
+
+#tab-bar {
+  display: flex;
+  align-items: flex-end;
+  background: var(--bg-primary);
+  height: 38px;
+  padding: 0 8px;
+  gap: 0;
+  flex-shrink: 0;
+  -webkit-app-region: drag;
+}
+
+#tab-strip {
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+  max-width: calc(100% - 120px);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+#tab-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 60px;
+  max-width: 220px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px 8px 0 0;
+  background: var(--bg-inactive-tab);
+  color: var(--text-tab-inactive);
+  font-size: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+  transition: background 0.1s, color 0.1s;
+  -webkit-app-region: no-drag;
+  animation: var(--tab-new-animation);
+}
+
+.tab:hover {
+  background: var(--bg-hover);
+}
+
+.tab.active {
+  background: var(--bg-active-tab);
+  color: var(--text-tab-active);
+  height: 34px;
+}
+
+.tab-favicon {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.tab-favicon-placeholder {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  background: var(--bg-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab-favicon-placeholder svg {
+  width: 10px;
+  height: 10px;
+  color: var(--text-secondary);
+}
+
+.tab-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-close {
+  display: none;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.tab:hover .tab-close {
+  display: flex;
+}
+
+.tab-close:hover {
+  background: var(--close-hover-bg);
+  color: var(--text-primary);
+}
+
+.tab-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-bottom: 3px;
+  -webkit-app-region: no-drag;
+}
+
+.tab-action:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+#tab-bar-spacer {
+  flex: 1;
+}
+
+@keyframes tabSlideIn {
+  from {
+    max-width: 0;
+    opacity: 0;
+    padding: 0;
+  }
+  to {
+    max-width: 220px;
+    opacity: 1;
+    padding: 0 12px;
+  }
+}
+
+/* --- Settings Dropdown --- */
+
+#settings-dropdown {
+  position: absolute;
+  top: 38px;
+  right: 8px;
+  background: var(--bg-settings);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  z-index: 100;
+  box-shadow: var(--shadow-settings);
+  min-width: 260px;
+}
+
+#settings-dropdown.hidden {
+  display: none;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.settings-row:last-child {
+  margin-bottom: 0;
+}
+
+.settings-row label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-width: 36px;
+}
+
+.settings-row input {
+  flex: 1;
+  height: 28px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-url-bar);
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 0 8px;
+  outline: none;
+}
+
+.settings-row input:focus {
+  border-color: var(--accent);
+  background: var(--bg-url-bar-focus);
+}
+
+.settings-actions {
+  justify-content: space-between;
+}
+
+.settings-actions button {
+  height: 28px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 4px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.settings-actions button:hover {
+  background: var(--accent-hover);
+}
+
+.status-badge {
+  font-size: var(--text-aux, 12px);
+  line-height: var(--text-aux--line-height, 1.2);
+  letter-spacing: var(--text-aux--letter-spacing, 0);
+  font-weight: var(--text-aux--font-weight, 400);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.status-badge.connected {
+  background: rgba(52, 168, 83, 0.15);
+  color: var(--status-connected);
+}
+
+.status-badge.connecting {
+  background: rgba(251, 188, 4, 0.15);
+  color: var(--status-connecting);
+}
+
+.status-badge.disconnected {
+  background: rgba(234, 67, 53, 0.15);
+  color: var(--status-disconnected);
+}
+
+/* --- Nav Bar --- */
+
+#nav-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--bg-nav);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+  height: 40px;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.nav-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.nav-btn:active {
+  background: var(--border-color);
+}
+
+#url-bar-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  background: var(--bg-url-bar);
+  border-radius: 16px;
+  padding: 0 12px;
+  gap: 8px;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+#url-bar-container:focus-within {
+  background: var(--bg-url-bar-focus);
+  border-color: var(--accent);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.connected {
+  background: var(--status-connected);
+}
+
+.status-dot.connecting {
+  background: var(--status-connecting);
+  animation: pulse 1.5s infinite;
+}
+
+.status-dot.disconnected {
+  background: var(--status-disconnected);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+#url-bar {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  font-family: inherit;
+}
+
+#url-bar::placeholder {
+  color: var(--text-secondary);
+}
+
+/* --- Canvas Area --- */
+
+#canvas-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--bg-canvas);
+  position: relative;
+}
+
+#screen {
+  cursor: default;
+  max-width: 100%;
+  max-height: 100%;
+  outline: none;
+}
+
+#canvas-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+#canvas-overlay p {
+  color: var(--text-secondary);
+  font-size: 16px;
+  background: var(--bg-secondary);
+  padding: 16px 32px;
+  border-radius: 8px;
+}
+
+#canvas-overlay.hidden {
+  display: none;
+}
+
+/* --- Utilities --- */
+
+.hidden {
+  display: none !important;
+}

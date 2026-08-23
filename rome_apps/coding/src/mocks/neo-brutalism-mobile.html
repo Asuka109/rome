@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stickr — Neo Brutalism Mobile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Color tokens — from CSV Primary/Secondary */
+    --cream: #FFFDF5;
+    --hot-red: #FF6B6B;
+    --vivid-yellow: #FFD93D;
+    --soft-violet: #C4B5FD;
+    --black: #000000;
+    --white: #FFFFFF;
+    --ink-muted: #4A4A4A;
+
+    /* Border tokens */
+    --bw-primary: 4px;
+    --bw-secondary: 2px;
+    --bw-heavy: 5px;
+
+    /* Radius tokens */
+    --radius-flat: 0px;
+    --radius-pill: 999px;
+
+    /* Hard offset shadow tokens (no blur) */
+    --shadow-sm: 4px 4px 0 0 var(--black);
+    --shadow-md: 6px 6px 0 0 var(--black);
+    --shadow-lg: 8px 8px 0 0 var(--black);
+    --shadow-violet: 6px 6px 0 0 var(--soft-violet);
+
+    /* Spacing scale */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 20px;
+    --sp-6: 24px;
+    --sp-8: 32px;
+
+    /* Typography scale */
+    --font: 'Space Grotesk', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --fs-xs: 0.72rem;
+    --fs-sm: 0.85rem;
+    --fs-base: 1rem;
+    --fs-lg: 1.25rem;
+    --fs-xl: 1.6rem;
+    --fs-2xl: 2.2rem;
+
+    /* Motion — spring/linear only */
+    --motion-press: 80ms linear;
+    --motion-spring: 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background:
+      repeating-linear-gradient(45deg, rgba(0,0,0,0.025) 0 2px, transparent 2px 22px),
+      var(--cream);
+    color: var(--black);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: var(--sp-6) var(--sp-4);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 100%;
+    max-width: 412px;
+    background: var(--cream);
+    border: var(--bw-heavy) solid var(--black);
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ---------- Status bar ---------- */
+  .statusbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--sp-2) var(--sp-5);
+    background: var(--black);
+    color: var(--cream);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+  .statusbar .icons { display: flex; gap: var(--sp-2); align-items: center; }
+  .statusbar svg { display: block; }
+
+  /* ---------- Header ---------- */
+  header {
+    padding: var(--sp-5);
+    border-bottom: var(--bw-primary) solid var(--black);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    background: var(--vivid-yellow);
+  }
+  .brand { display: flex; align-items: center; gap: var(--sp-3); }
+  .brand-mark {
+    width: 42px; height: 42px;
+    background: var(--hot-red);
+    border: var(--bw-primary) solid var(--black);
+    display: grid; place-items: center;
+    transform: rotate(-3deg);
+    box-shadow: var(--shadow-sm);
+  }
+  .brand-mark svg { width: 22px; height: 22px; }
+  .brand h1 {
+    font-size: var(--fs-xl);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .icon-btn {
+    width: 44px; height: 44px;
+    background: var(--white);
+    border: var(--bw-primary) solid var(--black);
+    box-shadow: var(--shadow-sm);
+    display: grid; place-items: center;
+    cursor: pointer;
+    color: var(--black);
+    transition: transform var(--motion-press), box-shadow var(--motion-press);
+    position: relative;
+  }
+  .icon-btn svg { width: 22px; height: 22px; }
+  .icon-btn:hover { background: var(--soft-violet); }
+  .icon-btn:focus-visible { outline: 3px solid var(--hot-red); outline-offset: 3px; }
+  .icon-btn:active { transform: translate(4px, 4px); box-shadow: 0 0 0 0 var(--black); }
+  .icon-btn .dot {
+    position: absolute; top: -8px; right: -8px;
+    width: 18px; height: 18px;
+    background: var(--hot-red);
+    border: 2px solid var(--black);
+    border-radius: var(--radius-pill);
+    font-size: 10px; font-weight: 700;
+    display: grid; place-items: center;
+    color: var(--white);
+  }
+
+  /* ---------- Scroll body ---------- */
+  main {
+    padding: var(--sp-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-5);
+  }
+
+  /* Greeting + balance card */
+  .greeting { display: flex; flex-direction: column; gap: 2px; }
+  .greeting .eyebrow {
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-muted);
+  }
+  .greeting h2 {
+    font-size: var(--fs-2xl);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 0.95;
+  }
+
+  .balance {
+    background: var(--soft-violet);
+    border: var(--bw-primary) solid var(--black);
+    box-shadow: var(--shadow-md);
+    padding: var(--sp-5);
+    transform: rotate(-1deg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+  }
+  .balance .row { display: flex; justify-content: space-between; align-items: flex-start; }
+  .balance .label {
+    font-size: var(--fs-xs); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .balance .amount {
+    font-size: 2.6rem; font-weight: 700;
+    letter-spacing: -0.04em; line-height: 1;
+  }
+  .balance .amount span { font-size: var(--fs-lg); vertical-align: super; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--vivid-yellow);
+    border: var(--bw-secondary) solid var(--black);
+    padding: 4px 10px;
+    font-size: var(--fs-xs); font-weight: 700;
+    transform: rotate(2deg);
+    align-self: flex-start;
+  }
+  .chip svg { width: 14px; height: 14px; }
+  .balance .meta {
+    font-size: var(--fs-sm); font-weight: 500;
+    background: var(--white);
+    border: var(--bw-secondary) solid var(--black);
+    padding: var(--sp-2) var(--sp-3);
+    display: flex; justify-content: space-between;
+  }
+
+  /* Quick actions */
+  .actions {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--sp-3);
+  }
+  .action {
+    display: flex; flex-direction: column; align-items: center; gap: var(--sp-2);
+    background: transparent; border: none; cursor: pointer;
+    font-family: var(--font);
+  }
+  .action .tile {
+    width: 100%; aspect-ratio: 1 / 1;
+    border: var(--bw-primary) solid var(--black);
+    box-shadow: var(--shadow-sm);
+    display: grid; place-items: center;
+    transition: transform var(--motion-press), box-shadow var(--motion-press);
+    color: var(--black);
+  }
+  .action:nth-child(1) .tile { background: var(--hot-red); }
+  .action:nth-child(2) .tile { background: var(--vivid-yellow); }
+  .action:nth-child(3) .tile { background: var(--white); }
+  .action:nth-child(4) .tile { background: var(--soft-violet); }
+  .action .tile svg { width: 26px; height: 26px; }
+  .action span {
+    font-size: var(--fs-xs); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  .action:hover .tile { transform: rotate(-2deg); }
+  .action:active .tile { transform: translate(4px, 4px); box-shadow: 0 0 0 0 var(--black); }
+  .action:focus-visible { outline: none; }
+  .action:focus-visible .tile { outline: 3px solid var(--black); outline-offset: 3px; }
+
+  /* Section heading */
+  .section-head {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .section-head h3 {
+    font-size: var(--fs-lg); font-weight: 700; letter-spacing: -0.02em;
+  }
+  .link-btn {
+    font-family: var(--font);
+    font-size: var(--fs-xs); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    background: var(--vivid-yellow);
+    border: var(--bw-secondary) solid var(--black);
+    padding: 4px 10px; cursor: pointer;
+  }
+  .link-btn:hover { background: var(--hot-red); color: var(--white); }
+  .link-btn:focus-visible { outline: 3px solid var(--black); outline-offset: 2px; }
+
+  /* Transaction list */
+  .txn-list { display: flex; flex-direction: column; gap: var(--sp-3); list-style: none; }
+  .txn {
+    background: var(--white);
+    border: var(--bw-primary) solid var(--black);
+    box-shadow: var(--shadow-sm);
+    padding: var(--sp-3) var(--sp-4);
+    display: flex; align-items: center; gap: var(--sp-3);
+    transition: transform var(--motion-spring);
+  }
+  .txn:nth-child(even) { transform: rotate(0.6deg); }
+  .txn:nth-child(odd) { transform: rotate(-0.6deg); }
+  .txn:hover { transform: rotate(0deg) translate(-2px, -2px); box-shadow: var(--shadow-md); }
+  .txn-ico {
+    flex: none; width: 40px; height: 40px;
+    border: var(--bw-secondary) solid var(--black);
+    display: grid; place-items: center;
+    color: var(--black);
+  }
+  .txn-ico.red { background: var(--hot-red); }
+  .txn-ico.violet { background: var(--soft-violet); }
+  .txn-ico.yellow { background: var(--vivid-yellow); }
+  .txn-ico svg { width: 20px; height: 20px; }
+  .txn-body { flex: 1 1 auto; min-width: 0; }
+  .txn-body .t { font-weight: 700; font-size: var(--fs-base); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .txn-body .s { font-size: var(--fs-xs); color: var(--ink-muted); font-weight: 500; }
+  .txn-amt { font-weight: 700; font-size: var(--fs-base); flex: none; }
+  .txn-amt.in { color: #0a7d2c; }
+
+  /* Primary CTA */
+  .cta {
+    font-family: var(--font);
+    width: 100%;
+    min-height: 56px;
+    background: var(--hot-red);
+    color: var(--white);
+    border: var(--bw-primary) solid var(--black);
+    box-shadow: var(--shadow-md);
+    font-size: var(--fs-lg);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: var(--sp-2);
+    transition: transform var(--motion-press), box-shadow var(--motion-press);
+  }
+  .cta svg { width: 22px; height: 22px; }
+  .cta:hover { background: #ff5252; }
+  .cta:focus-visible { outline: 3px solid var(--black); outline-offset: 4px; }
+  .cta:active { transform: translate(6px, 6px); box-shadow: 0 0 0 0 var(--black); }
+
+  /* ---------- Bottom tab bar ---------- */
+  nav.tabbar {
+    margin-top: var(--sp-2);
+    border-top: var(--bw-primary) solid var(--black);
+    background: var(--white);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .tab {
+    font-family: var(--font);
+    background: transparent; border: none; cursor: pointer;
+    padding: var(--sp-3) var(--sp-2) calc(var(--sp-3) + 4px);
+    display: flex; flex-direction: column; align-items: center; gap: var(--sp-1);
+    font-size: 0.62rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--ink-muted);
+    border-right: var(--bw-secondary) solid var(--black);
+    transition: background var(--motion-press);
+  }
+  .tab:last-child { border-right: none; }
+  .tab svg { width: 24px; height: 24px; }
+  .tab:hover { background: var(--cream); }
+  .tab[aria-current="page"] { color: var(--black); background: var(--vivid-yellow); }
+  .tab:focus-visible { outline: 3px solid var(--hot-red); outline-offset: -3px; }
+  .tab:active { background: var(--soft-violet); }
+
+  /* Decorative sticker */
+  .sticker {
+    position: absolute; top: 96px; right: -14px;
+    background: var(--hot-red); color: var(--white);
+    border: var(--bw-primary) solid var(--black);
+    box-shadow: var(--shadow-sm);
+    padding: 6px 14px;
+    font-size: var(--fs-xs); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    transform: rotate(8deg);
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  @media (min-width: 480px) {
+    .balance .amount { font-size: 3rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="phone">
+    <!-- Status bar -->
+    <div class="statusbar" aria-hidden="true">
+      <span>9:41</span>
+      <div class="icons">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 4h3v17h-3z"/></svg>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.5a10 10 0 0 1 14 0M8 16a5 5 0 0 1 8 0"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg>
+        <svg viewBox="0 0 24 24" width="20" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="5" width="17" height="13" rx="2"/><rect x="3" y="7" width="11" height="9" fill="currentColor"/><path d="M21 9v5" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/><path d="M8 13h6M8 16h6"/></svg>
+        </div>
+        <h1>Stickr</h1>
+      </div>
+      <button class="icon-btn" aria-label="Notifications">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+        <span class="dot">3</span>
+      </button>
+    </header>
+
+    <span class="sticker">New!</span>
+
+    <!-- Main scroll content -->
+    <main>
+      <div class="greeting">
+        <span class="eyebrow">Wednesday · 30 May</span>
+        <h2>Yo, Mara.</h2>
+      </div>
+
+      <!-- Balance card -->
+      <section class="balance" aria-label="Wallet balance">
+        <div class="row">
+          <span class="label">Total Stash</span>
+          <span class="chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5-7 9 14"/></svg>
+            +12.4%
+          </span>
+        </div>
+        <div class="amount"><span>$</span>4,820<span>.50</span></div>
+        <div class="meta">
+          <span>•••• 4417</span>
+          <span>Exp 09/27</span>
+        </div>
+      </section>
+
+      <!-- Quick actions -->
+      <section aria-label="Quick actions">
+        <div class="actions">
+          <button class="action">
+            <span class="tile" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
+            <span>Send</span>
+          </button>
+          <button class="action">
+            <span class="tile" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg></span>
+            <span>Ask</span>
+          </button>
+          <button class="action">
+            <span class="tile" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="12" rx="1"/><path d="M4 11h16M8 15h4"/></svg></span>
+            <span>Cards</span>
+          </button>
+          <button class="action">
+            <span class="tile" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></span>
+            <span>More</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Transactions -->
+      <section aria-label="Recent activity">
+        <div class="section-head">
+          <h3>Activity</h3>
+          <button class="link-btn">See all</button>
+        </div>
+        <ul class="txn-list">
+          <li class="txn">
+            <span class="txn-ico red" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12l-1 6H7zM5 8h14l-1 12H6z"/><path d="M9 12h6"/></svg></span>
+            <div class="txn-body">
+              <div class="t">Doodle Supply Co.</div>
+              <div class="s">Art &amp; Craft · Today</div>
+            </div>
+            <span class="txn-amt">-$38.00</span>
+          </li>
+          <li class="txn">
+            <span class="txn-ico violet" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.5 5 5.5.8-4 3.9 1 5.5L12 16l-5 2.6 1-5.5-4-3.9 5.5-.8z"/></svg></span>
+            <div class="txn-body">
+              <div class="t">Studio Subscription</div>
+              <div class="s">Membership · Yesterday</div>
+            </div>
+            <span class="txn-amt">-$12.99</span>
+          </li>
+          <li class="txn">
+            <span class="txn-ico yellow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+            <div class="txn-body">
+              <div class="t">Client Payout</div>
+              <div class="s">Income · Mon</div>
+            </div>
+            <span class="txn-amt in">+$640.00</span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Primary CTA -->
+      <button class="cta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        Add Money
+      </button>
+    </main>
+
+    <!-- Bottom tab bar -->
+    <nav class="tabbar" aria-label="Primary">
+      <button class="tab" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-7 9 7v10H3z"/><path d="M9 20v-6h6v6"/></svg>
+        Home
+      </button>
+      <button class="tab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-8"/><path d="M16 8h5v5"/></svg>
+        Stats
+      </button>
+      <button class="tab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="1"/><path d="M3 10h18M7 15h4"/></svg>
+        Cards
+      </button>
+      <button class="tab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+        You
+      </button>
+    </nav>
+  </div>
+</body>
+</html>

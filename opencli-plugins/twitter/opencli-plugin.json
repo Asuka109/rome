@@ -1,0 +1,6 @@
+{
+  "name": "rome-twitter",
+  "description": "Rome overrides/extensions for OpenCLI's twitter site commands",
+  "version": "0.1.0",
+  "opencli": ">=1.8.0"
+}

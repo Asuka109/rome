@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CONCRETE — Independent Editorial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Color — pure primaries only */
+    --red: #FF0000;
+    --blue: #0000FF;
+    --yellow: #FFFF00;
+    --black: #000000;
+    --white: #FFFFFF;
+    --green: #00FF00;
+    --pink: #FF00FF;
+
+    --bg: var(--white);
+    --ink: var(--black);
+
+    /* Shape — sharp, no curves */
+    --radius: 0px;
+
+    /* Borders — thick and visible */
+    --border-thin: 2px;
+    --border: 4px;
+    --border-thick: 6px;
+    --border-style: solid;
+
+    /* Shadow — hard offset, no blur */
+    --shadow: 8px 8px 0 0 var(--black);
+    --shadow-sm: 4px 4px 0 0 var(--black);
+    --shadow-pressed: 2px 2px 0 0 var(--black);
+
+    /* Spacing */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 16px;
+    --space-4: 24px;
+    --space-5: 40px;
+    --space-6: 64px;
+
+    /* Type */
+    --font: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+    --weight-mid: 500;
+    --weight-bold: 700;
+    --fs-display: clamp(2.75rem, 9vw, 6rem);
+    --fs-h2: clamp(1.5rem, 4vw, 2.5rem);
+    --fs-h3: 1.25rem;
+    --fs-body: 1.125rem;
+    --fs-label: 0.8125rem;
+
+    /* Motion — instant, brutalist */
+    --transition: none;
+    --transition-dur: 0s;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    font-family: var(--font);
+    font-weight: var(--weight-mid);
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.3;
+    font-size: var(--fs-body);
+    -webkit-font-smoothing: none;
+    overflow-x: hidden;
+  }
+
+  a { color: inherit; text-decoration: none; }
+
+  .wrap {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 var(--space-3);
+  }
+
+  .label {
+    font-size: var(--fs-label);
+    font-weight: var(--weight-bold);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  /* ===== HEADER / NAV ===== */
+  header {
+    border-bottom: var(--border-thick) var(--border-style) var(--black);
+    background: var(--yellow);
+  }
+
+  .topbar {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    border-top: var(--border-thin) var(--border-style) var(--black);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-weight: var(--weight-bold);
+    font-size: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+    padding: var(--space-3) var(--space-3) var(--space-3) 0;
+  }
+  .brand svg { display: block; }
+
+  nav {
+    display: flex;
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+  nav a {
+    display: flex;
+    align-items: center;
+    padding: var(--space-3);
+    font-weight: var(--weight-bold);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: var(--fs-label);
+    border-left: var(--border-thin) var(--border-style) var(--black);
+    transition: var(--transition);
+  }
+  nav a:hover { background: var(--black); color: var(--yellow); }
+  nav a:focus-visible {
+    outline: 4px solid var(--blue);
+    outline-offset: -4px;
+  }
+  nav a:active { background: var(--red); color: var(--white); }
+
+  .ticker {
+    background: var(--black);
+    color: var(--white);
+    overflow: hidden;
+    white-space: nowrap;
+    border-bottom: var(--border) var(--border-style) var(--black);
+  }
+  .ticker-track {
+    display: inline-block;
+    padding: var(--space-2) 0;
+    font-size: var(--fs-label);
+    font-weight: var(--weight-bold);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    animation: scroll 22s linear infinite;
+  }
+  .ticker-track span { padding: 0 var(--space-3); }
+  .ticker-track span.hot { color: var(--yellow); }
+  @keyframes scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* ===== HERO ===== */
+  .hero {
+    border-bottom: var(--border-thick) var(--border-style) var(--black);
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .hero-inner {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 0;
+  }
+  .hero-main {
+    padding: var(--space-5) var(--space-3) var(--space-4);
+    border-right: var(--border) var(--border-style) var(--black);
+  }
+  .hero-tag {
+    display: inline-block;
+    background: var(--red);
+    color: var(--white);
+    padding: var(--space-1) var(--space-2);
+    margin-bottom: var(--space-4);
+  }
+  .hero h1 {
+    font-size: var(--fs-display);
+    font-weight: var(--weight-bold);
+    line-height: 0.92;
+    letter-spacing: -2px;
+    text-transform: uppercase;
+    margin-bottom: var(--space-4);
+  }
+  .hero h1 .mark { background: var(--yellow); }
+  .hero h1 .out {
+    color: var(--white);
+    -webkit-text-stroke: 2px var(--black);
+    text-stroke: 2px var(--black);
+  }
+  .hero p {
+    max-width: 48ch;
+    font-size: var(--fs-body);
+    margin-bottom: var(--space-4);
+  }
+  .hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    align-items: center;
+  }
+
+  .btn {
+    font-family: var(--font);
+    font-weight: var(--weight-bold);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: var(--fs-body);
+    padding: var(--space-3) var(--space-4);
+    border: var(--border) var(--border-style) var(--black);
+    background: var(--blue);
+    color: var(--white);
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  .btn svg { display: block; }
+  .btn:hover { background: var(--yellow); color: var(--black); }
+  .btn:focus-visible {
+    outline: 4px solid var(--red);
+    outline-offset: 2px;
+  }
+  .btn:active {
+    transform: translate(6px, 6px);
+    box-shadow: var(--shadow-pressed);
+  }
+  .btn.ghost {
+    background: var(--white);
+    color: var(--black);
+    box-shadow: var(--shadow-sm);
+  }
+  .btn.ghost:hover { background: var(--black); color: var(--white); }
+
+  .hero-side {
+    background: var(--blue);
+    color: var(--white);
+    padding: var(--space-4) var(--space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    justify-content: center;
+  }
+  .stat {
+    border: var(--border) var(--border-style) var(--white);
+    background: var(--black);
+    padding: var(--space-3);
+  }
+  .stat .num {
+    font-size: 2.5rem;
+    font-weight: var(--weight-bold);
+    line-height: 1;
+    letter-spacing: -1px;
+  }
+  .stat:nth-child(1) .num { color: var(--yellow); }
+  .stat:nth-child(2) .num { color: var(--green); }
+  .stat:nth-child(3) .num { color: var(--pink); }
+  .stat .cap {
+    margin-top: var(--space-2);
+    font-size: var(--fs-label);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--white);
+  }
+
+  /* ===== SECTION HEADERS ===== */
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    padding: var(--space-4) 0 var(--space-3);
+    border-bottom: var(--border) var(--border-style) var(--black);
+    margin-bottom: var(--space-4);
+  }
+  .sec-head h2 {
+    font-size: var(--fs-h2);
+    font-weight: var(--weight-bold);
+    text-transform: uppercase;
+    letter-spacing: -1px;
+  }
+  .sec-head .count {
+    background: var(--black);
+    color: var(--green);
+    padding: var(--space-1) var(--space-2);
+    font-weight: var(--weight-bold);
+  }
+
+  main { padding-bottom: var(--space-6); }
+
+  /* ===== FEATURE GRID ===== */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-4);
+  }
+  .card {
+    border: var(--border) var(--border-style) var(--black);
+    background: var(--white);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    transition: var(--transition);
+  }
+  .card:hover {
+    box-shadow: var(--shadow);
+    transform: translate(-4px, -4px);
+  }
+  .card:focus-within {
+    outline: 4px solid var(--blue);
+    outline-offset: 2px;
+  }
+  .card-vis {
+    aspect-ratio: 16 / 10;
+    border-bottom: var(--border) var(--border-style) var(--black);
+    position: relative;
+    overflow: hidden;
+  }
+  .card-body { padding: var(--space-3); flex: 1; display: flex; flex-direction: column; }
+  .card-cat {
+    align-self: flex-start;
+    padding: var(--space-1) var(--space-2);
+    margin-bottom: var(--space-2);
+    color: var(--white);
+  }
+  .card h3 {
+    font-size: var(--fs-h3);
+    font-weight: var(--weight-bold);
+    text-transform: uppercase;
+    letter-spacing: -0.5px;
+    line-height: 1.05;
+    margin-bottom: var(--space-2);
+  }
+  .card h3 a:hover { background: var(--yellow); }
+  .card h3 a:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  .card .by {
+    margin-top: auto;
+    padding-top: var(--space-3);
+    border-top: var(--border-thin) var(--border-style) var(--black);
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--fs-label);
+    font-weight: var(--weight-bold);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* SVG visual fills */
+  .v-red { background: var(--red); }
+  .v-blue { background: var(--blue); }
+  .v-yellow { background: var(--yellow); }
+  .cat-red { background: var(--red); }
+  .cat-blue { background: var(--blue); }
+  .cat-black { background: var(--black); }
+
+  /* ===== SUBSCRIBE PANEL ===== */
+  .subscribe {
+    margin-top: var(--space-6);
+    border: var(--border-thick) var(--border-style) var(--black);
+    background: var(--pink);
+    box-shadow: var(--shadow);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .sub-left {
+    padding: var(--space-5) var(--space-4);
+    border-right: var(--border) var(--border-style) var(--black);
+  }
+  .sub-left h2 {
+    font-size: var(--fs-h2);
+    font-weight: var(--weight-bold);
+    text-transform: uppercase;
+    letter-spacing: -1px;
+    line-height: 0.95;
+    margin-bottom: var(--space-3);
+  }
+  .sub-left p { max-width: 36ch; }
+  .sub-right {
+    padding: var(--space-5) var(--space-4);
+    background: var(--white);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    justify-content: center;
+  }
+  .field label {
+    display: block;
+    font-size: var(--fs-label);
+    font-weight: var(--weight-bold);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: var(--space-2);
+  }
+  .field input {
+    width: 100%;
+    font-family: var(--font);
+    font-size: var(--fs-body);
+    font-weight: var(--weight-mid);
+    padding: var(--space-3);
+    border: var(--border) var(--border-style) var(--black);
+    border-radius: var(--radius);
+    background: var(--white);
+    color: var(--black);
+    transition: var(--transition);
+  }
+  .field input::placeholder { color: #555; }
+  .field input:focus-visible {
+    outline: none;
+    background: var(--yellow);
+    box-shadow: var(--shadow-sm);
+  }
+  .btn.block { width: 100%; justify-content: center; }
+
+  /* ===== FOOTER ===== */
+  footer {
+    border-top: var(--border-thick) var(--border-style) var(--black);
+    background: var(--black);
+    color: var(--white);
+  }
+  .foot {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-3);
+  }
+  .foot .brand { color: var(--white); padding: 0; }
+  .foot-links { display: flex; gap: var(--space-4); flex-wrap: wrap; }
+  .foot-links a {
+    font-size: var(--fs-label);
+    font-weight: var(--weight-bold);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .foot-links a:hover { color: var(--yellow); }
+  .foot-links a:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 900px) {
+    .hero-inner { grid-template-columns: 1fr; }
+    .hero-main { border-right: none; border-bottom: var(--border) var(--border-style) var(--black); }
+    .grid { grid-template-columns: repeat(2, 1fr); }
+    .subscribe { grid-template-columns: 1fr; }
+    .sub-left { border-right: none; border-bottom: var(--border) var(--border-style) var(--black); }
+  }
+  @media (max-width: 560px) {
+    .grid { grid-template-columns: 1fr; }
+    .brand { font-size: 1.25rem; }
+    nav a { padding: var(--space-2) var(--space-3); }
+    .hero-main { padding: var(--space-4) var(--space-3); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ticker-track { animation: none; }
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="topbar">
+        <a href="#" class="brand" aria-label="Concrete, home">
+          <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+            <rect x="1" y="1" width="32" height="32" fill="#000000"/>
+            <rect x="6" y="6" width="10" height="10" fill="#FF0000"/>
+            <rect x="18" y="6" width="10" height="10" fill="#0000FF"/>
+            <rect x="6" y="18" width="10" height="10" fill="#FFFF00"/>
+            <rect x="18" y="18" width="10" height="10" fill="#FFFFFF"/>
+          </svg>
+          Concrete
+        </a>
+        <nav aria-label="Primary">
+          <a href="#dispatch">Dispatch</a>
+          <a href="#essays">Essays</a>
+          <a href="#archive">Archive</a>
+          <a href="#subscribe" aria-current="page">Subscribe</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track">
+      <span class="hot">// Issue 047 out now</span>
+      <span>The Death of the Soft Corner</span>
+      <span class="hot">// 12,400 readers</span>
+      <span>Type as Protest</span>
+      <span>No grids were harmed</span>
+      <span class="hot">// Issue 047 out now</span>
+      <span>The Death of the Soft Corner</span>
+      <span class="hot">// 12,400 readers</span>
+      <span>Type as Protest</span>
+      <span>No grids were harmed</span>
+    </div>
+  </div>
+
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap">
+      <div class="hero-inner">
+        <div class="hero-main">
+          <span class="hero-tag label">Issue 047 / Cover Story</span>
+          <h1 id="hero-title">Build it <span class="mark">Loud</span>,<br>leave it <span class="out">raw</span>.</h1>
+          <p>An independent journal for designers, builders, and people who refuse to round their edges. Hard borders. Honest type. No apologies.</p>
+          <div class="hero-meta">
+            <a href="#dispatch" class="btn">
+              <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+                <path d="M2 9h11M9 3l6 6-6 6" stroke="currentColor" stroke-width="3" fill="none"/>
+              </svg>
+              Read the issue
+            </a>
+            <a href="#subscribe" class="btn ghost">Get it weekly</a>
+          </div>
+        </div>
+        <div class="hero-side" aria-label="Publication statistics">
+          <div class="stat">
+            <div class="num">047</div>
+            <div class="cap">Issues shipped</div>
+          </div>
+          <div class="stat">
+            <div class="num">12.4K</div>
+            <div class="cap">Subscribers</div>
+          </div>
+          <div class="stat">
+            <div class="num">0px</div>
+            <div class="cap">Border radius</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <div class="wrap">
+      <section id="dispatch" aria-labelledby="dispatch-h">
+        <div class="sec-head">
+          <h2 id="dispatch-h">Latest Dispatch</h2>
+          <span class="count label">06 New</span>
+        </div>
+        <div class="grid">
+
+          <article class="card">
+            <div class="card-vis v-red" role="img" aria-label="Abstract blocks in red, black and white">
+              <svg width="100%" height="100%" viewBox="0 0 320 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                <rect width="320" height="200" fill="#FF0000"/>
+                <rect x="20" y="20" width="120" height="120" fill="#000000"/>
+                <rect x="160" y="60" width="140" height="120" fill="#FFFFFF" stroke="#000" stroke-width="4"/>
+                <circle cx="230" cy="60" r="30" fill="#FFFF00" stroke="#000" stroke-width="4"/>
+              </svg>
+            </div>
+            <div class="card-body">
+              <span class="card-cat cat-black label">Manifesto</span>
+              <h3><a href="#">The Death of the Soft Corner</a></h3>
+              <div class="by"><span>M. Vasquez</span><span>8 min</span></div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-vis v-blue" role="img" aria-label="Stacked bars in blue and yellow">
+              <svg width="100%" height="100%" viewBox="0 0 320 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                <rect width="320" height="200" fill="#0000FF"/>
+                <rect x="30" y="120" width="50" height="80" fill="#FFFF00" stroke="#000" stroke-width="4"/>
+                <rect x="95" y="70" width="50" height="130" fill="#FFFFFF" stroke="#000" stroke-width="4"/>
+                <rect x="160" y="100" width="50" height="100" fill="#FF0000" stroke="#000" stroke-width="4"/>
+                <rect x="225" y="40" width="50" height="160" fill="#000000" stroke="#000" stroke-width="4"/>
+              </svg>
+            </div>
+            <div class="card-body">
+              <span class="card-cat cat-red label">Data</span>
+              <h3><a href="#">Why Every Chart Lies (Slightly)</a></h3>
+              <div class="by"><span>R. Okonkwo</span><span>11 min</span></div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-vis v-yellow" role="img" aria-label="Grid pattern of black lines on yellow">
+              <svg width="100%" height="100%" viewBox="0 0 320 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                <rect width="320" height="200" fill="#FFFF00"/>
+                <g stroke="#000" stroke-width="4">
+                  <line x1="0" y1="50" x2="320" y2="50"/>
+                  <line x1="0" y1="100" x2="320" y2="100"/>
+                  <line x1="0" y1="150" x2="320" y2="150"/>
+                  <line x1="80" y1="0" x2="80" y2="200"/>
+                  <line x1="160" y1="0" x2="160" y2="200"/>
+                  <line x1="240" y1="0" x2="240" y2="200"/>
+                </g>
+                <rect x="160" y="100" width="80" height="50" fill="#FF00FF" stroke="#000" stroke-width="4"/>
+              </svg>
+            </div>
+            <div class="card-body">
+              <span class="card-cat cat-blue label">Systems</span>
+              <h3><a href="#">The Visible Grid Returns</a></h3>
+              <div class="by"><span>J. Halvorsen</span><span>6 min</span></div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-vis v-blue" role="img" aria-label="Concentric black squares on white">
+              <svg width="100%" height="100%" viewBox="0 0 320 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                <rect width="320" height="200" fill="#FFFFFF"/>
+                <rect x="60" y="20" width="200" height="160" fill="none" stroke="#000" stroke-width="6"/>
+                <rect x="90" y="50" width="140" height="100" fill="none" stroke="#FF0000" stroke-width="6"/>
+                <rect x="120" y="80" width="80" height="40" fill="#0000FF"/>
+              </svg>
+            </div>
+            <div class="card-body">
+              <span class="card-cat cat-black label">Essay</span>
+              <h3><a href="#">Type as a Form of Protest</a></h3>
+              <div class="by"><span>A. Bauer</span><span>14 min</span></div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-vis v-red" role="img" aria-label="Diagonal slashes in primary colors">
+              <svg width="100%" height="100%" viewBox="0 0 320 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                <rect width="320" height="200" fill="#000000"/>
+                <polygon points="0,200 120,0 200,0 80,200" fill="#FF0000"/>
+                <polygon points="120,200 240,0 300,0 180,200" fill="#FFFF00"/>
+                <polygon points="240,200 320,80 320,200" fill="#0000FF"/>
+              </svg>
+            </div>
+            <div class="card-body">
+              <span class="card-cat cat-red label">Interview</span>
+              <h3><a href="#">Anti-Design Is Still Design</a></h3>
+              <div class="by"><span>C. Mensah</span><span>9 min</span></div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-vis v-yellow" role="img" aria-label="Large halftone dots on white and black">
+              <svg width="100%" height="100%" viewBox="0 0 320 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                <rect width="320" height="200" fill="#FFFFFF"/>
+                <rect x="0" y="0" width="160" height="200" fill="#000000"/>
+                <g fill="#FFFF00"><circle cx="40" cy="50" r="18"/><circle cx="110" cy="50" r="18"/><circle cx="40" cy="120" r="18"/><circle cx="110" cy="120" r="18"/></g>
+                <g fill="#000000"><circle cx="200" cy="60" r="22"/><circle cx="270" cy="60" r="14"/><circle cx="200" cy="140" r="14"/><circle cx="270" cy="140" r="22"/></g>
+              </svg>
+            </div>
+            <div class="card-body">
+              <span class="card-cat cat-blue label">Field Notes</span>
+              <h3><a href="#">Printing in Pure Primaries</a></h3>
+              <div class="by"><span>L. Petrova</span><span>5 min</span></div>
+            </div>
+          </article>
+
+        </div>
+      </section>
+
+      <section id="subscribe" class="subscribe" aria-labelledby="sub-h">
+        <div class="sub-left">
+          <h2 id="sub-h">Join the dispatch.</h2>
+          <p>One raw, unfiltered issue every Thursday. No tracking, no fluff, no rounded corners. Unsubscribe with one click.</p>
+        </div>
+        <form class="sub-right" onsubmit="return false;">
+          <div class="field">
+            <label for="email">Your email</label>
+            <input id="email" type="email" name="email" placeholder="you@domain.com" autocomplete="email" required>
+          </div>
+          <button type="submit" class="btn block">
+            <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+              <path d="M2 4h14v10H2z" fill="none" stroke="currentColor" stroke-width="3"/>
+              <path d="M2 4l7 5 7-5" fill="none" stroke="currentColor" stroke-width="3"/>
+            </svg>
+            Subscribe Free
+          </button>
+        </form>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="foot">
+        <span class="brand">
+          <svg width="28" height="28" viewBox="0 0 34 34" aria-hidden="true">
+            <rect x="1" y="1" width="32" height="32" fill="#FFFFFF"/>
+            <rect x="6" y="6" width="10" height="10" fill="#FF0000"/>
+            <rect x="18" y="6" width="10" height="10" fill="#0000FF"/>
+            <rect x="6" y="18" width="10" height="10" fill="#FFFF00"/>
+            <rect x="18" y="18" width="10" height="10" fill="#000000"/>
+          </svg>
+          Concrete
+        </span>
+        <nav class="foot-links" aria-label="Footer">
+          <a href="#">About</a>
+          <a href="#">Contributors</a>
+          <a href="#">RSS</a>
+          <a href="#">Contact</a>
+        </nav>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

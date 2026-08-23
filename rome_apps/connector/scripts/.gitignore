@@ -1,0 +1,4 @@
+node_modules/
+package-lock.json
+# Temp files written next to the script by `composio run -f`
+.composio-run-*.ts

@@ -1,0 +1,118 @@
+.rome-news-item-card {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--rome-news-border, var(--border));
+  border-radius: 0.5rem;
+  background: var(--rome-news-surface, var(--surface, var(--card, var(--background))));
+  color: var(--rome-news-foreground, var(--foreground));
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 200ms ease,
+    border-color 200ms ease,
+    box-shadow 200ms ease;
+}
+
+.rome-news-item-card:hover {
+  transform: translateY(-0.125rem);
+  border-color: var(--rome-news-border-hover, var(--border-strong, var(--ring)));
+  box-shadow: var(--rome-news-shadow-hover, 0 8px 22px rgb(15 23 42 / 10%));
+}
+
+.rome-news-item-card:focus-visible {
+  outline: 2px solid var(--rome-news-focus, var(--ring));
+  outline-offset: 2px;
+}
+
+.rome-news-item-media {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--rome-news-muted, var(--surface-muted, var(--muted)));
+}
+
+.rome-news-item-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition:
+    opacity 300ms ease,
+    transform 300ms ease;
+}
+
+.rome-news-item-image[data-loaded="true"] {
+  opacity: 1;
+}
+
+.rome-news-item-card:hover .rome-news-item-image {
+  transform: scale(1.03);
+}
+
+.rome-news-item-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rome-news-muted-foreground, var(--subtle-foreground, var(--muted-foreground)));
+  background: var(--rome-news-muted, var(--surface-muted, var(--muted)));
+}
+
+.rome-news-item-placeholder[data-loading="true"] {
+  animation: rome-news-pulse 1.6s ease-in-out infinite;
+}
+
+.rome-news-item-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.625rem 0.75rem;
+}
+
+.rome-news-item-title,
+.rome-news-item-subtitle {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rome-news-item-title {
+  color: var(--rome-news-foreground, var(--foreground));
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.rome-news-item-subtitle {
+  color: var(--rome-news-secondary-foreground, var(--muted-foreground));
+  font-size: var(--text-aux, 0.75rem);
+  line-height: var(--text-aux--line-height, 1.2);
+  letter-spacing: var(--text-aux--letter-spacing, 0);
+  font-weight: var(--text-aux--font-weight, 400);
+}
+
+@keyframes rome-news-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rome-news-item-card,
+  .rome-news-item-image,
+  .rome-news-item-placeholder {
+    transition: none;
+    animation: none;
+  }
+}

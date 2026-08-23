@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS//TERMINAL — Cyberpunk Trading HUD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Core palette */
+    --bg-dark: #0D0D0D;
+    --bg-panel: #111416;
+    --bg-elev: #15191c;
+    --neon-green: #00FF00;
+    --neon-magenta: #FF00FF;
+    --neon-cyan: #00FFFF;
+    --warn-amber: #FFB000;
+    --grid-line: rgba(0, 255, 0, 0.07);
+
+    /* Text */
+    --txt-bright: #d6fbd6;
+    --txt-mid: rgba(0, 255, 0, 0.62);
+    --txt-dim: rgba(0, 255, 0, 0.38);
+
+    /* Effects */
+    --scanline-opacity: 0.10;
+    --glitch-duration: 0.3s;
+    --glow-green: 0 0 6px rgba(0,255,0,.7), 0 0 14px rgba(0,255,0,.35);
+    --glow-cyan: 0 0 6px rgba(0,255,255,.7), 0 0 14px rgba(0,255,255,.35);
+    --glow-magenta: 0 0 6px rgba(255,0,255,.7), 0 0 14px rgba(255,0,255,.35);
+
+    /* Shape */
+    --radius: 2px;
+    --chamfer: 10px;
+    --border-neon: 1px solid rgba(0, 255, 0, 0.28);
+    --shadow-panel: 0 0 0 1px rgba(0,255,0,.10), 0 18px 40px rgba(0,0,0,.6);
+
+    /* Spacing scale */
+    --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px;
+    --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-8: 48px;
+
+    /* Type scale */
+    --fs-h1: clamp(28px, 5vw, 42px);
+    --fs-h2: clamp(20px, 3vw, 28px);
+    --fs-sec: 20px;
+    --fs-body: 14px;
+    --fs-label: 10px;
+    --ff-head: 'Orbitron', system-ui, sans-serif;
+    --ff-body: 'JetBrains Mono', ui-monospace, 'Courier New', monospace;
+
+    /* Motion */
+    --t-fast: 0.12s ease;
+    --t-med: 0.25s cubic-bezier(.2,.7,.3,1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { background: var(--bg-dark); }
+
+  body {
+    font-family: var(--ff-body);
+    color: var(--txt-mid);
+    font-size: var(--fs-body);
+    line-height: 1.5;
+    letter-spacing: 0.5px;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+    background:
+      radial-gradient(900px 500px at 80% -10%, rgba(255,0,255,.06), transparent 60%),
+      radial-gradient(800px 500px at 0% 110%, rgba(0,255,255,.06), transparent 60%),
+      linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0 / 100% 32px,
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0 / 32px 100%,
+      var(--bg-dark);
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0,
+      rgba(0,0,0,0) 2px,
+      rgba(0,255,0,var(--scanline-opacity)) 3px,
+      rgba(0,0,0,0) 4px
+    );
+    mix-blend-mode: overlay;
+  }
+  /* Vignette + sweeping scan */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9998;
+    background: linear-gradient(180deg, transparent, rgba(0,255,0,.05) 50%, transparent);
+    height: 140px;
+    animation: scan 7s linear infinite;
+  }
+  @keyframes scan { 0% { transform: translateY(-160px);} 100% { transform: translateY(110vh);} }
+
+  a { color: inherit; text-decoration: none; }
+  button { font-family: var(--ff-body); cursor: pointer; }
+
+  /* Utility chamfered panel */
+  .panel {
+    background:
+      linear-gradient(180deg, rgba(0,255,0,.025), transparent 40%),
+      var(--bg-panel);
+    border: var(--border-neon);
+    box-shadow: var(--shadow-panel);
+    clip-path: polygon(var(--chamfer) 0, 100% 0, 100% calc(100% - var(--chamfer)), calc(100% - var(--chamfer)) 100%, 0 100%, 0 var(--chamfer));
+    position: relative;
+  }
+
+  .label {
+    font-size: var(--fs-label);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--txt-dim);
+  }
+
+  .neon-cyan { color: var(--neon-cyan); text-shadow: var(--glow-cyan); }
+  .neon-mag { color: var(--neon-magenta); text-shadow: var(--glow-magenta); }
+  .neon-grn { color: var(--neon-green); text-shadow: var(--glow-green); }
+
+  /* ============ LAYOUT SHELL ============ */
+  .shell { max-width: 1320px; margin: 0 auto; padding: var(--sp-4); }
+
+  /* Header */
+  header.topbar {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+    flex-wrap: wrap;
+    padding: var(--sp-3) var(--sp-4);
+    border: var(--border-neon);
+    background: linear-gradient(90deg, rgba(0,255,0,.04), transparent 50%, rgba(255,0,255,.04));
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  }
+  .brand { display: flex; align-items: center; gap: var(--sp-3); }
+  .brand svg { width: 34px; height: 34px; filter: drop-shadow(0 0 6px rgba(0,255,255,.6)); }
+  .brand .mark {
+    font-family: var(--ff-head);
+    font-weight: 900;
+    font-size: 18px;
+    letter-spacing: 3px;
+    color: var(--txt-bright);
+    text-shadow: var(--glow-cyan);
+  }
+  .brand .mark b { color: var(--neon-magenta); text-shadow: var(--glow-magenta); }
+
+  nav.mainnav { display: flex; gap: var(--sp-1); margin-left: auto; flex-wrap: wrap; }
+  nav.mainnav a {
+    font-size: var(--fs-label);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    padding: var(--sp-2) var(--sp-3);
+    color: var(--txt-mid);
+    border: 1px solid transparent;
+    transition: var(--t-fast);
+  }
+  nav.mainnav a:hover { color: var(--neon-cyan); border-color: rgba(0,255,255,.4); text-shadow: var(--glow-cyan); }
+  nav.mainnav a:focus-visible { outline: 2px solid var(--neon-cyan); outline-offset: 2px; }
+  nav.mainnav a[aria-current="page"] { color: var(--neon-green); border-color: rgba(0,255,0,.4); text-shadow: var(--glow-green); }
+
+  .sys-status { display: flex; align-items: center; gap: var(--sp-2); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--neon-green); box-shadow: var(--glow-green); animation: blink 1.6s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: .3; } }
+
+  /* Hero / title strip */
+  .hero {
+    margin-top: var(--sp-4);
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: var(--sp-4);
+  }
+  .hero-main { padding: var(--sp-5); }
+  .hero-main h1 {
+    font-family: var(--ff-head);
+    font-weight: 900;
+    font-size: var(--fs-h1);
+    line-height: 1.05;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    color: var(--txt-bright);
+    text-shadow: var(--glow-green);
+    position: relative;
+  }
+  /* Glitch */
+  .glitch { position: relative; display: inline-block; }
+  .glitch::before, .glitch::after {
+    content: attr(data-text);
+    position: absolute; left: 0; top: 0;
+    width: 100%;
+    overflow: hidden;
+  }
+  .glitch::before { color: var(--neon-magenta); animation: glitchTop var(--glitch-duration) infinite linear alternate-reverse; clip-path: inset(0 0 55% 0); }
+  .glitch::after { color: var(--neon-cyan); animation: glitchBot calc(var(--glitch-duration) * 1.4) infinite linear alternate-reverse; clip-path: inset(55% 0 0 0); }
+  @keyframes glitchTop { 0%{transform:translate(0)} 20%{transform:translate(-2px,-1px)} 40%{transform:translate(2px,1px)} 60%{transform:translate(-1px,0)} 100%{transform:translate(1px,0)} }
+  @keyframes glitchBot { 0%{transform:translate(0)} 25%{transform:translate(2px,1px)} 50%{transform:translate(-2px,-1px)} 75%{transform:translate(1px,0)} 100%{transform:translate(-1px,1px)} }
+
+  .hero-main p { margin-top: var(--sp-3); color: var(--txt-mid); max-width: 52ch; }
+  .hero-meta { display: flex; gap: var(--sp-5); margin-top: var(--sp-5); flex-wrap: wrap; }
+  .hero-meta .stat { display: flex; flex-direction: column; gap: 2px; }
+  .hero-meta .stat .v { font-size: 22px; font-weight: 700; color: var(--neon-cyan); text-shadow: var(--glow-cyan); }
+
+  .cta-row { display: flex; gap: var(--sp-3); margin-top: var(--sp-5); flex-wrap: wrap; }
+  .btn {
+    font-size: var(--fs-label);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    padding: 12px 22px;
+    border: 1px solid var(--neon-green);
+    color: var(--neon-green);
+    background: transparent;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    transition: var(--t-med);
+    text-shadow: var(--glow-green);
+  }
+  .btn:hover { background: rgba(0,255,0,.12); box-shadow: var(--glow-green); }
+  .btn:focus-visible { outline: 2px solid var(--neon-cyan); outline-offset: 3px; }
+  .btn:active { transform: translateY(1px); background: rgba(0,255,0,.22); }
+  .btn.alt { border-color: var(--neon-magenta); color: var(--neon-magenta); text-shadow: var(--glow-magenta); }
+  .btn.alt:hover { background: rgba(255,0,255,.12); box-shadow: var(--glow-magenta); }
+
+  /* Right hero terminal */
+  .terminal { padding: var(--sp-4); display: flex; flex-direction: column; }
+  .term-head { display: flex; align-items: center; gap: var(--sp-2); border-bottom: 1px dashed rgba(0,255,0,.2); padding-bottom: var(--sp-2); }
+  .term-head .tdot { width: 9px; height: 9px; border: 1px solid var(--neon-green); }
+  .term-body { font-size: 13px; margin-top: var(--sp-3); display: flex; flex-direction: column; gap: 5px; flex: 1; }
+  .term-body .ln { white-space: nowrap; overflow: hidden; }
+  .term-body .ln .pre { color: var(--neon-magenta); }
+  .term-body .ln .ok { color: var(--neon-green); }
+  .caret { display: inline-block; width: 8px; height: 14px; background: var(--neon-green); box-shadow: var(--glow-green); animation: blink 1s steps(2) infinite; vertical-align: -2px; }
+
+  /* ============ DASHBOARD GRID ============ */
+  .grid {
+    margin-top: var(--sp-4);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--sp-4);
+  }
+  .kpi { padding: var(--sp-4); }
+  .kpi .label { display: flex; justify-content: space-between; align-items: center; }
+  .kpi .num { font-size: 26px; font-weight: 700; margin-top: var(--sp-2); color: var(--txt-bright); }
+  .kpi .delta { font-size: 12px; margin-top: 2px; }
+  .delta.up { color: var(--neon-green); }
+  .delta.down { color: var(--neon-magenta); }
+  .spark { margin-top: var(--sp-3); width: 100%; height: 38px; display: block; }
+
+  /* Chart + table row */
+  .row2 {
+    margin-top: var(--sp-4);
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: var(--sp-4);
+  }
+  .card-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: var(--sp-3) var(--sp-4);
+    border-bottom: 1px solid rgba(0,255,0,.15);
+  }
+  .card-head h2 {
+    font-family: var(--ff-head); font-weight: 700; font-size: var(--fs-sec);
+    text-transform: uppercase; letter-spacing: 2px; color: var(--txt-bright);
+    text-shadow: var(--glow-cyan);
+  }
+  .seg { display: flex; gap: 0; border: 1px solid rgba(0,255,0,.25); }
+  .seg button {
+    background: transparent; border: none; color: var(--txt-dim);
+    font-size: var(--fs-label); letter-spacing: 1px; text-transform: uppercase;
+    padding: 6px 12px; transition: var(--t-fast);
+  }
+  .seg button[aria-pressed="true"] { background: rgba(0,255,0,.15); color: var(--neon-green); text-shadow: var(--glow-green); }
+  .seg button:hover { color: var(--neon-cyan); }
+  .seg button:focus-visible { outline: 2px solid var(--neon-cyan); outline-offset: -2px; }
+
+  .chart-wrap { padding: var(--sp-4); }
+  svg.chart { width: 100%; height: auto; display: block; aspect-ratio: 16 / 7; }
+
+  /* Order list */
+  .orders { padding: var(--sp-2) var(--sp-4) var(--sp-4); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: left; font-size: var(--fs-label); text-transform: uppercase;
+    letter-spacing: 1.5px; color: var(--txt-dim); font-weight: 500;
+    padding: var(--sp-2) 4px; border-bottom: 1px dashed rgba(0,255,0,.2);
+  }
+  tbody td { padding: 10px 4px; border-bottom: 1px solid rgba(0,255,0,.06); }
+  tbody tr { transition: var(--t-fast); }
+  tbody tr:hover { background: rgba(0,255,0,.05); }
+  .pair { color: var(--txt-bright); font-weight: 500; }
+  .tag {
+    font-size: 9px; padding: 2px 7px; letter-spacing: 1px; text-transform: uppercase;
+    border: 1px solid currentColor;
+  }
+  .tag.buy { color: var(--neon-green); }
+  .tag.sell { color: var(--neon-magenta); }
+  .num-pos { color: var(--neon-green); }
+  .num-neg { color: var(--neon-magenta); }
+
+  footer.statusbar {
+    margin-top: var(--sp-4);
+    display: flex; gap: var(--sp-5); flex-wrap: wrap; align-items: center;
+    padding: var(--sp-3) var(--sp-4);
+    border: var(--border-neon);
+    font-size: var(--fs-label); text-transform: uppercase; letter-spacing: 2px;
+    color: var(--txt-dim);
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+  }
+  footer .uptime { margin-left: auto; color: var(--neon-green); text-shadow: var(--glow-green); }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 1024px) {
+    .hero { grid-template-columns: 1fr; }
+    .grid { grid-template-columns: repeat(2, 1fr); }
+    .row2 { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) {
+    .grid { grid-template-columns: 1fr; }
+    nav.mainnav { width: 100%; order: 3; margin-left: 0; }
+    .sys-status { margin-left: auto; }
+    .term-body .ln { white-space: normal; }
+    table { font-size: 12px; }
+    .hide-sm { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body::after { animation: none; display: none; }
+    .dot, .caret { animation: none; }
+    .glitch::before, .glitch::after { animation: none; }
+    *, *::before, *::after { transition-duration: 0.001ms !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="shell">
+
+    <!-- ============ HEADER ============ -->
+    <header class="topbar">
+      <div class="brand">
+        <svg viewBox="0 0 32 32" role="img" aria-label="Nexus terminal logo">
+          <polygon points="16,2 30,9 30,23 16,30 2,23 2,9" fill="none" stroke="#00FFFF" stroke-width="1.5"/>
+          <polygon points="16,8 24,12 24,20 16,24 8,20 8,12" fill="none" stroke="#FF00FF" stroke-width="1.5"/>
+          <circle cx="16" cy="16" r="2.5" fill="#00FF00"/>
+        </svg>
+        <span class="mark">NEXUS<b>//</b>TERM</span>
+      </div>
+
+      <nav class="mainnav" aria-label="Primary">
+        <a href="#" aria-current="page">Markets</a>
+        <a href="#">Terminal</a>
+        <a href="#">Vault</a>
+        <a href="#">Signals</a>
+        <a href="#" class="hide-sm">Nodes</a>
+      </nav>
+
+      <div class="sys-status" aria-label="System status: online">
+        <span class="dot" aria-hidden="true"></span>
+        <span class="label">SYS // ONLINE</span>
+      </div>
+    </header>
+
+    <!-- ============ HERO ============ -->
+    <section class="hero" aria-label="Account overview">
+      <div class="hero-main panel">
+        <span class="label">// PORTFOLIO_OS v4.2 — node:tokyo-07</span>
+        <h1><span class="glitch" data-text="NEON LEDGER">NEON LEDGER</span></h1>
+        <p>Real-time decentralized exchange terminal. Route orders across 14 liquidity mesh nodes with sub-millisecond execution and encrypted cold-vault settlement.</p>
+
+        <div class="hero-meta">
+          <div class="stat">
+            <span class="label">Net Equity</span>
+            <span class="v">₿ 12.480</span>
+          </div>
+          <div class="stat">
+            <span class="label">24H PnL</span>
+            <span class="v neon-grn">+8.42%</span>
+          </div>
+          <div class="stat">
+            <span class="label">Open Orders</span>
+            <span class="v neon-mag">07</span>
+          </div>
+        </div>
+
+        <div class="cta-row">
+          <button class="btn">Execute Trade</button>
+          <button class="btn alt">Open Vault</button>
+        </div>
+      </div>
+
+      <aside class="terminal panel" aria-label="System log">
+        <div class="term-head">
+          <span class="tdot" aria-hidden="true"></span>
+          <span class="tdot" aria-hidden="true"></span>
+          <span class="tdot" aria-hidden="true"></span>
+          <span class="label" style="margin-left:auto;">root@nexus:~</span>
+        </div>
+        <div class="term-body" aria-hidden="true">
+          <div class="ln"><span class="pre">$</span> connect --mesh tokyo-07</div>
+          <div class="ln"><span class="ok">&gt;&gt;</span> handshake ... <span class="ok">OK</span></div>
+          <div class="ln"><span class="pre">$</span> sync ledger --depth full</div>
+          <div class="ln"><span class="ok">&gt;&gt;</span> 1,204,889 blocks verified</div>
+          <div class="ln"><span class="pre">$</span> stream prices --pairs all</div>
+          <div class="ln neon-cyan">&gt;&gt; LIVE FEED ENGAGED</div>
+          <div class="ln"><span class="pre">$</span> <span class="caret"></span></div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- ============ MAIN ============ -->
+    <main>
+      <!-- KPI grid -->
+      <section class="grid" aria-label="Key metrics">
+        <article class="kpi panel">
+          <span class="label">BTC / USDT <span class="neon-grn">●</span></span>
+          <div class="num neon-cyan">$67,420</div>
+          <div class="delta up">▲ +2.14% / 24h</div>
+          <svg class="spark" viewBox="0 0 120 40" preserveAspectRatio="none" aria-hidden="true">
+            <polyline points="0,32 15,28 30,30 45,20 60,24 75,12 90,16 105,6 120,9" fill="none" stroke="#00FF00" stroke-width="1.5"/>
+          </svg>
+        </article>
+        <article class="kpi panel">
+          <span class="label">ETH / USDT <span class="neon-mag">●</span></span>
+          <div class="num neon-cyan">$3,512</div>
+          <div class="delta down">▼ -0.86% / 24h</div>
+          <svg class="spark" viewBox="0 0 120 40" preserveAspectRatio="none" aria-hidden="true">
+            <polyline points="0,10 15,14 30,9 45,18 60,16 75,24 90,20 105,30 120,26" fill="none" stroke="#FF00FF" stroke-width="1.5"/>
+          </svg>
+        </article>
+        <article class="kpi panel">
+          <span class="label">Mesh Latency</span>
+          <div class="num">0.42<span style="font-size:14px;color:var(--txt-dim)"> ms</span></div>
+          <div class="delta up">▲ optimal</div>
+          <svg class="spark" viewBox="0 0 120 40" preserveAspectRatio="none" aria-hidden="true">
+            <polyline points="0,20 15,22 30,18 45,20 60,15 75,18 90,14 105,16 120,12" fill="none" stroke="#00FFFF" stroke-width="1.5"/>
+          </svg>
+        </article>
+        <article class="kpi panel">
+          <span class="label">Vault Lock</span>
+          <div class="num neon-grn">AES-256</div>
+          <div class="delta up">▲ sealed / cold</div>
+          <svg class="spark" viewBox="0 0 120 40" preserveAspectRatio="none" aria-hidden="true">
+            <polyline points="0,30 15,30 30,28 45,28 60,22 75,22 90,14 105,14 120,8" fill="none" stroke="#00FF00" stroke-width="1.5"/>
+          </svg>
+        </article>
+      </section>
+
+      <!-- Chart + Orders -->
+      <section class="row2" aria-label="Market data">
+        <article class="panel">
+          <div class="card-head">
+            <h2>BTC // PRICE_FEED</h2>
+            <div class="seg" role="group" aria-label="Timeframe">
+              <button type="button">1H</button>
+              <button type="button" aria-pressed="true">24H</button>
+              <button type="button">7D</button>
+              <button type="button" class="hide-sm">30D</button>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <svg class="chart" viewBox="0 0 640 280" preserveAspectRatio="none" role="img" aria-label="BTC price chart over the last 24 hours, trending upward">
+              <defs>
+                <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#00FF00" stop-opacity="0.32"/>
+                  <stop offset="100%" stop-color="#00FF00" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <!-- grid -->
+              <g stroke="rgba(0,255,0,.10)" stroke-width="1">
+                <line x1="0" y1="70" x2="640" y2="70"/>
+                <line x1="0" y1="140" x2="640" y2="140"/>
+                <line x1="0" y1="210" x2="640" y2="210"/>
+              </g>
+              <!-- area -->
+              <path d="M0,210 L60,200 L120,215 L180,170 L240,185 L300,140 L360,150 L420,95 L480,120 L540,70 L600,85 L640,55 L640,280 L0,280 Z" fill="url(#fill)"/>
+              <!-- line -->
+              <polyline points="0,210 60,200 120,215 180,170 240,185 300,140 360,150 420,95 480,120 540,70 600,85 640,55"
+                fill="none" stroke="#00FF00" stroke-width="2" style="filter:drop-shadow(0 0 5px rgba(0,255,0,.8))"/>
+              <!-- live point -->
+              <circle cx="640" cy="55" r="4" fill="#00FFFF" style="filter:drop-shadow(0 0 6px #00FFFF)"/>
+            </svg>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="card-head">
+            <h2>ORDER_BOOK</h2>
+            <span class="label neon-cyan">LIVE</span>
+          </div>
+          <div class="orders">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Pair</th>
+                  <th scope="col">Side</th>
+                  <th scope="col">Price</th>
+                  <th scope="col" class="hide-sm">Fill</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="pair">SOL/USDT</td>
+                  <td><span class="tag buy">Buy</span></td>
+                  <td class="num-pos">142.08</td>
+                  <td class="hide-sm">98%</td>
+                </tr>
+                <tr>
+                  <td class="pair">BTC/USDT</td>
+                  <td><span class="tag sell">Sell</span></td>
+                  <td class="num-neg">67,390</td>
+                  <td class="hide-sm">100%</td>
+                </tr>
+                <tr>
+                  <td class="pair">ETH/USDT</td>
+                  <td><span class="tag buy">Buy</span></td>
+                  <td class="num-pos">3,498</td>
+                  <td class="hide-sm">42%</td>
+                </tr>
+                <tr>
+                  <td class="pair">AVAX/USDT</td>
+                  <td><span class="tag sell">Sell</span></td>
+                  <td class="num-neg">38.20</td>
+                  <td class="hide-sm">77%</td>
+                </tr>
+                <tr>
+                  <td class="pair">LINK/USDT</td>
+                  <td><span class="tag buy">Buy</span></td>
+                  <td class="num-pos">17.64</td>
+                  <td class="hide-sm">11%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="statusbar">
+      <span>NODE: TOKYO-07</span>
+      <span class="hide-sm">PROTOCOL: NEXUS-MESH/4.2</span>
+      <span>PEERS: 1,408</span>
+      <span class="uptime">UPTIME 99.997%</span>
+    </footer>
+
+  </div>
+</body>
+</html>

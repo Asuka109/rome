@@ -1,0 +1,175 @@
+name: Docker Hub Publish (Test)
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Twice a day at 00:00 and 12:00 UTC
+    - cron: "0 0 * * *"
+    - cron: "0 12 * * *"
+
+env:
+  IMAGE_NAME: zoolsher/rome
+
+jobs:
+  build:
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          lfs: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.TEST_DOCKERHUB_USERNAME }}
+          password: ${{ secrets.TEST_DOCKERHUB_TOKEN }}
+
+      - name: Prepare platform metadata
+        id: platform
+        run: |
+          platform="${{ matrix.platform }}"
+          echo "pair=${platform//\//-}" >> "$GITHUB_OUTPUT"
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=sha,format=short
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+
+      - name: Prepare Docker runtime workspace
+        run: node scripts/docker/prepare-runtime-workspace.mjs
+
+      - name: Compute build metadata
+        id: build_meta
+        run: |
+          echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Start disk probe
+        run: scripts/docker/probe-build-disk.sh start
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .docker/rome-runtime-workspace
+          file: .docker/rome-runtime-workspace/Dockerfile
+          platforms: ${{ matrix.platform }}
+          outputs: type=image,name=${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true,compression=zstd,compression-level=9,force-compression=true,oci-mediatypes=true
+          labels: ${{ steps.meta.outputs.labels }}
+          # Deliberately no ROME_GA_MEASUREMENT_ID here: test images must not
+          # carry the GA4 measurement ID — the Dockerfile ARG
+          # defaults to empty, which keeps analytics off.
+          build-args: |
+            ROME_DOCKER_APP_CODE_MODE=compiled
+            ROME_BUILD_SHA=${{ steps.build_meta.outputs.sha }}
+            ROME_BUILD_TIME=${{ steps.build_meta.outputs.time }}
+          cache-from: type=gha,scope=rome-runtime-test-${{ steps.platform.outputs.pair }}
+          cache-to: type=gha,mode=min,scope=rome-runtime-test-${{ steps.platform.outputs.pair }}
+
+      # Runs on failure too, though an ENOSPC kill takes the whole job log with
+      # it — see the header of probe-build-disk.sh. The signal this earns is
+      # from the legs that survive.
+      - name: Report disk usage
+        if: always()
+        run: scripts/docker/probe-build-disk.sh report
+
+      - name: Upload disk probe
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: disk-probe-${{ steps.platform.outputs.pair }}
+          path: /tmp/build-disk-probe.tsv
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v7
+        with:
+          name: digests-${{ steps.platform.outputs.pair }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    permissions:
+      contents: read
+
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.TEST_DOCKERHUB_USERNAME }}
+          password: ${{ secrets.TEST_DOCKERHUB_TOKEN }}
+
+      - name: Download digests
+        uses: actions/download-artifact@v7
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=sha,format=short
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+
+      - name: Create multi-arch manifest
+        working-directory: /tmp/digests
+        env:
+          DOCKER_METADATA_OUTPUT_JSON: ${{ steps.meta.outputs.json }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+        run: |
+          tag_args=()
+          while IFS= read -r tag; do
+            tag_args+=(-t "$tag")
+          done < <(jq -r --arg fallback "${IMAGE_NAME}:latest" '(.tags // []) | if length == 0 then [$fallback] else . end | .[]' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+
+          sources=()
+          for digest in *; do
+            sources+=("${IMAGE_NAME}@sha256:${digest}")
+          done
+
+          docker buildx imagetools create "${tag_args[@]}" "${sources[@]}"

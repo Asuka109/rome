@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NEONWAVE // Synthwave Streaming</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=VT323&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* ----- Color tokens (from CSV Primary/Secondary) ----- */
+    --neon-blue: #0080ff;
+    --neon-pink: #ff006e;
+    --neon-cyan: #00ffff;
+    --neon-purple: #5d34d0;
+    --hot-pink: #ff10f0;
+    --gold: #ffd700;
+    --silver: #c0c0c0;
+
+    --bg: #08060f;
+    --bg-deep: #1a1a2e;
+    --panel: rgba(20, 16, 40, 0.72);
+    --panel-solid: #14101f;
+    --grid-line: rgba(0, 255, 255, 0.14);
+
+    --text: #eafcff;
+    --text-dim: #9aa6cf;
+    --text-faint: #5c6391;
+
+    /* ----- Radius ----- */
+    --r-sm: 4px;
+    --r-md: 10px;
+    --r-lg: 18px;
+
+    /* ----- Spacing scale ----- */
+    --s-1: 4px;
+    --s-2: 8px;
+    --s-3: 12px;
+    --s-4: 16px;
+    --s-5: 24px;
+    --s-6: 32px;
+    --s-7: 48px;
+
+    /* ----- Shadows / glow ----- */
+    --glow-cyan: 0 0 10px rgba(0, 255, 255, 0.55), 0 0 24px rgba(0, 255, 255, 0.28);
+    --glow-pink: 0 0 10px rgba(255, 0, 110, 0.6), 0 0 28px rgba(255, 0, 110, 0.32);
+    --glow-blue: 0 0 12px rgba(0, 128, 255, 0.55), 0 0 30px rgba(0, 128, 255, 0.3);
+    --shadow-panel: 0 18px 50px rgba(0, 0, 0, 0.55);
+
+    /* ----- Typography scale ----- */
+    --font-display: 'Orbitron', 'Segoe UI', sans-serif;
+    --font-terminal: 'VT323', 'Courier New', monospace;
+    --fs-hero: clamp(2.2rem, 6vw, 4.4rem);
+    --fs-h2: clamp(1.3rem, 2.6vw, 1.9rem);
+    --fs-body: 1rem;
+    --fs-sm: 0.78rem;
+
+    /* ----- Motion ----- */
+    --t-fast: 140ms ease;
+    --t-med: 280ms cubic-bezier(0.22, 1, 0.36, 1);
+    --scanline-opacity: 0.3;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-display);
+    color: var(--text);
+    background-color: var(--bg);
+    background-image:
+      radial-gradient(ellipse 90% 60% at 50% -8%, rgba(93, 52, 208, 0.42), transparent 60%),
+      radial-gradient(ellipse 70% 50% at 92% 8%, rgba(255, 0, 110, 0.22), transparent 55%),
+      linear-gradient(180deg, #0b0818 0%, #08060f 55%, #05040b 100%);
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Perspective floor grid */
+  body::after {
+    content: "";
+    position: fixed;
+    left: 50%;
+    bottom: 0;
+    width: 220vw;
+    height: 46vh;
+    transform: translateX(-50%) perspective(380px) rotateX(68deg);
+    transform-origin: bottom center;
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 44px 44px;
+    -webkit-mask-image: linear-gradient(transparent, #000 70%);
+    mask-image: linear-gradient(transparent, #000 70%);
+    pointer-events: none;
+    z-index: 0;
+    animation: floor 8s linear infinite;
+  }
+
+  @keyframes floor {
+    from { background-position: 0 0, 0 0; }
+    to { background-position: 0 44px, 44px 0; }
+  }
+
+  /* CRT scanline overlay */
+  .crt {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 90;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0) 0px,
+      rgba(0, 0, 0, 0) 2px,
+      rgba(0, 0, 0, var(--scanline-opacity)) 3px,
+      rgba(0, 0, 0, var(--scanline-opacity)) 4px
+    );
+    mix-blend-mode: multiply;
+  }
+  .crt::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 62%, rgba(0, 0, 0, 0.55) 100%);
+  }
+
+  .shell {
+    position: relative;
+    z-index: 1;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: var(--s-4) var(--s-4) var(--s-7);
+  }
+
+  /* ---------- Header / Nav ---------- */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4);
+    flex-wrap: wrap;
+    padding: var(--s-3) var(--s-4);
+    border: 1px solid rgba(0, 255, 255, 0.22);
+    border-radius: var(--r-lg);
+    background: linear-gradient(180deg, rgba(20, 16, 40, 0.85), rgba(10, 8, 20, 0.7));
+    backdrop-filter: blur(8px);
+    box-shadow: var(--shadow-panel);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+  }
+  .brand .logo {
+    width: 40px;
+    height: 40px;
+    filter: drop-shadow(0 0 6px var(--neon-cyan));
+    flex-shrink: 0;
+  }
+  .brand h1 {
+    margin: 0;
+    font-size: clamp(1.1rem, 2.4vw, 1.5rem);
+    font-weight: 900;
+    letter-spacing: 0.18em;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--hot-pink));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    position: relative;
+  }
+  .brand .tag {
+    display: block;
+    font-family: var(--font-terminal);
+    font-size: 1rem;
+    letter-spacing: 0.05em;
+    color: var(--neon-cyan);
+    text-shadow: var(--glow-cyan);
+  }
+
+  nav {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    flex-wrap: wrap;
+  }
+  nav a {
+    font-family: var(--font-terminal);
+    font-size: 1.15rem;
+    letter-spacing: 0.04em;
+    color: var(--text-dim);
+    text-decoration: none;
+    padding: var(--s-1) var(--s-3);
+    border-radius: var(--r-sm);
+    border: 1px solid transparent;
+    transition: color var(--t-fast), border-color var(--t-fast), text-shadow var(--t-fast);
+  }
+  nav a:hover,
+  nav a[aria-current="page"] {
+    color: var(--neon-cyan);
+    text-shadow: var(--glow-cyan);
+    border-color: rgba(0, 255, 255, 0.4);
+  }
+  nav a:focus-visible {
+    outline: 2px solid var(--hot-pink);
+    outline-offset: 2px;
+  }
+
+  .btn {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    font-size: var(--fs-sm);
+    text-transform: uppercase;
+    border-radius: var(--r-md);
+    border: 1px solid var(--neon-pink);
+    background: linear-gradient(180deg, rgba(255, 0, 110, 0.22), rgba(255, 0, 110, 0.06));
+    color: #fff;
+    padding: var(--s-3) var(--s-5);
+    cursor: pointer;
+    box-shadow: var(--glow-pink);
+    transition: transform var(--t-fast), box-shadow var(--t-fast), background var(--t-fast);
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 0 14px rgba(255, 0, 110, 0.8), 0 0 36px rgba(255, 0, 110, 0.45); }
+  .btn:active { transform: translateY(0) scale(0.98); }
+  .btn:focus-visible { outline: 2px solid var(--neon-cyan); outline-offset: 3px; }
+
+  .btn-ghost {
+    border-color: rgba(0, 255, 255, 0.45);
+    background: rgba(0, 255, 255, 0.05);
+    box-shadow: 0 0 8px rgba(0, 255, 255, 0.25);
+  }
+  .btn-ghost:hover { box-shadow: var(--glow-cyan); }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    display: grid;
+    grid-template-columns: 1.25fr 1fr;
+    gap: var(--s-6);
+    align-items: center;
+    margin-top: var(--s-6);
+    padding: var(--s-6);
+    border: 1px solid rgba(93, 52, 208, 0.4);
+    border-radius: var(--r-lg);
+    background: var(--panel);
+    backdrop-filter: blur(6px);
+    box-shadow: var(--shadow-panel);
+    overflow: hidden;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+    font-family: var(--font-terminal);
+    font-size: 1.2rem;
+    letter-spacing: 0.12em;
+    color: var(--gold);
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+    margin-bottom: var(--s-3);
+  }
+  .eyebrow .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--neon-cyan);
+    box-shadow: var(--glow-cyan);
+    animation: blink 1.4s steps(2, start) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0.25; } }
+
+  .hero h2 {
+    margin: 0 0 var(--s-4);
+    font-size: var(--fs-hero);
+    font-weight: 900;
+    line-height: 1.02;
+    letter-spacing: 0.02em;
+    color: #fff;
+    text-shadow:
+      0 0 8px rgba(0, 255, 255, 0.5),
+      0 0 20px rgba(255, 0, 110, 0.35);
+  }
+  .hero h2 .glitch {
+    position: relative;
+    color: var(--neon-cyan);
+    display: inline-block;
+    animation: glitch 3.6s infinite steps(1);
+  }
+  .hero h2 .glitch::before,
+  .hero h2 .glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    left: 0; top: 0;
+    width: 100%;
+    overflow: hidden;
+  }
+  .hero h2 .glitch::before { color: var(--hot-pink); clip-path: inset(0 0 55% 0); animation: glitch-x 2.4s infinite linear alternate; }
+  .hero h2 .glitch::after { color: var(--neon-blue); clip-path: inset(55% 0 0 0); animation: glitch-x 1.8s infinite linear alternate-reverse; }
+  @keyframes glitch-x { 0% { transform: translateX(-3px); } 100% { transform: translateX(3px); } }
+  @keyframes glitch {
+    0%, 92%, 100% { transform: none; }
+    93% { transform: translate(-2px, 1px) skewX(4deg); }
+    95% { transform: translate(2px, -1px) skewX(-4deg); }
+    97% { transform: translate(-1px, 0) skewX(2deg); }
+  }
+
+  .hero p.lede {
+    margin: 0 0 var(--s-5);
+    font-family: var(--font-terminal);
+    font-size: 1.4rem;
+    color: var(--text-dim);
+    max-width: 46ch;
+  }
+
+  .hero-actions { display: flex; gap: var(--s-3); flex-wrap: wrap; }
+
+  .hero-stats {
+    display: flex;
+    gap: var(--s-6);
+    margin-top: var(--s-6);
+    flex-wrap: wrap;
+  }
+  .hero-stats .stat .num {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--neon-cyan);
+    text-shadow: var(--glow-cyan);
+  }
+  .hero-stats .stat .lbl {
+    font-family: var(--font-terminal);
+    font-size: 1rem;
+    color: var(--text-faint);
+    letter-spacing: 0.06em;
+  }
+
+  /* Hero art: vinyl / sun */
+  .hero-art {
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    max-width: 380px;
+    margin: 0 auto;
+    filter: drop-shadow(0 0 18px rgba(255, 0, 110, 0.45));
+  }
+  .hero-art .spin { transform-origin: 130px 130px; animation: spin 9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- Sections ---------- */
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-4);
+    margin: var(--s-7) 0 var(--s-4);
+    flex-wrap: wrap;
+  }
+  .section-head h3 {
+    margin: 0;
+    font-size: var(--fs-h2);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #fff;
+  }
+  .section-head h3 span { color: var(--hot-pink); text-shadow: var(--glow-pink); }
+  .section-head a {
+    font-family: var(--font-terminal);
+    font-size: 1.15rem;
+    color: var(--neon-cyan);
+    text-decoration: none;
+    letter-spacing: 0.04em;
+  }
+  .section-head a:hover { text-shadow: var(--glow-cyan); }
+  .section-head a:focus-visible { outline: 2px solid var(--neon-cyan); outline-offset: 2px; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--s-4);
+  }
+
+  .card {
+    position: relative;
+    border: 1px solid rgba(0, 128, 255, 0.3);
+    border-radius: var(--r-md);
+    background: linear-gradient(180deg, rgba(25, 33, 52, 0.85), rgba(14, 11, 25, 0.9));
+    padding: var(--s-4);
+    overflow: hidden;
+    transition: transform var(--t-med), border-color var(--t-med), box-shadow var(--t-med);
+  }
+  .card:hover {
+    transform: translateY(-6px);
+    border-color: var(--neon-cyan);
+    box-shadow: var(--glow-cyan);
+  }
+  .card:focus-within {
+    border-color: var(--neon-cyan);
+    box-shadow: var(--glow-cyan);
+  }
+
+  .cover {
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    border-radius: var(--r-sm);
+    margin-bottom: var(--s-3);
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .cover svg { width: 100%; height: 100%; display: block; }
+
+  .card .play {
+    position: absolute;
+    right: var(--s-3);
+    bottom: 64px;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: var(--hot-pink);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow: var(--glow-pink);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity var(--t-med), transform var(--t-med), background var(--t-fast);
+  }
+  .card:hover .play,
+  .card:focus-within .play { opacity: 1; transform: translateY(0); }
+  .card .play:hover { background: var(--neon-cyan); }
+  .card .play:focus-visible { outline: 2px solid var(--neon-cyan); outline-offset: 3px; opacity: 1; transform: translateY(0); }
+  .card .play svg { width: 18px; height: 18px; }
+
+  .card .ttl {
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    margin: 0 0 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card .artist {
+    font-family: var(--font-terminal);
+    font-size: 1.1rem;
+    color: var(--text-faint);
+    margin: 0;
+  }
+  .badge {
+    position: absolute;
+    top: var(--s-3); left: var(--s-3);
+    font-family: var(--font-terminal);
+    font-size: 0.95rem;
+    letter-spacing: 0.08em;
+    color: var(--bg);
+    background: var(--gold);
+    padding: 1px var(--s-2);
+    border-radius: var(--r-sm);
+    text-shadow: none;
+  }
+
+  /* ---------- Layout for lower split ---------- */
+  .split {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: var(--s-4);
+    margin-top: var(--s-7);
+    align-items: start;
+  }
+
+  /* Now playing console */
+  .console {
+    border: 1px solid rgba(255, 0, 110, 0.35);
+    border-radius: var(--r-lg);
+    background: var(--panel);
+    backdrop-filter: blur(6px);
+    box-shadow: var(--shadow-panel);
+    padding: var(--s-5);
+  }
+  .console h3 {
+    margin: 0 0 var(--s-4);
+    font-size: var(--fs-sm);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--neon-cyan);
+    text-shadow: var(--glow-cyan);
+  }
+  .np {
+    display: flex;
+    gap: var(--s-4);
+    align-items: center;
+    margin-bottom: var(--s-4);
+  }
+  .np .art {
+    width: 84px; height: 84px;
+    border-radius: var(--r-sm);
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 1px solid rgba(0, 255, 255, 0.25);
+  }
+  .np .art svg { width: 100%; height: 100%; display: block; }
+  .np .meta .t { font-size: 1.15rem; font-weight: 700; margin: 0 0 2px; }
+  .np .meta .a { font-family: var(--font-terminal); font-size: 1.2rem; color: var(--text-dim); margin: 0; }
+
+  /* Equalizer */
+  .eq { display: flex; align-items: flex-end; gap: 4px; height: 40px; margin: var(--s-3) 0; }
+  .eq span {
+    width: 6px;
+    background: linear-gradient(var(--neon-cyan), var(--hot-pink));
+    border-radius: 2px;
+    box-shadow: 0 0 6px rgba(0, 255, 255, 0.5);
+    animation: eq 0.9s ease-in-out infinite alternate;
+  }
+  .eq span:nth-child(2) { animation-delay: 0.12s; }
+  .eq span:nth-child(3) { animation-delay: 0.24s; }
+  .eq span:nth-child(4) { animation-delay: 0.36s; }
+  .eq span:nth-child(5) { animation-delay: 0.48s; }
+  .eq span:nth-child(6) { animation-delay: 0.6s; }
+  .eq span:nth-child(7) { animation-delay: 0.2s; }
+  .eq span:nth-child(8) { animation-delay: 0.4s; }
+  @keyframes eq { from { height: 8px; } to { height: 40px; } }
+
+  /* progress */
+  .progress {
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    margin: var(--s-3) 0 var(--s-2);
+  }
+  .progress i {
+    display: block;
+    height: 100%;
+    width: 42%;
+    background: linear-gradient(90deg, var(--neon-blue), var(--hot-pink));
+    box-shadow: var(--glow-pink);
+  }
+  .timecode {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-terminal);
+    font-size: 1.05rem;
+    color: var(--text-faint);
+  }
+  .controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--s-4);
+    margin-top: var(--s-4);
+  }
+  .ctrl {
+    background: transparent;
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    color: var(--neon-cyan);
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    cursor: pointer;
+    transition: box-shadow var(--t-fast), border-color var(--t-fast), background var(--t-fast);
+  }
+  .ctrl:hover { box-shadow: var(--glow-cyan); border-color: var(--neon-cyan); }
+  .ctrl:focus-visible { outline: 2px solid var(--hot-pink); outline-offset: 2px; }
+  .ctrl.main {
+    width: 58px; height: 58px;
+    background: var(--neon-pink);
+    border-color: var(--neon-pink);
+    color: #fff;
+    box-shadow: var(--glow-pink);
+  }
+  .ctrl.main:hover { background: var(--hot-pink); }
+  .ctrl svg { width: 20px; height: 20px; }
+
+  /* Queue list */
+  .queue {
+    border: 1px solid rgba(93, 52, 208, 0.4);
+    border-radius: var(--r-lg);
+    background: var(--panel);
+    backdrop-filter: blur(6px);
+    box-shadow: var(--shadow-panel);
+    padding: var(--s-5);
+  }
+  .queue h3 {
+    margin: 0 0 var(--s-3);
+    font-size: var(--fs-sm);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--hot-pink);
+    text-shadow: var(--glow-pink);
+  }
+  .qrow {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    align-items: center;
+    gap: var(--s-3);
+    padding: var(--s-2) var(--s-2);
+    border-radius: var(--r-sm);
+    border: 1px solid transparent;
+    transition: background var(--t-fast), border-color var(--t-fast);
+  }
+  .qrow:hover { background: rgba(0, 255, 255, 0.06); border-color: rgba(0, 255, 255, 0.2); }
+  .qrow .idx { font-family: var(--font-terminal); font-size: 1.2rem; color: var(--text-faint); }
+  .qrow.active .idx { color: var(--neon-cyan); text-shadow: var(--glow-cyan); }
+  .qrow .qt { font-size: 0.9rem; font-weight: 700; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .qrow .qa { font-family: var(--font-terminal); font-size: 1rem; color: var(--text-faint); margin: 0; }
+  .qrow .dur { font-family: var(--font-terminal); font-size: 1.05rem; color: var(--text-dim); }
+  .qrow.active { background: rgba(255, 0, 110, 0.08); border-color: rgba(255, 0, 110, 0.3); }
+
+  /* ---------- Footer ---------- */
+  footer {
+    margin-top: var(--s-7);
+    padding-top: var(--s-5);
+    border-top: 1px solid rgba(0, 255, 255, 0.18);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--s-4);
+    flex-wrap: wrap;
+    font-family: var(--font-terminal);
+    font-size: 1.1rem;
+    color: var(--text-faint);
+  }
+  footer .links { display: flex; gap: var(--s-4); flex-wrap: wrap; }
+  footer a { color: var(--text-dim); text-decoration: none; }
+  footer a:hover { color: var(--neon-cyan); text-shadow: var(--glow-cyan); }
+  footer a:focus-visible { outline: 2px solid var(--neon-cyan); outline-offset: 2px; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 880px) {
+    .hero { grid-template-columns: 1fr; }
+    .hero-art { max-width: 280px; order: -1; }
+    .split { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px) {
+    .shell { padding: var(--s-3) var(--s-3) var(--s-6); }
+    header { justify-content: center; text-align: center; }
+    nav { justify-content: center; }
+    .hero { padding: var(--s-4); }
+    .hero-stats { gap: var(--s-5); }
+  }
+
+  /* ---------- Reduced motion ---------- */
+  @media (prefers-reduced-motion: reduce) {
+    body::after { animation: none; }
+    .hero-art .spin,
+    .eq span,
+    .eyebrow .dot,
+    .hero h2 .glitch,
+    .hero h2 .glitch::before,
+    .hero h2 .glitch::after { animation: none !important; }
+    * { transition-duration: 0.001ms !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="crt" aria-hidden="true"></div>
+
+  <div class="shell">
+    <header>
+      <div class="brand">
+        <svg class="logo" viewBox="0 0 48 48" role="img" aria-label="NeonWave logo">
+          <defs>
+            <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#00ffff"/>
+              <stop offset="1" stop-color="#ff10f0"/>
+            </linearGradient>
+          </defs>
+          <polygon points="24,3 45,24 24,45 3,24" fill="none" stroke="url(#lg)" stroke-width="2.5"/>
+          <path d="M14 30 L20 16 L24 26 L28 16 L34 30" fill="none" stroke="url(#lg)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div>
+          <h1>NEONWAVE</h1>
+          <span class="tag">// synthwave streaming</span>
+        </div>
+      </div>
+      <nav aria-label="Primary">
+        <a href="#" aria-current="page">Discover</a>
+        <a href="#">Stations</a>
+        <a href="#">Library</a>
+        <a href="#">Live</a>
+        <button class="btn btn-ghost" type="button">Sign In</button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <div>
+          <span class="eyebrow"><span class="dot" aria-hidden="true"></span>TRANSMISSION ONLINE // 1989.FM</span>
+          <h2 id="hero-title">RIDE THE <span class="glitch" data-text="NEON">NEON</span><br/>NIGHT DRIVE</h2>
+          <p class="lede">Endless retrowave, outrun, and darksynth channels streaming straight from the grid. Plug in and let the synths take the wheel.</p>
+          <div class="hero-actions">
+            <button class="btn" type="button">
+              Start Listening
+            </button>
+            <button class="btn btn-ghost" type="button">Browse Stations</button>
+          </div>
+          <div class="hero-stats">
+            <div class="stat"><div class="num">12.4M</div><div class="lbl">tracks</div></div>
+            <div class="stat"><div class="num">340</div><div class="lbl">live channels</div></div>
+            <div class="stat"><div class="num">48k</div><div class="lbl">online now</div></div>
+          </div>
+        </div>
+        <svg class="hero-art" viewBox="0 0 260 260" role="img" aria-label="Glowing synthwave sun over a vinyl record">
+          <defs>
+            <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#ffd700"/>
+              <stop offset="0.5" stop-color="#ff10f0"/>
+              <stop offset="1" stop-color="#5d34d0"/>
+            </linearGradient>
+            <radialGradient id="vinyl" cx="50%" cy="50%" r="50%">
+              <stop offset="0" stop-color="#1a1a2e"/>
+              <stop offset="0.85" stop-color="#08060f"/>
+              <stop offset="1" stop-color="#00ffff"/>
+            </radialGradient>
+            <clipPath id="sclip"><circle cx="130" cy="130" r="86"/></clipPath>
+          </defs>
+          <!-- vinyl -->
+          <g class="spin">
+            <circle cx="130" cy="130" r="120" fill="url(#vinyl)" stroke="#00ffff" stroke-width="1.5"/>
+            <circle cx="130" cy="130" r="104" fill="none" stroke="rgba(0,255,255,0.18)" stroke-width="1"/>
+            <circle cx="130" cy="130" r="92" fill="none" stroke="rgba(0,255,255,0.14)" stroke-width="1"/>
+          </g>
+          <!-- sun label -->
+          <circle cx="130" cy="130" r="86" fill="url(#sun)"/>
+          <g clip-path="url(#sclip)" stroke="#08060f" stroke-width="6">
+            <line x1="44" y1="150" x2="216" y2="150"/>
+            <line x1="44" y1="166" x2="216" y2="166"/>
+            <line x1="44" y1="184" x2="216" y2="184"/>
+            <line x1="44" y1="204" x2="216" y2="204"/>
+          </g>
+          <circle cx="130" cy="130" r="14" fill="#08060f" stroke="#ff10f0" stroke-width="2"/>
+          <circle cx="130" cy="130" r="3" fill="#00ffff"/>
+        </svg>
+      </section>
+
+      <section aria-labelledby="trending-title">
+        <div class="section-head">
+          <h3 id="trending-title">Trending <span>// outrun</span></h3>
+          <a href="#">View all &rsaquo;</a>
+        </div>
+        <div class="grid">
+          <article class="card" tabindex="0">
+            <div class="cover">
+              <span class="badge">NEW</span>
+              <svg viewBox="0 0 100 100" role="img" aria-label="Album cover: Midnight Protocol">
+                <rect width="100" height="100" fill="#1a1a2e"/>
+                <circle cx="50" cy="42" r="26" fill="none" stroke="#ff10f0" stroke-width="2"/>
+                <circle cx="50" cy="42" r="18" fill="none" stroke="#00ffff" stroke-width="2"/>
+                <path d="M0 70 H100 M0 80 H100 M0 90 H100" stroke="#5d34d0" stroke-width="2"/>
+                <polygon points="50,16 60,42 40,42" fill="#ffd700"/>
+              </svg>
+            </div>
+            <button class="play" type="button" aria-label="Play Midnight Protocol">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <p class="ttl">Midnight Protocol</p>
+            <p class="artist">Neon Specter</p>
+          </article>
+
+          <article class="card" tabindex="0">
+            <div class="cover">
+              <svg viewBox="0 0 100 100" role="img" aria-label="Album cover: Chrome Horizon">
+                <rect width="100" height="100" fill="#08060f"/>
+                <rect x="20" y="20" width="60" height="60" fill="none" stroke="#00ffff" stroke-width="2" transform="rotate(45 50 50)"/>
+                <rect x="32" y="32" width="36" height="36" fill="none" stroke="#ff006e" stroke-width="2" transform="rotate(45 50 50)"/>
+                <circle cx="50" cy="50" r="6" fill="#ffd700"/>
+              </svg>
+            </div>
+            <button class="play" type="button" aria-label="Play Chrome Horizon">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <p class="ttl">Chrome Horizon</p>
+            <p class="artist">Vector Drive</p>
+          </article>
+
+          <article class="card" tabindex="0">
+            <div class="cover">
+              <svg viewBox="0 0 100 100" role="img" aria-label="Album cover: Laser Memory">
+                <rect width="100" height="100" fill="#14101f"/>
+                <g stroke="#00ffff" stroke-width="1.5" fill="none">
+                  <path d="M50 0 L20 100 M50 0 L40 100 M50 0 L60 100 M50 0 L80 100"/>
+                </g>
+                <circle cx="50" cy="34" r="20" fill="#ff10f0" opacity="0.85"/>
+              </svg>
+            </div>
+            <button class="play" type="button" aria-label="Play Laser Memory">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <p class="ttl">Laser Memory</p>
+            <p class="artist">Cassette Ghost</p>
+          </article>
+
+          <article class="card" tabindex="0">
+            <div class="cover">
+              <span class="badge">HOT</span>
+              <svg viewBox="0 0 100 100" role="img" aria-label="Album cover: Turbo Dusk">
+                <rect width="100" height="100" fill="#1a1a2e"/>
+                <polygon points="50,12 88,88 12,88" fill="none" stroke="#ffd700" stroke-width="2"/>
+                <line x1="12" y1="68" x2="88" y2="68" stroke="#ff006e" stroke-width="3"/>
+                <line x1="20" y1="50" x2="80" y2="50" stroke="#00ffff" stroke-width="2"/>
+              </svg>
+            </div>
+            <button class="play" type="button" aria-label="Play Turbo Dusk">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <p class="ttl">Turbo Dusk</p>
+            <p class="artist">Hyperdrive 84</p>
+          </article>
+
+          <article class="card" tabindex="0">
+            <div class="cover">
+              <svg viewBox="0 0 100 100" role="img" aria-label="Album cover: Static Bloom">
+                <rect width="100" height="100" fill="#08060f"/>
+                <g fill="none" stroke-width="2">
+                  <circle cx="50" cy="50" r="38" stroke="#5d34d0"/>
+                  <circle cx="50" cy="50" r="26" stroke="#ff10f0"/>
+                  <circle cx="50" cy="50" r="14" stroke="#00ffff"/>
+                </g>
+              </svg>
+            </div>
+            <button class="play" type="button" aria-label="Play Static Bloom">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <p class="ttl">Static Bloom</p>
+            <p class="artist">Glass Arcade</p>
+          </article>
+        </div>
+      </section>
+
+      <div class="split">
+        <section class="console" aria-labelledby="np-title">
+          <h3 id="np-title">Now Playing</h3>
+          <div class="np">
+            <div class="art">
+              <svg viewBox="0 0 100 100" role="img" aria-label="Now playing cover: Neon Highway">
+                <rect width="100" height="100" fill="#1a1a2e"/>
+                <circle cx="50" cy="40" r="24" fill="url(#sun)"/>
+                <path d="M0 72 H100 M0 82 H100 M0 92 H100" stroke="#ff006e" stroke-width="2"/>
+              </svg>
+            </div>
+            <div class="meta">
+              <p class="t">Neon Highway</p>
+              <p class="a">The Midnight Riders</p>
+            </div>
+          </div>
+
+          <div class="eq" aria-hidden="true">
+            <span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span>
+          </div>
+
+          <div class="progress" role="progressbar" aria-label="Track progress" aria-valuenow="42" aria-valuemin="0" aria-valuemax="100"><i></i></div>
+          <div class="timecode"><span>1:48</span><span>4:12</span></div>
+
+          <div class="controls">
+            <button class="ctrl" type="button" aria-label="Previous track">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+            </button>
+            <button class="ctrl main" type="button" aria-label="Pause">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+            </button>
+            <button class="ctrl" type="button" aria-label="Next track">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 6h2v12h-2zM6 6l8.5 6L6 18z"/></svg>
+            </button>
+          </div>
+        </section>
+
+        <section class="queue" aria-labelledby="q-title">
+          <h3 id="q-title">Up Next</h3>
+          <div class="qrow active">
+            <span class="idx">&#9654;</span>
+            <div><p class="qt">Neon Highway</p><p class="qa">The Midnight Riders</p></div>
+            <span class="dur">4:12</span>
+          </div>
+          <div class="qrow">
+            <span class="idx">02</span>
+            <div><p class="qt">Afterburner</p><p class="qa">Solar Coast</p></div>
+            <span class="dur">3:38</span>
+          </div>
+          <div class="qrow">
+            <span class="idx">03</span>
+            <div><p class="qt">Velvet Circuit</p><p class="qa">Lumière</p></div>
+            <span class="dur">5:02</span>
+          </div>
+          <div class="qrow">
+            <span class="idx">04</span>
+            <div><p class="qt">Polaroid Skies</p><p class="qa">Daytona Dream</p></div>
+            <span class="dur">3:55</span>
+          </div>
+          <div class="qrow">
+            <span class="idx">05</span>
+            <div><p class="qt">Ghost in the Static</p><p class="qa">VHS Sunset</p></div>
+            <span class="dur">4:27</span>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer>
+      <span>&copy; 1989-2026 NEONWAVE SYSTEMS // ALL CHANNELS NOMINAL</span>
+      <div class="links">
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="#">Status</a>
+        <a href="#">API</a>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

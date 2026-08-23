@@ -1,0 +1,121 @@
+# rome-obs singleton.
+#
+# One obs stack per developer machine, shared across all worktrees on that
+# machine. Each worktree's Rome emits OTLP into this singleton, with
+# `service.instance.id` set to the worktree slug so data stays logically
+# separated — same topology as prod's central ClickStack, just scoped to one
+# host instead of many tenants.
+#
+# Uses HyperDX's all-in-one image for dev simplicity: one container bundles
+# the OpenTelemetry Collector (OTLP ingress on :4318 HTTP / :4317 gRPC),
+# ClickHouse (unified backing store on :8123 HTTP / :9000 native), and the
+# HyperDX UI (:8080). Prod's central stack will split these into separate
+# scalable services; the dev image's internal pipeline is byte-compatible
+# with the split form.
+#
+# Brought up idempotently by scripts/dev-up.sh:
+#   docker compose -f infra/observability/compose.yml up -d
+#
+# Teardown (wipes telemetry for all instances on this host):
+#   docker compose -f infra/observability/compose.yml down -v
+
+name: rome-obs
+
+services:
+  obs:
+    # `hyperdx-local` is the no-auth local-dev variant. It has OTLP receivers
+    # wired into the collector's default pipelines out of the box; the
+    # `all-in-one` variant requires an admin signup via UI before OTLP
+    # ingestion turns on, which is the wrong trade for dev.
+    image: hyperdx/hyperdx-local:2
+    container_name: rome-obs
+    restart: unless-stopped
+    # Cap the singleton at 4 GiB so a runaway ClickHouse query or MongoDB
+    # doesn't starve the dev laptop. HyperDX bundles 4 servers in one image;
+    # steady state is ~600 MB, but it spikes under ingest.
+    mem_limit: 4g
+    environment:
+      # Public URL of the HyperDX UI — must match the Traefik route below.
+      # FRONTEND_URL takes precedence over HYPERDX_APP_URL+HYPERDX_APP_PORT
+      # concatenation in HyperDX's entrypoint; setting HYPERDX_APP_URL
+      # instead double-ports the URL (`host:3000:8080`) and crashes on boot.
+      FRONTEND_URL: http://obs.rome.localhost:3000
+      # Strip any inherited HTTP proxy. On hosts that ship docker via Orbstack
+      # (or similar), the daemon injects http_proxy/https_proxy pointing at a
+      # host-side proxy. The entrypoint's readiness probe is intra-container
+      # (`curl http://ch-server:8123` where ch-server resolves to 127.0.0.1
+      # via /etc/hosts), but `ch-server` is not in the inherited no_proxy
+      # list, so curl ships the request to the host proxy, which can't reach
+      # the container's loopback — the probe hangs forever and the container
+      # never reports ready. All of this service's I/O is intra-container, so
+      # blanking the proxy vars is safe.
+      http_proxy: ""
+      https_proxy: ""
+      all_proxy: ""
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      ALL_PROXY: ""
+    volumes:
+      - rome-obs-ch-data:/var/lib/clickhouse
+      - rome-obs-ch-logs:/var/log/clickhouse-server
+      - rome-obs-mongo-data:/data/db
+      # Dev override: make ClickHouse's `default` user reachable from any IP
+      # (hyperdx-local:2 restricts it to localhost by default). See the file's
+      # header for the full story. Path is relative to this compose.yml.
+      - ./ch-default-allow-remote.xml:/etc/clickhouse-server/users.d/ch-default-allow-remote.xml:ro
+    networks:
+      - rome-edge
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=rome-edge
+      # HyperDX UI → obs.rome.localhost
+      - traefik.http.routers.obs-ui.rule=Host(`obs.rome.localhost`)
+      - traefik.http.routers.obs-ui.entrypoints=web
+      - traefik.http.routers.obs-ui.service=obs-ui
+      - traefik.http.services.obs-ui.loadbalancer.server.port=8080
+      # ClickHouse HTTP → clickhouse.rome.localhost  (host-side SQL access)
+      - traefik.http.routers.obs-ch.rule=Host(`clickhouse.rome.localhost`)
+      - traefik.http.routers.obs-ch.entrypoints=web
+      - traefik.http.routers.obs-ch.service=obs-ch
+      - traefik.http.services.obs-ch.loadbalancer.server.port=8123
+      # OTLP HTTP → otlp.rome.localhost  (reserved; in-container Rome uses
+      # compose DNS `rome-obs:4318` directly, no Traefik hop).
+      - traefik.http.routers.obs-otlp.rule=Host(`otlp.rome.localhost`)
+      - traefik.http.routers.obs-otlp.entrypoints=web
+      - traefik.http.routers.obs-otlp.service=obs-otlp
+      - traefik.http.services.obs-otlp.loadbalancer.server.port=4318
+
+  # Standalone OTEL collector — mirror of the prod setup in `docker-compose.yml`.
+  # Every worktree's backend (compose.dev.yml) points its OTLP exporter at this
+  # service; the collector forwards traces/metrics/logs to ClickStack using
+  # `CLICKHOUSE_*` env vars (set in the worktree `.env` or exported by the
+  # operator). HyperDX-local above stays for cases where someone wants the
+  # bundled local UI; it is no longer the default ingress.
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.117.0
+    container_name: rome-otel-collector
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol/config.yaml:ro
+    # Collector-only secrets file — kept separate from the worktree's
+    # `.env` (which compose.dev.yml forwards wholesale into the rome
+    # container) so CLICKHOUSE_* never lands in Rome's environment.
+    # Marked optional so the obs singleton still comes up on a fresh
+    # checkout; the collector then crash-loops at boot until creds are
+    # added, which is the intended fail-closed signal.
+    env_file:
+      - path: ../../.env.collector
+        required: false
+    networks:
+      - rome-edge
+
+networks:
+  rome-edge:
+    name: rome-edge
+    external: true
+
+volumes:
+  rome-obs-ch-data:
+  rome-obs-ch-logs:
+  rome-obs-mongo-data:

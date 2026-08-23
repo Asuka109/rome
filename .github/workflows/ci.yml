@@ -1,0 +1,437 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    # `edited` is not a default pull_request type, but the lint job validates the
+    # PR title, and a title is fixed by editing it rather than by pushing. Without
+    # it a corrected title would leave the failed run standing with no way to
+    # clear it short of an empty commit.
+    types: [opened, reopened, synchronize, edited]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ──────────────────────────────────────────
+  # Job 1: Lint + Type Check (fast, catches errors early)
+  #
+  # The two checks that need no repo toolchain run first: they cost seconds and
+  # fail on mistakes a reader can see, so a bad PR title or an unformatted script
+  # reports before the ~1m install the rest of the job waits on.
+  # ──────────────────────────────────────────
+  lint:
+    runs-on: ubuntu-latest
+    # Covers the shell-tool downloads and both lint passes on top of the node
+    # chain that previously fit in 5.
+    timeout-minutes: 10
+    env:
+      # Keep the versions in sync with the flake devShell (flake.nix). The
+      # SHA256s pin the GitHub release artifacts so a tampered/replaced download
+      # fails the job instead of silently running an unknown binary.
+      SHELLCHECK_VERSION: v0.11.0
+      SHELLCHECK_SHA256: 8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198
+      SHFMT_VERSION: v3.12.0
+      SHFMT_SHA256: d9fbb2a9c33d13f47e7618cf362a914d029d02a6df124064fff04fd688a745ea
+    steps:
+      - uses: actions/checkout@v6
+
+      # Squash-and-merge uses the PR title as the merge commit subject on main,
+      # and release-please reads those subjects to decide the next version +
+      # CHANGELOG for the packages in release-please-config.json. This is the
+      # only PR-time gate on that input — see docs/releases.md.
+      #
+      # This check ran as its own `pull_request_target` workflow until it moved
+      # here. That trigger ran main's copy of both the workflow and the
+      # validator, so a branch could not edit either one into reporting success
+      # for any title. On `pull_request` both come from the PR under test, so
+      # diff review is what catches a weakened gate — as it already is for every
+      # other check in this file.
+      #
+      # The title is attacker-controlled text, so it is read as data through an
+      # environment variable and never interpolated into the run script.
+      - name: Validate PR title
+        if: github.event_name == 'pull_request'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: scripts/check-pr-title.sh
+
+      - name: Install shellcheck
+        run: |
+          curl -fsSL -o shellcheck.tar.xz \
+            "https://github.com/koalaman/shellcheck/releases/download/${SHELLCHECK_VERSION}/shellcheck-${SHELLCHECK_VERSION}.linux.x86_64.tar.xz"
+          echo "${SHELLCHECK_SHA256}  shellcheck.tar.xz" | sha256sum --check --strict -
+          sudo tar -xJf shellcheck.tar.xz --strip-components=1 -C /usr/local/bin "shellcheck-${SHELLCHECK_VERSION}/shellcheck"
+          rm shellcheck.tar.xz
+          shellcheck --version
+      - name: Install shfmt
+        run: |
+          curl -fsSL -o shfmt \
+            "https://github.com/mvdan/sh/releases/download/${SHFMT_VERSION}/shfmt_${SHFMT_VERSION}_linux_amd64"
+          echo "${SHFMT_SHA256}  shfmt" | sha256sum --check --strict -
+          sudo install -m 0755 shfmt /usr/local/bin/shfmt
+          rm shfmt
+          shfmt --version
+      - run: scripts/lint-shell.sh
+
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm check:ui:tailwind
+      - run: pnpm lint:agents
+      - run: pnpm typecheck
+      - run: pnpm typecheck:lint-agents
+
+  # ──────────────────────────────────────────
+  # Job 1b: DB schema drift — committed migrations must match the schema files
+  # ──────────────────────────────────────────
+  db-schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: scripts/check-db-schema.sh
+
+  # ──────────────────────────────────────────
+  # Job 2: Unit tests, sharded
+  #
+  # A hosted runner gives vitest one worker, so the shards buy their speedup by
+  # running on three runners rather than from any extra parallelism within one.
+  # Each shard also skips its own suite when the diff touches nothing it reads.
+  #
+  # Detection runs inside each shard rather than in one job the shards depend
+  # on. GitHub reports a job skipped by `if:` as a success, so a shared detector
+  # that failed would skip all three shards and report three green checks over a
+  # suite that never ran. Deciding in-job means every shard reports a verdict it
+  # computed itself, and each is required on `main` in its own right.
+  #
+  # The mapping and its fail-open rules live in scripts/ci-changed-areas.mjs.
+  #
+  # Job 2a: packages/core. The suite collects tests out of rome_apps, scripts,
+  # and infra as well as core itself, and is the longest shard at ~5m05s. Every
+  # cap below clears its shard's runtime with room: a cut mid-suite reports as a
+  # job failure with no failing test, which reads as a broken test rather than
+  # an exhausted budget.
+  # ──────────────────────────────────────────
+  unit-tests-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # The mapping diffs against the merge base, which a shallow clone of
+          # the PR head does not contain.
+          fetch-depth: 0
+      # Runs on the runner's preinstalled node: the script imports only node
+      # builtins, so a shard the diff does not reach finishes without ever
+      # setting up a toolchain.
+      - id: areas
+        env:
+          GITHUB_EVENT_BEFORE: ${{ github.event.before }}
+        run: node scripts/ci-changed-areas.mjs >> "$GITHUB_OUTPUT"
+      # Checks the mapping this job just read against the dependency closure and
+      # the token gates' own scan roots. It carries no condition on purpose: a
+      # change that invalidates the mapping can be one the mapping routes away
+      # from this shard, so gating the check on the mapping lets the very change
+      # that breaks it skip the check that would catch it. Node builtins only,
+      # so it runs before any toolchain exists.
+      - run: node --test scripts/ci-changed-areas.test.mjs
+      # An areas step that emits nothing leaves every guard below false, which
+      # reads as a shard the diff did not reach rather than a detector that
+      # never ran. Skipping is the one outcome this design never infers.
+      - if: steps.areas.outputs.core == ''
+        run: |
+          echo "ci-changed-areas produced no verdict" >&2
+          exit 1
+      - if: steps.areas.outputs.core == 'true'
+        uses: pnpm/action-setup@v5
+      - if: steps.areas.outputs.core == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - if: steps.areas.outputs.core == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.areas.outputs.core == 'true'
+        run: pnpm test:unit:core
+
+  # ──────────────────────────────────────────
+  # Job 2b: the dashboard and the kit (~2m40s, of which ~40s is jsdom setup).
+  # ──────────────────────────────────────────
+  unit-tests-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # The mapping diffs against the merge base, which a shallow clone of
+          # the PR head does not contain.
+          fetch-depth: 0
+      # Runs on the runner's preinstalled node: the script imports only node
+      # builtins, so a shard the diff does not reach finishes without ever
+      # setting up a toolchain.
+      - id: areas
+        env:
+          GITHUB_EVENT_BEFORE: ${{ github.event.before }}
+        run: node scripts/ci-changed-areas.mjs >> "$GITHUB_OUTPUT"
+      # Checks the mapping this job just read against the dependency closure and
+      # the token gates' own scan roots. It carries no condition on purpose: a
+      # change that invalidates the mapping can be one the mapping routes away
+      # from this shard, so gating the check on the mapping lets the very change
+      # that breaks it skip the check that would catch it. Node builtins only,
+      # so it runs before any toolchain exists.
+      - run: node --test scripts/ci-changed-areas.test.mjs
+      # An areas step that emits nothing leaves every guard below false, which
+      # reads as a shard the diff did not reach rather than a detector that
+      # never ran. Skipping is the one outcome this design never infers.
+      - if: steps.areas.outputs.web == ''
+        run: |
+          echo "ci-changed-areas produced no verdict" >&2
+          exit 1
+      - if: steps.areas.outputs.web == 'true'
+        uses: pnpm/action-setup@v5
+      - if: steps.areas.outputs.web == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - if: steps.areas.outputs.web == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.areas.outputs.web == 'true'
+        run: pnpm test:unit:web
+
+  # ──────────────────────────────────────────
+  # Job 2c: everything else (~1m) — libs, the Discord CLI, the Electron shell,
+  # and the standalone node --test gates over tokens and layout.
+  # ──────────────────────────────────────────
+  unit-tests-rest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # The mapping diffs against the merge base, which a shallow clone of
+          # the PR head does not contain.
+          fetch-depth: 0
+      # Runs on the runner's preinstalled node: the script imports only node
+      # builtins, so a shard the diff does not reach finishes without ever
+      # setting up a toolchain.
+      - id: areas
+        env:
+          GITHUB_EVENT_BEFORE: ${{ github.event.before }}
+        run: node scripts/ci-changed-areas.mjs >> "$GITHUB_OUTPUT"
+      # Checks the mapping this job just read against the dependency closure and
+      # the token gates' own scan roots. It carries no condition on purpose: a
+      # change that invalidates the mapping can be one the mapping routes away
+      # from this shard, so gating the check on the mapping lets the very change
+      # that breaks it skip the check that would catch it. Node builtins only,
+      # so it runs before any toolchain exists.
+      - run: node --test scripts/ci-changed-areas.test.mjs
+      # An areas step that emits nothing leaves every guard below false, which
+      # reads as a shard the diff did not reach rather than a detector that
+      # never ran. Skipping is the one outcome this design never infers.
+      - if: steps.areas.outputs.rest == ''
+        run: |
+          echo "ci-changed-areas produced no verdict" >&2
+          exit 1
+      - if: steps.areas.outputs.rest == 'true'
+        uses: pnpm/action-setup@v5
+      - if: steps.areas.outputs.rest == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - if: steps.areas.outputs.rest == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.areas.outputs.rest == 'true'
+        run: pnpm test:unit:rest
+
+  # ──────────────────────────────────────────
+  # Job 3: Integration Tests (parallel with lint)
+  # ──────────────────────────────────────────
+  integration-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:integration
+
+  # ──────────────────────────────────────────
+  # Job 3b: Layout invariants — real-browser geometry over the mock-mode SPA.
+  #
+  # The jsdom suites can't see this class of bug at all: jsdom applies no
+  # stylesheets and computes no layout, so a component passes every behavioral
+  # assertion while painting broken. This job renders the dashboard in Chromium
+  # against MSW fixtures and asserts relationships between boxes (containment,
+  # centering, proportional insets, sibling uniformity) — never pixel values,
+  # so a restyle doesn't need a re-baseline the way a screenshot suite would.
+  # ──────────────────────────────────────────
+  layout-invariants:
+    runs-on: ubuntu-latest
+    # Playwright's own image, which preships Chromium and the apt-level shared
+    # libraries it links against. Downloading the browser and apt-installing its
+    # dependencies used to be the bulk of this job's wall clock, and both were
+    # pure setup: the binaries never differ between runs at a pinned version.
+    #
+    # The image has to track the @playwright/test version the lockfile resolves.
+    # It lays the browsers down under build-specific revision directories, so a
+    # client of a different version looks for revisions that are not there.
+    # packages/web pins @playwright/test to an exact version for that reason, so
+    # a bump is a deliberate edit here and there rather than something a lockfile
+    # refresh can do on its own. The guard below is the backstop, and turns a
+    # mismatch into a readable failure rather than a bare missing-executable
+    # error at the first test.
+    container:
+      # v1.62.1-noble, by digest. The tag is mutable — MCR re-pushes it with
+      # rebuilt base layers and refreshed apt libs — so pinning the tag would
+      # make the "binaries never differ between runs" claim above false, and
+      # would run whatever the tag points at today with the checkout in reach.
+      # The lint job pins its shellcheck and shfmt downloads by SHA256 for the
+      # same reason. The digest is a multi-arch index, so it resolves per
+      # runner architecture the way the tag did.
+      image: mcr.microsoft.com/playwright@sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e
+      # The image's default user is root. Run as the runner's own uid instead so
+      # the files the job writes into the workspace — the install, the failure
+      # report — are not left root-owned. This buys file ownership and nothing
+      # more: Playwright launches Chromium unsandboxed whatever the uid, since
+      # `chromiumSandbox` defaults to false. 1001 is the uid on GitHub-hosted
+      # runners, which is what `runs-on: ubuntu-latest` gives every job in this
+      # file. A `runs-on` change moving this job to a self-hosted runner has to
+      # revisit the number, or checkout and install fail on the workspace mount
+      # with permission errors that name none of this.
+      options: --user 1001
+    timeout-minutes: 10
+    # A container job runs `run:` steps under `sh -e`, not the `bash -e` the
+    # host runner gives every other job in this file. The image ships bash, so
+    # name it here rather than writing POSIX shell in one job and bash in the
+    # rest.
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
+      # The image already ships node 24, but the toolchain is pinned here the
+      # same way every other job pins it, so this job's node moves when CI's
+      # does and not when the image's does.
+      #
+      # No `cache: pnpm`, unlike every other job here. The store cache is keyed
+      # on the lockfile hash alone, so this job would share one entry with jobs
+      # that install the whole workspace — and the entry is immutable and
+      # first-writer-wins, so a filtered `--ignore-scripts` store saved from
+      # here would make those jobs restore a partial store and re-fetch the
+      # rest. It buys this job nothing anyway: the closure is small enough that
+      # a measured cold install takes 15s, against 30s to save the entry.
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      # Scoped to rome-web and its workspace dependencies rather than the whole
+      # monorepo, because the Playwright image ships no C toolchain: core's
+      # native deps hit `not found: make` and fail the install. This job never
+      # loads them — it runs one Playwright suite over the web package. The dev
+      # stack already installs filtered, and `verifyDepsBeforeRun` is off
+      # (pnpm-workspace.yaml), so the partial tree does not trigger a re-install
+      # when the suite starts its web server.
+      #
+      # `--ignore-scripts` makes the toolchain-free image safe rather than
+      # lucky. Narrowing the closure does not remove every native lifecycle:
+      # better-sqlite3 reaches it through drizzle-orm and runs
+      # `prebuild-install || node-gyp rebuild`, which only stays on its first
+      # branch while a prebuild exists for the runner's node and architecture.
+      # The fallback would compile, and there is nothing here to compile with.
+      # No package in this job needs its build step: the suite's web server
+      # runs `build:kit` itself, which is what compiles the workspace packages.
+      - run: pnpm install --frozen-lockfile --filter "rome-web..." --ignore-scripts
+      - name: Check the image ships the browsers this Playwright expects
+        # Both sides of the check are ground truth: `--dry-run` reports where
+        # the installed client will look for each binary, and the directory
+        # test reports whether the image put one there. Comparing the resolved
+        # version against a constant kept elsewhere in this file would only
+        # restate what someone typed, and would pass while the image tag —
+        # the thing that actually supplies the browsers — sat one bump behind.
+        #
+        # The parse depends on the "Install location:" label, which is CLI
+        # presentation rather than a contract — `playwright install` offers no
+        # machine-readable output. Globbing the image's browsers directory
+        # instead would drop the half that matters, since only the client knows
+        # which revision it wants. A Playwright release that reformats the line
+        # therefore fails this step, and the message below says so.
+        run: |
+          # Every `run:` here is bash with `-eo pipefail`, so a failure inside
+          # either pipeline below aborts the step at the assignment. Both carry
+          # a fallback, or the diagnostic underneath never reaches stderr and
+          # the guard fails as opaquely as the error it exists to replace.
+          locations=$(pnpm --filter rome-web exec playwright install --dry-run chromium |
+            sed -n 's/^[[:space:]]*Install location:[[:space:]]*//p') || {
+            echo "playwright install --dry-run did not run. Its output is above." >&2
+            exit 1
+          }
+          test -n "$locations" || {
+            echo "playwright install --dry-run printed no 'Install location:' line." >&2
+            echo "Playwright changed that command's output. Re-point the sed above" >&2
+            echo "at the new wording — this is a broken guard, not a missing browser." >&2
+            exit 1
+          }
+          # INSTALLATION_COMPLETE is Playwright's own marker for a browser
+          # directory it finished laying down, so a half-written revision reads
+          # as missing rather than as present.
+          missing=""
+          while read -r dir; do
+            test -f "$dir/INSTALLATION_COMPLETE" || missing="$missing $dir"
+          done <<<"$locations"
+          if [ -n "$missing" ]; then
+            # `playwright --version` prints "Version x.y.z". Anchor on the
+            # number so anything Playwright appends stays out of the message,
+            # and so an engine warning pnpm puts on stdout cannot match.
+            version=$(pnpm --filter rome-web exec playwright --version |
+              sed -n 's/^Version \([0-9][0-9.]*\).*/\1/p') || version="(unreadable)"
+            echo "This job's image does not ship the browser build that" >&2
+            echo "@playwright/test $version expects." >&2
+            echo "Missing:$missing" >&2
+            echo "Re-pin the container image in .github/workflows/ci.yml to the" >&2
+            echo "matching mcr.microsoft.com/playwright release's digest." >&2
+            exit 1
+          fi
+      - run: pnpm --filter rome-web test:layout
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: layout-invariants-report
+          path: packages/web/test-results/
+          retention-days: 7
+
+  # ──────────────────────────────────────────
+  # Job 4: E2E Tests (depends on unit + integration passing)
+  # ──────────────────────────────────────────
+  e2e-tests:
+    needs: [unit-tests-core, unit-tests-web, unit-tests-rest, integration-tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:e2e

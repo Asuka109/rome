@@ -1,0 +1,21 @@
+formatVersion: 1
+id: dream
+icon: assets/icon.svg
+version: 0.1.5
+description: Periodic self-review agent that summarizes recent conversations and updates memory
+appRoot: dist
+
+web:
+  manifest: web/manifest.json
+  displayName: Dream
+  navLabel: Dream
+
+agents:
+  - agents/dream.yaml
+  - agents/skill-review.yaml
+
+actions:
+  - actions/dream
+  - actions/skill-review
+  - actions/get-webchat-conversations
+  - actions/get-action-logs

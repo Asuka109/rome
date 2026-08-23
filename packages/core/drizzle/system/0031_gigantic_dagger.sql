@@ -1,0 +1,1 @@
+ALTER TABLE `guardian_auth` ADD `account_id` text;

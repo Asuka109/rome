@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Atlas One — 3D Product Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;500;600;700&family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Neutral product-stage palette from canonical row */
+    --canvas-bg: #F5F5F5;
+    --soft-grey: #E8E8E8;
+    --pure-white: #FFFFFF;
+    --ink: #15181E;
+    --ink-soft: #50565F;
+    --ink-faint: #8A909A;
+    --hairline: #E2E4E8;
+
+    /* Accent / hotspot */
+    --hotspot: #3B82F6;
+    --hotspot-strong: #2563EB;
+    --hotspot-glow: rgba(59, 130, 246, 0.32);
+    --accent-amber: #F59E0B;
+
+    /* Material swatches */
+    --mat-graphite: #2B2F36;
+    --mat-clay: #C98A6B;
+    --mat-sage: #8AA68B;
+    --mat-ivory: #EDE6DA;
+
+    /* Stage lighting / reflections */
+    --stage-top: #FBFBFC;
+    --stage-bottom: #DCDEE3;
+    --reflection: rgba(43, 47, 54, 0.12);
+
+    /* Radius */
+    --r-sm: 10px;
+    --r-md: 16px;
+    --r-lg: 24px;
+    --r-pill: 999px;
+
+    /* Shadow — soft floating studio shadows */
+    --shadow-sm: 0 1px 2px rgba(21, 24, 30, 0.06), 0 2px 6px rgba(21, 24, 30, 0.05);
+    --shadow-md: 0 6px 18px rgba(21, 24, 30, 0.08), 0 2px 6px rgba(21, 24, 30, 0.06);
+    --shadow-lg: 0 24px 60px rgba(21, 24, 30, 0.14), 0 8px 20px rgba(21, 24, 30, 0.08);
+    --shadow-hotspot: 0 0 0 6px var(--hotspot-glow);
+
+    /* Spacing scale */
+    --s-1: 4px;
+    --s-2: 8px;
+    --s-3: 12px;
+    --s-4: 16px;
+    --s-5: 24px;
+    --s-6: 32px;
+    --s-7: 48px;
+    --s-8: 64px;
+
+    /* Type scale */
+    --font-head: 'Rubik', system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-body: 'Nunito Sans', system-ui, -apple-system, "Segoe UI", sans-serif;
+    --t-xs: 12px;
+    --t-sm: 14px;
+    --t-base: 16px;
+    --t-lg: 20px;
+    --t-xl: 28px;
+    --t-2xl: 40px;
+
+    /* Motion */
+    --rotation-speed: 0.5;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --dur-fast: 140ms;
+    --dur: 280ms;
+    --dur-slow: 520ms;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    font-family: var(--font-body);
+    background:
+      radial-gradient(1200px 600px at 80% -10%, #FFFFFF 0%, rgba(255,255,255,0) 60%),
+      var(--canvas-bg);
+    color: var(--ink);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, .num { font-family: var(--font-head); letter-spacing: -0.02em; }
+
+  a { color: inherit; text-decoration: none; }
+
+  button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+  :focus-visible {
+    outline: 3px solid var(--hotspot);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 var(--s-5);
+  }
+
+  /* ---------- Header ---------- */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: rgba(245, 245, 245, 0.82);
+    backdrop-filter: blur(14px) saturate(1.1);
+    -webkit-backdrop-filter: blur(14px) saturate(1.1);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: var(--s-5);
+    height: 68px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    font-family: var(--font-head);
+    font-weight: 600;
+    font-size: var(--t-lg);
+  }
+  .brand .logo {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(150deg, var(--ink), #353A43);
+    display: grid; place-items: center;
+    box-shadow: var(--shadow-sm);
+  }
+  .nav-links {
+    display: flex;
+    gap: var(--s-5);
+    margin-left: var(--s-4);
+    list-style: none;
+  }
+  .nav-links a {
+    font-size: var(--t-sm);
+    font-weight: 600;
+    color: var(--ink-soft);
+    padding: 6px 2px;
+    position: relative;
+    transition: color var(--dur-fast) var(--ease);
+  }
+  .nav-links a::after {
+    content: "";
+    position: absolute; left: 0; right: 100%; bottom: -2px;
+    height: 2px; background: var(--ink);
+    transition: right var(--dur) var(--ease);
+  }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-links a:hover::after { right: 0; }
+
+  .nav-right { margin-left: auto; display: flex; align-items: center; gap: var(--s-3); }
+  .icon-btn {
+    width: 42px; height: 42px;
+    border-radius: var(--r-pill);
+    display: grid; place-items: center;
+    color: var(--ink-soft);
+    background: var(--pure-white);
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  }
+  .icon-btn:hover { color: var(--ink); transform: translateY(-1px); }
+  .icon-btn:active { transform: translateY(0) scale(0.96); }
+  .cart-dot {
+    position: relative;
+  }
+  .cart-dot .badge {
+    position: absolute; top: -2px; right: -2px;
+    min-width: 18px; height: 18px; padding: 0 4px;
+    border-radius: var(--r-pill);
+    background: var(--hotspot);
+    color: #fff; font-size: 11px; font-weight: 700;
+    display: grid; place-items: center;
+    border: 2px solid var(--canvas-bg);
+  }
+
+  /* ---------- Main grid ---------- */
+  main { padding: var(--s-6) 0 var(--s-8); }
+  .product {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr);
+    gap: var(--s-6);
+    align-items: start;
+  }
+
+  /* ---------- 3D Stage ---------- */
+  .stage-card {
+    position: relative;
+    border-radius: var(--r-lg);
+    background:
+      radial-gradient(120% 90% at 50% 8%, var(--stage-top), var(--stage-bottom) 75%);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.7);
+  }
+  .stage {
+    position: relative;
+    aspect-ratio: 5 / 4;
+    width: 100%;
+    display: grid;
+    place-items: center;
+  }
+  .stage-floor {
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 38%;
+    background: linear-gradient(to top, rgba(43,47,54,0.06), transparent);
+    pointer-events: none;
+  }
+
+  .badge-3d {
+    position: absolute; top: var(--s-4); left: var(--s-4);
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px;
+    background: rgba(21,24,30,0.9);
+    color: #fff; font-size: var(--t-xs); font-weight: 700;
+    border-radius: var(--r-pill);
+    letter-spacing: 0.02em;
+    z-index: 5;
+  }
+  .badge-3d svg { width: 14px; height: 14px; }
+
+  .ar-btn {
+    position: absolute; top: var(--s-4); right: var(--s-4);
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 9px 16px;
+    background: var(--pure-white);
+    color: var(--ink); font-weight: 700; font-size: var(--t-sm);
+    border-radius: var(--r-pill);
+    box-shadow: var(--shadow-md);
+    z-index: 5;
+    transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+  }
+  .ar-btn svg { width: 18px; height: 18px; color: var(--hotspot); }
+  .ar-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+  .ar-btn:active { transform: translateY(0); }
+
+  /* The "product" rendered with SVG + CSS, spinning to suggest 360 view */
+  .model-wrap {
+    position: relative;
+    width: min(64%, 380px);
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+  .model {
+    width: 100%;
+    display: block;
+    filter: drop-shadow(0 30px 28px rgba(21,24,30,0.22));
+    animation: orbit 14s linear infinite;
+    animation-duration: calc(7s / var(--rotation-speed));
+  }
+  .grabbing .model { animation-play-state: paused; }
+  @keyframes orbit {
+    0%   { transform: rotateY(-14deg) rotateX(4deg); }
+    50%  { transform: rotateY(14deg)  rotateX(4deg); }
+    100% { transform: rotateY(-14deg) rotateX(4deg); }
+  }
+  .model-shadow {
+    position: absolute;
+    left: 50%; bottom: -6%;
+    width: 70%; height: 26px;
+    transform: translateX(-50%);
+    background: radial-gradient(50% 50% at 50% 50%, rgba(21,24,30,0.28), rgba(21,24,30,0) 70%);
+    filter: blur(2px);
+    animation: shadowPulse 14s linear infinite;
+    animation-duration: calc(7s / var(--rotation-speed));
+  }
+  @keyframes shadowPulse {
+    0%,100% { width: 62%; opacity: 0.8; }
+    50%     { width: 74%; opacity: 1; }
+  }
+
+  /* Hotspots */
+  .hotspot {
+    position: absolute;
+    width: 26px; height: 26px;
+    border-radius: var(--r-pill);
+    background: var(--pure-white);
+    box-shadow: var(--shadow-hotspot), var(--shadow-sm);
+    display: grid; place-items: center;
+    z-index: 6;
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .hotspot::before {
+    content: "";
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--hotspot);
+  }
+  .hotspot::after {
+    content: attr(data-label);
+    position: absolute;
+    left: 50%; bottom: calc(100% + 10px);
+    transform: translateX(-50%) translateY(6px);
+    white-space: nowrap;
+    background: var(--ink);
+    color: #fff; font-size: var(--t-xs); font-weight: 600;
+    padding: 6px 10px; border-radius: var(--r-sm);
+    box-shadow: var(--shadow-md);
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  .hotspot:hover, .hotspot:focus-visible {
+    transform: scale(1.12);
+    box-shadow: 0 0 0 8px var(--hotspot-glow), var(--shadow-md);
+  }
+  .hotspot:hover::after, .hotspot:focus-visible::after {
+    opacity: 1; transform: translateX(-50%) translateY(0);
+  }
+  .hotspot.h1 { top: 22%; left: 30%; }
+  .hotspot.h2 { top: 46%; right: 26%; }
+  .hotspot.h3 { bottom: 24%; left: 40%; }
+  .ping {
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px var(--hotspot);
+    animation: ping 2.4s var(--ease) infinite;
+  }
+  @keyframes ping {
+    0% { transform: scale(1); opacity: 0.7; }
+    70%,100% { transform: scale(2.1); opacity: 0; }
+  }
+
+  /* Stage controls */
+  .stage-controls {
+    display: flex; align-items: center; gap: var(--s-3);
+    padding: var(--s-4) var(--s-5);
+    background: rgba(255,255,255,0.55);
+    border-top: 1px solid var(--hairline);
+    flex-wrap: wrap;
+  }
+  .hint {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: var(--t-sm); font-weight: 600; color: var(--ink-soft);
+  }
+  .hint svg { width: 18px; height: 18px; color: var(--ink-faint); }
+  .ctrl-group { margin-left: auto; display: flex; gap: var(--s-2); }
+  .ctrl {
+    width: 40px; height: 40px;
+    border-radius: var(--r-sm);
+    background: var(--pure-white);
+    box-shadow: var(--shadow-sm);
+    display: grid; place-items: center;
+    color: var(--ink-soft);
+    transition: transform var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  }
+  .ctrl svg { width: 18px; height: 18px; }
+  .ctrl:hover { color: var(--ink); transform: translateY(-1px); }
+  .ctrl:active { transform: translateY(0) scale(0.95); }
+
+  /* Thumbnails */
+  .thumbs {
+    display: flex; gap: var(--s-3); margin-top: var(--s-4);
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+  }
+  .thumb {
+    flex: 0 0 auto;
+    width: 78px; aspect-ratio: 1;
+    border-radius: var(--r-md);
+    background: var(--pure-white);
+    box-shadow: var(--shadow-sm);
+    display: grid; place-items: center;
+    border: 2px solid transparent;
+    transition: border-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+  }
+  .thumb svg { width: 60%; height: 60%; }
+  .thumb:hover { transform: translateY(-2px); }
+  .thumb.active { border-color: var(--ink); }
+
+  /* ---------- Detail panel ---------- */
+  .detail { display: flex; flex-direction: column; gap: var(--s-5); }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: var(--t-xs); font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-faint);
+  }
+  .title { font-size: var(--t-2xl); line-height: 1.04; font-weight: 600; }
+  .price-row { display: flex; align-items: baseline; gap: var(--s-3); flex-wrap: wrap; }
+  .price { font-family: var(--font-head); font-size: var(--t-xl); font-weight: 600; }
+  .price-was { color: var(--ink-faint); text-decoration: line-through; font-size: var(--t-base); }
+  .save-tag {
+    font-size: var(--t-xs); font-weight: 700; color: #0F7A3D;
+    background: #E6F6EC; padding: 4px 10px; border-radius: var(--r-pill);
+  }
+  .rating { display: flex; align-items: center; gap: 8px; font-size: var(--t-sm); color: var(--ink-soft); }
+  .stars { display: inline-flex; gap: 2px; color: var(--accent-amber); }
+  .stars svg { width: 16px; height: 16px; }
+  .lede { color: var(--ink-soft); font-size: var(--t-base); }
+
+  .group-label {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: var(--t-sm); font-weight: 700; color: var(--ink);
+  }
+  .group-label .val { color: var(--ink-soft); font-weight: 600; }
+
+  /* Material switcher */
+  .swatches { display: flex; gap: var(--s-3); margin-top: var(--s-3); }
+  .swatch {
+    width: 46px; height: 46px; border-radius: var(--r-pill);
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    border: 2px solid var(--pure-white);
+    outline: 2px solid transparent;
+    transition: outline-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+  }
+  .swatch:hover { transform: translateY(-2px); }
+  .swatch[aria-pressed="true"] { outline-color: var(--ink); }
+  .swatch[aria-pressed="true"]::after {
+    content: ""; position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center / 20px no-repeat;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+  }
+  .sw-graphite { background: var(--mat-graphite); }
+  .sw-clay { background: var(--mat-clay); }
+  .sw-sage { background: var(--mat-sage); }
+  .sw-ivory { background: var(--mat-ivory); }
+
+  /* Size segmented control */
+  .sizes { display: flex; gap: var(--s-2); margin-top: var(--s-3); flex-wrap: wrap; }
+  .size {
+    min-width: 56px; padding: 10px 14px;
+    border-radius: var(--r-sm);
+    background: var(--pure-white);
+    box-shadow: var(--shadow-sm);
+    font-weight: 700; font-size: var(--t-sm); color: var(--ink-soft);
+    transition: color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+  }
+  .size:hover { transform: translateY(-1px); }
+  .size[aria-pressed="true"] {
+    color: #fff; background: var(--ink);
+    box-shadow: var(--shadow-md);
+  }
+  .size[disabled] { opacity: 0.4; cursor: not-allowed; text-decoration: line-through; }
+
+  /* CTA */
+  .cta-row { display: flex; gap: var(--s-3); margin-top: var(--s-2); }
+  .btn-primary {
+    flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 16px 22px;
+    border-radius: var(--r-md);
+    background: linear-gradient(180deg, var(--hotspot), var(--hotspot-strong));
+    color: #fff; font-weight: 700; font-size: var(--t-base);
+    box-shadow: 0 8px 22px var(--hotspot-glow), var(--shadow-sm);
+    transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+  }
+  .btn-primary svg { width: 20px; height: 20px; }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 30px var(--hotspot-glow), var(--shadow-md); }
+  .btn-primary:active { transform: translateY(0) scale(0.99); }
+  .btn-ghost {
+    width: 56px;
+    border-radius: var(--r-md);
+    background: var(--pure-white);
+    color: var(--ink-soft);
+    box-shadow: var(--shadow-sm);
+    display: grid; place-items: center;
+    transition: color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+  }
+  .btn-ghost svg { width: 20px; height: 20px; }
+  .btn-ghost:hover { color: #E04848; transform: translateY(-2px); }
+
+  .meta-list {
+    list-style: none;
+    border-top: 1px solid var(--hairline);
+    padding-top: var(--s-4);
+    display: grid; gap: var(--s-3);
+  }
+  .meta-list li {
+    display: flex; align-items: center; gap: var(--s-3);
+    font-size: var(--t-sm); color: var(--ink-soft);
+  }
+  .meta-list svg { width: 18px; height: 18px; color: var(--hotspot); flex: 0 0 auto; }
+  .meta-list b { color: var(--ink); font-weight: 700; }
+
+  /* ---------- Specs strip ---------- */
+  .specs {
+    margin-top: var(--s-8);
+  }
+  .specs h2 { font-size: var(--t-xl); margin-bottom: var(--s-5); }
+  .spec-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--s-4);
+  }
+  .spec {
+    background: var(--pure-white);
+    border-radius: var(--r-md);
+    padding: var(--s-5);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(255,255,255,0.8);
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .spec:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+  .spec .ico {
+    width: 40px; height: 40px; border-radius: var(--r-sm);
+    background: var(--soft-grey);
+    display: grid; place-items: center; color: var(--ink);
+    margin-bottom: var(--s-4);
+  }
+  .spec .ico svg { width: 20px; height: 20px; }
+  .spec .num { font-size: var(--t-xl); font-weight: 600; }
+  .spec .lbl { font-size: var(--t-sm); color: var(--ink-faint); font-weight: 600; }
+
+  /* ---------- Footer ---------- */
+  footer {
+    margin-top: var(--s-8);
+    border-top: 1px solid var(--hairline);
+    padding: var(--s-6) 0;
+    color: var(--ink-faint);
+    font-size: var(--t-sm);
+  }
+  .foot-row { display: flex; flex-wrap: wrap; gap: var(--s-4); align-items: center; }
+  .foot-row .spacer { margin-left: auto; }
+  .foot-links { display: flex; gap: var(--s-5); list-style: none; }
+  .foot-links a:hover { color: var(--ink); }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 920px) {
+    .product { grid-template-columns: 1fr; gap: var(--s-5); }
+    .spec-grid { grid-template-columns: repeat(2, 1fr); }
+    .nav-links { display: none; }
+  }
+  @media (max-width: 560px) {
+    .wrap { padding: 0 var(--s-4); }
+    .title { font-size: 30px; }
+    .nav { height: 60px; }
+    .spec-grid { grid-template-columns: 1fr 1fr; }
+    .model-wrap { width: min(78%, 280px); }
+    .ar-btn span { display: none; }
+    .ar-btn { padding: 9px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .model, .model-shadow { animation: none; transform: rotateY(0) rotateX(2deg); }
+    .ping { animation: none; }
+    * { transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <nav class="nav" aria-label="Primary">
+        <a href="#" class="brand" aria-label="Atlas One home">
+          <span class="logo" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+            </svg>
+          </span>
+          Atlas One
+        </a>
+        <ul class="nav-links">
+          <li><a href="#">Chairs</a></li>
+          <li><a href="#">Tables</a></li>
+          <li><a href="#">Lighting</a></li>
+          <li><a href="#">Studio</a></li>
+        </ul>
+        <div class="nav-right">
+          <button class="icon-btn" aria-label="Search">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          </button>
+          <button class="icon-btn cart-dot" aria-label="Cart, 2 items">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>
+            <span class="badge" aria-hidden="true">2</span>
+          </button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <div class="product">
+        <!-- 3D Stage -->
+        <section class="stage-card" aria-label="3D product preview">
+          <span class="badge-3d" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+            360° VIEW
+          </span>
+          <button class="ar-btn" type="button" aria-label="View in your room with augmented reality">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="m12 8 4 2.3v4.6L12 17l-4-2.1v-4.6L12 8Z"/></svg>
+            <span>View in your room</span>
+          </button>
+
+          <div class="stage" id="stage" role="img" aria-label="Rotating 3D model of the Atlas Halo lounge chair in graphite finish. Drag to spin, scroll or pinch to zoom.">
+            <div class="stage-floor" aria-hidden="true"></div>
+
+            <div class="model-wrap" id="modelWrap">
+              <!-- Hotspots -->
+              <button class="hotspot h1" type="button" data-label="Solid oak frame" aria-label="Hotspot: solid oak frame"><span class="ping" aria-hidden="true"></span></button>
+              <button class="hotspot h2" type="button" data-label="Recycled wool seat" aria-label="Hotspot: recycled wool seat"><span class="ping" aria-hidden="true"></span></button>
+              <button class="hotspot h3" type="button" data-label="Powder-coat base" aria-label="Hotspot: powder-coated steel base"><span class="ping" aria-hidden="true"></span></button>
+
+              <!-- SVG "product": a stylized lounge chair -->
+              <svg class="model" id="model" viewBox="0 0 280 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <defs>
+                  <linearGradient id="seat" x1="60" y1="60" x2="220" y2="200" gradientUnits="userSpaceOnUse">
+                    <stop offset="0" stop-color="#3D434C"/>
+                    <stop offset="0.55" stop-color="#2B2F36"/>
+                    <stop offset="1" stop-color="#1B1E23"/>
+                  </linearGradient>
+                  <linearGradient id="seatHi" x1="80" y1="70" x2="160" y2="150" gradientUnits="userSpaceOnUse">
+                    <stop offset="0" stop-color="#5A616B"/>
+                    <stop offset="1" stop-color="#5A616B" stop-opacity="0"/>
+                  </linearGradient>
+                  <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#D8A56F"/>
+                    <stop offset="1" stop-color="#A9764A"/>
+                  </linearGradient>
+                  <linearGradient id="steel" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0" stop-color="#9AA0A8"/>
+                    <stop offset="0.5" stop-color="#D7DBE0"/>
+                    <stop offset="1" stop-color="#8B919A"/>
+                  </linearGradient>
+                </defs>
+
+                <!-- back legs / frame -->
+                <rect x="74" y="150" width="12" height="92" rx="6" fill="url(#wood)"/>
+                <rect x="196" y="150" width="12" height="92" rx="6" fill="url(#wood)"/>
+                <!-- steel cross base -->
+                <rect x="70" y="236" width="142" height="11" rx="5.5" fill="url(#steel)"/>
+
+                <!-- backrest cushion -->
+                <path d="M70 70 q0 -34 34 -34 h74 q34 0 34 34 v66 q0 22 -24 22 H94 q-24 0 -24 -22 Z" fill="url(#seat)"/>
+                <path d="M86 64 q0 -16 22 -16 h64 q22 0 22 16 v40 q-30 -14 -54 -14 -24 0 -54 14 Z" fill="url(#seatHi)" opacity="0.5"/>
+                <!-- seat cushion -->
+                <path d="M64 150 h152 q14 0 14 16 v8 q0 16 -16 16 H66 q-16 0 -16 -16 v-8 q0 -16 14 -16 Z" fill="url(#seat)"/>
+                <path d="M70 156 h140 q8 0 8 8 H62 q0 -8 8 -8 Z" fill="url(#seatHi)" opacity="0.45"/>
+                <!-- stitch lines -->
+                <path d="M104 56 v80 M176 56 v80" stroke="#15181E" stroke-opacity="0.35" stroke-width="2" stroke-dasharray="4 5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="model-shadow" aria-hidden="true"></div>
+          </div>
+
+          <div class="stage-controls">
+            <span class="hint">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 12V7"/><path d="M3 12h5"/></svg>
+              Drag to rotate · scroll to zoom
+            </span>
+            <div class="ctrl-group">
+              <button class="ctrl" type="button" aria-label="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+              <button class="ctrl" type="button" aria-label="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+              <button class="ctrl" type="button" aria-label="Reset view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v5h-5"/></svg></button>
+            </div>
+          </div>
+
+          <div class="thumbs wrap-pad" style="padding: var(--s-4) var(--s-5);" role="tablist" aria-label="Saved views">
+            <button class="thumb active" role="tab" aria-selected="true" aria-label="Three-quarter view">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#2B2F36" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9h14v8H5z"/><path d="M7 9V6h10v3"/><path d="M6 17v3M18 17v3"/></svg>
+            </button>
+            <button class="thumb" role="tab" aria-selected="false" aria-label="Front view">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#50565F" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="8" width="12" height="9" rx="1.5"/><path d="M8 17v3M16 17v3"/></svg>
+            </button>
+            <button class="thumb" role="tab" aria-selected="false" aria-label="Side profile">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#50565F" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5v12h8"/><path d="M8 11h8"/><path d="M8 17v3M16 17v3"/></svg>
+            </button>
+            <button class="thumb" role="tab" aria-selected="false" aria-label="Top-down view">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#50565F" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/></svg>
+            </button>
+          </div>
+        </section>
+
+        <!-- Detail panel -->
+        <section class="detail" aria-label="Product details">
+          <span class="eyebrow">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m5 12 5 5 9-11"/></svg>
+            New · Atlas Studio
+          </span>
+          <h1 class="title">Halo Lounge Chair</h1>
+
+          <div class="rating">
+            <span class="stars" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.8 5.9 20.8 7 14 2 9.2l6.9-.9Z"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.8 5.9 20.8 7 14 2 9.2l6.9-.9Z"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.8 5.9 20.8 7 14 2 9.2l6.9-.9Z"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.8 5.9 20.8 7 14 2 9.2l6.9-.9Z"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.8 5.9 20.8 7 14 2 9.2l6.9-.9Z"/></svg>
+            </span>
+            <span>4.8 · 312 reviews</span>
+          </div>
+
+          <div class="price-row">
+            <span class="price">$1,290</span>
+            <span class="price-was">$1,540</span>
+            <span class="save-tag">Save 16%</span>
+          </div>
+
+          <p class="lede">A sculpted lounge chair with a solid oak frame and a wool-blend shell. Spin the model to inspect every joint, switch finishes live, and preview it in your space with AR.</p>
+
+          <div>
+            <div class="group-label"><span>Finish</span><span class="val">Graphite Wool</span></div>
+            <div class="swatches" role="group" aria-label="Choose finish">
+              <button class="swatch sw-graphite" type="button" aria-pressed="true" aria-label="Graphite wool"></button>
+              <button class="swatch sw-clay" type="button" aria-pressed="false" aria-label="Clay leather"></button>
+              <button class="swatch sw-sage" type="button" aria-pressed="false" aria-label="Sage bouclé"></button>
+              <button class="swatch sw-ivory" type="button" aria-pressed="false" aria-label="Ivory linen"></button>
+            </div>
+          </div>
+
+          <div>
+            <div class="group-label"><span>Frame size</span><span class="val">Standard</span></div>
+            <div class="sizes" role="group" aria-label="Choose frame size">
+              <button class="size" type="button" aria-pressed="false">Compact</button>
+              <button class="size" type="button" aria-pressed="true">Standard</button>
+              <button class="size" type="button" aria-pressed="false">Wide</button>
+              <button class="size" type="button" aria-pressed="false" disabled>XL</button>
+            </div>
+          </div>
+
+          <div class="cta-row">
+            <button class="btn-primary" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>
+              Add to cart
+            </button>
+            <button class="btn-ghost" type="button" aria-label="Save to wishlist">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+            </button>
+          </div>
+
+          <ul class="meta-list">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1.5"/><path d="M16 8h4l3 3v5h-7"/><circle cx="5.5" cy="18.5" r="2"/><circle cx="18.5" cy="18.5" r="2"/></svg> Free delivery <b>&nbsp;Tue, Jun 9</b></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg> 10-year structural warranty</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 12V7M3 12h5"/></svg> 100-day risk-free returns</li>
+          </ul>
+        </section>
+      </div>
+
+      <!-- Specs strip -->
+      <section class="specs" aria-label="Specifications">
+        <h2>The details, measured</h2>
+        <div class="spec-grid">
+          <div class="spec">
+            <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3 3 21"/><path d="M15 3h6v6"/><path d="M3 15v6h6"/></svg></span>
+            <div class="num">82 cm</div>
+            <div class="lbl">Seat height</div>
+          </div>
+          <div class="spec">
+            <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></span>
+            <div class="num">14 kg</div>
+            <div class="lbl">Total weight</div>
+          </div>
+          <div class="spec">
+            <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></svg></span>
+            <div class="num">FSC</div>
+            <div class="lbl">Certified oak</div>
+          </div>
+          <div class="spec">
+            <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></span>
+            <div class="num">4 hr</div>
+            <div class="lbl">Tool-free assembly</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="foot-row">
+        <span class="brand" style="font-size:var(--t-base)">
+          <span class="logo" aria-hidden="true" style="width:28px;height:28px;border-radius:8px">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5"/></svg>
+          </span>
+          Atlas One
+        </span>
+        <ul class="foot-links spacer">
+          <li><a href="#">Materials</a></li>
+          <li><a href="#">Shipping</a></li>
+          <li><a href="#">Trade program</a></li>
+          <li><a href="#">Support</a></li>
+        </ul>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Lightweight drag-to-rotate / scroll-to-zoom that nudges the CSS model.
+    // Purely enhances the demo; layout works without it.
+    (function () {
+      var stage = document.getElementById('stage');
+      var wrap = document.getElementById('modelWrap');
+      var model = document.getElementById('model');
+      if (!stage || !wrap || !model) return;
+
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var rotY = 0, rotX = 4, zoom = 1;
+      var dragging = false, lastX = 0, lastY = 0;
+      var manual = false;
+
+      function apply() {
+        model.style.transform =
+          'rotateY(' + rotY + 'deg) rotateX(' + rotX + 'deg) scale(' + zoom + ')';
+      }
+
+      function start(x, y) {
+        dragging = true; manual = true; lastX = x; lastY = y;
+        stage.classList.add('grabbing');
+        model.style.animation = 'none';
+      }
+      function move(x, y) {
+        if (!dragging) return;
+        rotY += (x - lastX) * 0.5;       // --rotation-speed
+        rotX = Math.max(-18, Math.min(18, rotX - (y - lastY) * 0.25));
+        lastX = x; lastY = y;
+        apply();
+      }
+      function end() { dragging = false; stage.classList.remove('grabbing'); }
+
+      stage.addEventListener('pointerdown', function (e) {
+        stage.setPointerCapture(e.pointerId); start(e.clientX, e.clientY);
+      });
+      stage.addEventListener('pointermove', function (e) { move(e.clientX, e.clientY); });
+      stage.addEventListener('pointerup', end);
+      stage.addEventListener('pointercancel', end);
+
+      stage.addEventListener('wheel', function (e) {
+        if (!manual && reduce) { manual = true; model.style.animation = 'none'; }
+        e.preventDefault();
+        zoom = Math.max(0.5, Math.min(2, zoom - e.deltaY * 0.0015)); // zoom-min .5 / max 2
+        manual = true; model.style.animation = 'none';
+        apply();
+      }, { passive: false });
+
+      // Zoom / reset controls
+      var ctrls = document.querySelectorAll('.ctrl');
+      if (ctrls[0]) ctrls[0].addEventListener('click', function () { zoom = Math.max(0.5, zoom - 0.2); manual = true; model.style.animation = 'none'; apply(); });
+      if (ctrls[1]) ctrls[1].addEventListener('click', function () { zoom = Math.min(2, zoom + 0.2); manual = true; model.style.animation = 'none'; apply(); });
+      if (ctrls[2]) ctrls[2].addEventListener('click', function () {
+        rotY = 0; rotX = 4; zoom = 1; apply();
+        if (!reduce) { model.style.animation = ''; manual = false; }
+      });
+
+      // Finish swatches (visual selection only)
+      document.querySelectorAll('.swatch').forEach(function (sw) {
+        sw.addEventListener('click', function () {
+          document.querySelectorAll('.swatch').forEach(function (s) { s.setAttribute('aria-pressed', 'false'); });
+          sw.setAttribute('aria-pressed', 'true');
+        });
+      });
+      // Sizes
+      document.querySelectorAll('.size:not([disabled])').forEach(function (b) {
+        b.addEventListener('click', function () {
+          document.querySelectorAll('.size').forEach(function (s) { s.setAttribute('aria-pressed', 'false'); });
+          b.setAttribute('aria-pressed', 'true');
+        });
+      });
+      // Thumbnail tabs
+      document.querySelectorAll('.thumb').forEach(function (t) {
+        t.addEventListener('click', function () {
+          document.querySelectorAll('.thumb').forEach(function (x) { x.classList.remove('active'); x.setAttribute('aria-selected', 'false'); });
+          t.classList.add('active'); t.setAttribute('aria-selected', 'true');
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

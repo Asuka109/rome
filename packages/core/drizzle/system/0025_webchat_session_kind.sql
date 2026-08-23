@@ -1,0 +1,1 @@
+ALTER TABLE `webchat_sessions` ADD `kind` text DEFAULT 'user' NOT NULL;

@@ -1,0 +1,76 @@
+import { createRoot } from "react-dom/client";
+import { Compass } from "lucide-react";
+import { defineComponent, startChat, type AppComponentContext } from "@rome-os/app-web-sdk";
+import { Button } from "@rome-os/ui/button";
+import { Item, ItemActions, ItemContent, ItemDescription, ItemTitle } from "@/components/ui/item";
+
+// The "pick your first app" card. props: `{ ideas: [{title, prompt}] }`. Each
+// idea renders as a shadcn Item (title + description, with a "Build this" action
+// on the right). "Build this" opens a FRESH chat seeded with the idea's kickoff
+// prompt (not this welcome session) via `startChat`, so the guardian can come
+// back and build another. Only "I'll explore on my own" resolves this turn,
+// submitting the `EXPLORE` sentinel so the script closes out with the completion
+// card.
+export const EXPLORE = "__explore__";
+
+interface Idea {
+  title: string;
+  prompt: string;
+}
+
+function readIdeas(value: unknown): Idea[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((i) =>
+    i &&
+    typeof i === "object" &&
+    typeof (i as Idea).title === "string" &&
+    typeof (i as Idea).prompt === "string"
+      ? [{ title: (i as Idea).title, prompt: (i as Idea).prompt }]
+      : [],
+  );
+}
+
+function IdeaPicker({ ctx }: { ctx: AppComponentContext }) {
+  const ideas = readIdeas(ctx.props.ideas);
+  const resolved = ctx.host.resolved;
+
+  // Open the build in a brand-new conversation, seeded with the idea's kickoff
+  // prompt — exactly as if the guardian started a new chat and asked for it.
+  const build = (idea: Idea) => void startChat({ message: idea.prompt });
+
+  return (
+    <div className="w-full max-w-md space-y-2">
+      <p className="text-sm font-medium text-foreground">Pick your first app to build</p>
+
+      {ideas.map((idea) => (
+        <Item key={idea.title}>
+          <ItemContent>
+            <ItemTitle>{idea.title}</ItemTitle>
+            <ItemDescription>{idea.prompt}</ItemDescription>
+          </ItemContent>
+          <ItemActions>
+            <Button size="sm" disabled={resolved} onClick={() => build(idea)}>
+              Build this
+            </Button>
+          </ItemActions>
+        </Item>
+      ))}
+
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled={resolved}
+        className="text-muted-foreground"
+        onClick={() => ctx.host.submit({ ideaTitle: EXPLORE }, "I'll explore on my own")}
+      >
+        <Compass /> I'll explore on my own
+      </Button>
+    </div>
+  );
+}
+
+defineComponent("idea-picker", (container, ctx) => {
+  const root = createRoot(container);
+  root.render(<IdeaPicker ctx={ctx} />);
+  return () => root.unmount();
+});

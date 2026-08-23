@@ -1,0 +1,155 @@
+{
+  "page": {
+    "title": "Activity",
+    "liveUpdated": "Live · updated {{when}}",
+    "refresh": "Refresh",
+    "loading": "Loading…",
+    "empty": {
+      "title": "No activity yet",
+      "hint": "Approvals, action executions, and webhook receipts will appear here"
+    },
+    "pendingCallout": {
+      "single": "{{count}} pending approval",
+      "multiple": "{{count}} pending approvals",
+      "suffix": "requiring review",
+      "cta": "Review ›"
+    },
+    "stats": {
+      "pending": "Pending",
+      "running": "Running",
+      "errors": "Errors",
+      "events": "Events"
+    },
+    "filters": {
+      "all": "All",
+      "pending": "Pending",
+      "running": "Running",
+      "success": "Success",
+      "error": "Error",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "auto_approved": "Auto",
+      "pending_approval": "Awaiting",
+      "cancelled": "Cancelled"
+    },
+    "pagination": {
+      "previous": "‹ Previous",
+      "next": "Next ›",
+      "page": "Page {{n}}"
+    }
+  },
+  "status": {
+    "accepted": "Accepted",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "auto_approved": "Auto-approved",
+    "pending": "Pending",
+    "executed": "Executed",
+    "execution_failed": "Execution failed",
+    "awaiting_execution": "Awaiting execution",
+    "running": "Running",
+    "success": "Success",
+    "error": "Error",
+    "pending_approval": "Pending approval",
+    "cancelled": "Cancelled"
+  },
+  "duration": {
+    "none": "—"
+  },
+  "timeAgo": {
+    "justNow": "just now",
+    "secondsAgo": "{{n}}s ago",
+    "minutesAgo": "{{n}}m ago",
+    "hoursAgo": "{{n}}h ago",
+    "daysAgo": "{{n}}d ago"
+  },
+  "approval": {
+    "requestedBy": "Requested by",
+    "resolved": "Resolved {{when}}",
+    "by": "by",
+    "executed": "Executed {{when}}",
+    "errorPrefix": "Error · ",
+    "payload": "Payload",
+    "actions": {
+      "reject": "Reject",
+      "approve": "Approve",
+      "retry": "Retry",
+      "pending": "…"
+    }
+  },
+  "execution": {
+    "errorPrefix": "Error · ",
+    "details": "Details",
+    "rootId": "Root ID",
+    "args": "Args",
+    "children": "Children",
+    "childCountSingle": "{{count}} child action",
+    "childCountMultiple": "{{count}} child actions",
+    "initiatedBy": "Initiated by",
+    "performedBy": "By",
+    "actorGuardian": "Guardian",
+    "actorAnonymous": "Anonymous",
+    "cancellationRequested": "Cancellation requested {{when}}",
+    "actions": {
+      "cancel": "Cancel",
+      "pending": "…"
+    }
+  },
+  "webhook": {
+    "received": "Webhook received for",
+    "executionLabel": "Execution",
+    "finished": "Finished {{when}}",
+    "callbackLabel": "Callback",
+    "callbackHttp": " · HTTP {{status}}",
+    "errorPrefix": "Error · ",
+    "callbackErrorPrefix": "Callback error · ",
+    "payload": "Payload"
+  },
+  "trace": {
+    "loading": "Loading trace...",
+    "retry": "Retry",
+    "failedWithReason": "Error: {{reason}}",
+    "stoppedByUser": "Stopped by user",
+    "thinking": "Thinking...",
+    "thoughtFor": "Thought for {{duration}}",
+    "subagents": {
+      "ariaLabel": "Delegated subagents",
+      "openTrace": "Open trace for {{agent}}",
+      "status": {
+        "running": "running",
+        "completed": "completed",
+        "failed": "failed",
+        "cancelled": "cancelled"
+      }
+    },
+    "summary": {
+      "appsUsedSingle": "Used {{count}} app",
+      "appsUsedMultiple": "Used {{count}} apps",
+      "stepsSingle": "{{count}} step",
+      "stepsMultiple": "{{count}} steps",
+      "joiner": " · ",
+      "stoppedSuffix": " · stopped",
+      "failedSuffix": " · error",
+      "liveAppsSingle": "{{count}} app",
+      "liveAppsMultiple": "{{count}} apps",
+      "liveStep": "step {{count}}",
+      "activity": {
+        "usingApp": "Using {{app}}",
+        "thinking": "Thinking…",
+        "responding": "Responding…"
+      }
+    },
+    "drawer": {
+      "title": "Trace",
+      "live": "Live",
+      "ariaLabel": "Agent trace",
+      "closeAriaLabel": "Close trace",
+      "loadFailedHttp": "Failed to load trace (HTTP {{status}})",
+      "notAvailable": "Trace not available yet",
+      "loadFailed": "Failed to load trace",
+      "loadFailedReason": "Failed to load trace: {{reason}}",
+      "dumpTitle": "Download raw trace JSON",
+      "dumpAriaLabel": "Download raw trace JSON"
+    }
+  }
+}

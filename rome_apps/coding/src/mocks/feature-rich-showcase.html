@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Northbeam — All-in-one operations platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Brand + feature category colors */
+    --brand: #4f46e5;
+    --brand-strong: #4338ca;
+    --brand-soft: #eef2ff;
+    --accent: #f97316; /* contrasting CTA accent */
+    --accent-strong: #ea580c;
+
+    --c-benefit: #16a34a;     /* benefits = green */
+    --c-benefit-soft: #ecfdf5;
+    --c-problem: #ef4444;     /* problems = red/orange */
+    --c-problem-soft: #fef2f2;
+    --c-feature: #7c3aed;     /* features = blue/purple */
+    --c-feature-soft: #f5f3ff;
+    --c-info: #0ea5e9;        /* info/blue */
+    --c-info-soft: #ecfeff;
+
+    /* Neutrals */
+    --bg: #ffffff;
+    --bg-alt: #f6f7fb;
+    --ink: #0f172a;
+    --ink-2: #334155;
+    --muted: #64748b;
+    --line: #e6e8f0;
+    --line-strong: #d3d7e4;
+
+    /* Design system variables (from CSV) */
+    --card-padding: 2rem;
+    --card-radius: 12px;
+    --icon-size: 48px;
+    --grid-gap: 2rem;
+    --section-padding: 4rem 0;
+    --hover-transform: translateY(-4px);
+
+    --radius-sm: 8px;
+    --radius-lg: 20px;
+    --radius-pill: 999px;
+
+    --shadow-sm: 0 1px 2px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.08);
+    --shadow-md: 0 8px 20px -8px rgba(15,23,42,.18);
+    --shadow-lg: 0 24px 48px -16px rgba(79,70,229,.28);
+
+    /* Type scale */
+    --fs-display: clamp(2.2rem, 5vw, 3.5rem);
+    --fs-h2: clamp(1.6rem, 3vw, 2.25rem);
+    --fs-h3: 1.15rem;
+    --fs-body: 1rem;
+    --fs-sm: .875rem;
+    --fs-xs: .75rem;
+
+    --space-1: .25rem;
+    --space-2: .5rem;
+    --space-3: .75rem;
+    --space-4: 1rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+
+    --maxw: 1200px;
+
+    /* Motion */
+    --ease: cubic-bezier(.22,1,.36,1);
+    --t-fast: 140ms;
+    --t-med: 280ms;
+    --t-slow: 520ms;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    font-size: var(--fs-body);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,h2,h3,h4 { margin: 0; line-height: 1.12; letter-spacing: -.02em; font-weight: 800; }
+  p { margin: 0; }
+  a { color: inherit; text-decoration: none; }
+
+  .wrap { width: 100%; max-width: var(--maxw); margin-inline: auto; padding-inline: clamp(1rem, 4vw, 2rem); }
+
+  :focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; border-radius: 6px; }
+
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    font-size: var(--fs-xs); font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--brand-strong);
+    background: var(--brand-soft);
+    border: 1px solid #dfe3ff;
+    padding: .4rem .7rem; border-radius: var(--radius-pill);
+  }
+
+  /* ---------- Header ---------- */
+  header.site {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(255,255,255,.82);
+    backdrop-filter: saturate(150%) blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav { display: flex; align-items: center; gap: var(--space-6); height: 68px; }
+  .brand { display: flex; align-items: center; gap: .6rem; font-weight: 800; font-size: 1.1rem; letter-spacing: -.02em; }
+  .brand .logo {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--brand), #8b5cf6);
+    display: grid; place-items: center; box-shadow: var(--shadow-md);
+  }
+  .nav-links { display: none; gap: var(--space-6); margin-inline: auto; }
+  .nav-links a { font-size: var(--fs-sm); font-weight: 600; color: var(--ink-2); transition: color var(--t-fast); }
+  .nav-links a:hover { color: var(--brand-strong); }
+  .nav-cta { display: flex; align-items: center; gap: var(--space-3); margin-left: auto; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+    font-family: inherit; font-weight: 700; font-size: var(--fs-sm);
+    border-radius: var(--radius-pill); border: 1px solid transparent;
+    padding: .65rem 1.15rem; cursor: pointer;
+    transition: transform var(--t-fast) var(--ease), box-shadow var(--t-med) var(--ease), background var(--t-fast);
+  }
+  .btn:active { transform: translateY(1px) scale(.99); }
+  .btn-ghost { background: transparent; color: var(--ink-2); border-color: var(--line-strong); }
+  .btn-ghost:hover { background: var(--bg-alt); color: var(--ink); }
+  .btn-primary { background: linear-gradient(135deg, var(--brand), var(--brand-strong)); color: #fff; box-shadow: var(--shadow-md); }
+  .btn-primary:hover { box-shadow: var(--shadow-lg); transform: var(--hover-transform); }
+  .btn-accent { background: linear-gradient(135deg, var(--accent), var(--accent-strong)); color: #fff; box-shadow: 0 8px 22px -8px rgba(234,88,12,.6); }
+  .btn-accent:hover { transform: var(--hover-transform); box-shadow: 0 16px 34px -10px rgba(234,88,12,.6); }
+  .btn-lg { padding: .85rem 1.5rem; font-size: var(--fs-body); }
+
+  .icon { width: 1.1em; height: 1.1em; display: inline-block; }
+
+  /* ---------- Hero ---------- */
+  .hero { position: relative; overflow: hidden; padding: clamp(3rem,7vw,5.5rem) 0 clamp(2rem,5vw,4rem); }
+  .hero::before {
+    content: ""; position: absolute; inset: -20% -10% auto -10%; height: 70%;
+    background:
+      radial-gradient(50% 60% at 20% 20%, rgba(124,58,237,.16), transparent 70%),
+      radial-gradient(45% 55% at 85% 10%, rgba(14,165,233,.16), transparent 70%);
+    z-index: 0; pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero-grid { display: grid; gap: clamp(2rem,4vw,3.5rem); align-items: center; }
+  @media (min-width: 960px) { .hero-grid { grid-template-columns: 1.05fr .95fr; } }
+
+  .hero h1 { font-size: var(--fs-display); margin-top: var(--space-6); }
+  .hero h1 .grad { background: linear-gradient(120deg, var(--brand), #8b5cf6 55%, var(--c-info)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero .lede { color: var(--ink-2); font-size: clamp(1rem,1.6vw,1.18rem); margin-top: var(--space-4); max-width: 40ch; }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-8); }
+  .hero-meta { display: flex; flex-wrap: wrap; gap: var(--space-6); margin-top: var(--space-8); color: var(--muted); font-size: var(--fs-sm); }
+  .hero-meta .stat { line-height: 1.2; }
+  .hero-meta .stat b { display: block; font-size: 1.4rem; color: var(--ink); font-weight: 800; }
+
+  /* Hero product panel (CSS dashboard mock) */
+  .panel {
+    background: #fff; border: 1px solid var(--line); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg); overflow: hidden;
+  }
+  .panel-top { display: flex; align-items: center; gap: .4rem; padding: .8rem 1rem; border-bottom: 1px solid var(--line); background: var(--bg-alt); }
+  .dot { width: 11px; height: 11px; border-radius: 50%; }
+  .panel-body { padding: 1.25rem; display: grid; gap: 1rem; }
+  .mini-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: .75rem; }
+  .mini { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: .75rem; background: #fff; }
+  .mini .lbl { font-size: var(--fs-xs); color: var(--muted); font-weight: 600; }
+  .mini .val { font-size: 1.25rem; font-weight: 800; letter-spacing: -.02em; }
+  .mini .up { color: var(--c-benefit); font-size: var(--fs-xs); font-weight: 700; }
+  .chartbox { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 1rem; }
+  .bars { display: flex; align-items: flex-end; gap: .5rem; height: 110px; }
+  .bar { flex: 1; border-radius: 6px 6px 0 0; background: linear-gradient(180deg, #c7d2fe, var(--brand)); animation: grow var(--t-slow) var(--ease) both; }
+  @keyframes grow { from { transform: scaleY(.2); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
+  .bar { transform-origin: bottom; }
+
+  /* ---------- Logos strip ---------- */
+  .logos { padding: 1.5rem 0 0; }
+  .logos p { text-align: center; color: var(--muted); font-size: var(--fs-xs); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+  .logo-row { display: flex; flex-wrap: wrap; justify-content: center; gap: clamp(1.5rem,5vw,3rem); align-items: center; margin-top: 1rem; opacity: .7; }
+  .logo-row svg { height: 22px; width: auto; color: var(--ink-2); }
+
+  /* ---------- Sections ---------- */
+  section { padding: var(--section-padding); }
+  .section-alt { background: var(--bg-alt); }
+  .section-head { max-width: 56ch; margin: 0 auto; text-align: center; }
+  .section-head h2 { font-size: var(--fs-h2); margin-top: var(--space-4); }
+  .section-head p { color: var(--ink-2); margin-top: var(--space-3); }
+
+  /* ---------- Feature grid ---------- */
+  .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--grid-gap); margin-top: 2.5rem; }
+  .card {
+    background: #fff; border: 1px solid var(--line); border-radius: var(--card-radius);
+    padding: var(--card-padding); box-shadow: var(--shadow-sm);
+    transition: transform var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease), border-color var(--t-med);
+    position: relative; overflow: hidden;
+  }
+  .card::after { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--cat,var(--brand)); opacity: 0; transition: opacity var(--t-med); }
+  .card:hover, .card:focus-within { transform: var(--hover-transform); box-shadow: var(--shadow-md); border-color: var(--line-strong); }
+  .card:hover::after, .card:focus-within::after { opacity: 1; }
+  .ic {
+    width: var(--icon-size); height: var(--icon-size); border-radius: 14px;
+    display: grid; place-items: center; color: #fff;
+    background: var(--cat, var(--brand));
+    box-shadow: 0 8px 18px -8px var(--cat,var(--brand));
+    transition: transform var(--t-med) var(--ease);
+  }
+  .card:hover .ic { transform: scale(1.08) rotate(-3deg); }
+  .ic svg { width: 24px; height: 24px; }
+  .card h3 { font-size: var(--fs-h3); margin-top: 1.1rem; }
+  .card p { color: var(--ink-2); font-size: var(--fs-sm); margin-top: .5rem; }
+  .card .tag { display: inline-block; margin-top: 1rem; font-size: var(--fs-xs); font-weight: 700; color: var(--cat,var(--brand)); }
+
+  .cat-feature { --cat: var(--c-feature); }
+  .cat-info { --cat: var(--c-info); }
+  .cat-benefit { --cat: var(--c-benefit); }
+  .cat-brand { --cat: var(--brand); }
+  .cat-accent { --cat: var(--accent-strong); }
+  .cat-problem { --cat: var(--c-problem); }
+
+  /* ---------- Problem / solution ---------- */
+  .ps-grid { display: grid; gap: var(--grid-gap); margin-top: 2.5rem; }
+  @media (min-width: 820px) { .ps-grid { grid-template-columns: 1fr 1fr; } }
+  .ps {
+    border-radius: var(--card-radius); padding: var(--card-padding); border: 1px solid var(--line);
+  }
+  .ps.problem { background: var(--c-problem-soft); border-color: #fadbd8; }
+  .ps.solution { background: var(--c-benefit-soft); border-color: #c8f0d8; }
+  .ps h3 { display: flex; align-items: center; gap: .6rem; font-size: var(--fs-h3); }
+  .ps-pill { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: .25rem .6rem; border-radius: var(--radius-pill); }
+  .problem .ps-pill { background: var(--c-problem); color: #fff; }
+  .solution .ps-pill { background: var(--c-benefit); color: #fff; }
+  .ps ul { list-style: none; margin: 1.1rem 0 0; padding: 0; display: grid; gap: .7rem; }
+  .ps li { display: flex; gap: .6rem; font-size: var(--fs-sm); color: var(--ink-2); }
+  .ps li svg { flex: none; width: 18px; height: 18px; margin-top: 2px; }
+  .problem li svg { color: var(--c-problem); }
+  .solution li svg { color: var(--c-benefit); }
+
+  /* ---------- Interactive feature toggle ---------- */
+  .demo { display: grid; gap: var(--grid-gap); margin-top: 2.5rem; align-items: start; }
+  @media (min-width: 900px) { .demo { grid-template-columns: .8fr 1.2fr; } }
+  .tabs { display: grid; gap: .6rem; }
+  .tab {
+    text-align: left; font-family: inherit; cursor: pointer;
+    background: #fff; border: 1px solid var(--line); border-radius: var(--card-radius);
+    padding: 1rem 1.15rem; transition: border-color var(--t-fast), box-shadow var(--t-med), transform var(--t-fast);
+    display: flex; gap: .9rem; align-items: flex-start; width: 100%;
+  }
+  .tab:hover { border-color: var(--line-strong); transform: translateX(2px); }
+  .tab[aria-selected="true"] { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+  .tab .ic-sm { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; color: #fff; background: var(--cat,var(--brand)); flex: none; }
+  .tab .ic-sm svg { width: 20px; height: 20px; }
+  .tab b { font-size: var(--fs-body); font-weight: 700; }
+  .tab span { display: block; font-size: var(--fs-sm); color: var(--muted); margin-top: .15rem; }
+
+  .demo-stage { background: #fff; border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); overflow: hidden; min-height: 320px; }
+  .demo-pane { padding: 1.5rem; display: none; animation: fade var(--t-med) var(--ease) both; }
+  .demo-pane.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .demo-pane h4 { font-size: var(--fs-h3); }
+  .demo-pane p { color: var(--ink-2); font-size: var(--fs-sm); margin-top: .5rem; }
+  .kv { display: grid; grid-template-columns: repeat(auto-fit,minmax(120px,1fr)); gap: .75rem; margin-top: 1.25rem; }
+  .kv .box { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: .9rem; background: var(--bg-alt); }
+  .kv .box small { color: var(--muted); font-size: var(--fs-xs); font-weight: 600; }
+  .kv .box b { display: block; font-size: 1.2rem; margin-top: .2rem; }
+  .progress { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; margin-top: 1.25rem; }
+  .progress i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--brand), #8b5cf6); }
+
+  /* ---------- Comparison table ---------- */
+  .table-scroll { margin-top: 2.5rem; overflow-x: auto; border: 1px solid var(--line); border-radius: var(--card-radius); }
+  table { width: 100%; border-collapse: collapse; min-width: 520px; }
+  th, td { padding: 1rem 1.1rem; text-align: left; font-size: var(--fs-sm); border-bottom: 1px solid var(--line); }
+  thead th { background: var(--bg-alt); font-weight: 700; }
+  thead th.us { color: var(--brand-strong); }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.center, th.center { text-align: center; }
+  .yes svg { color: var(--c-benefit); width: 20px; height: 20px; }
+  .no svg { color: var(--c-problem); width: 18px; height: 18px; }
+  .feat-name { font-weight: 600; color: var(--ink); }
+
+  /* ---------- CTA banner ---------- */
+  .cta { text-align: center; }
+  .cta-card {
+    border-radius: var(--radius-lg); padding: clamp(2rem,5vw,3.5rem);
+    background: linear-gradient(135deg, var(--brand-strong), #6d28d9 60%, #4338ca);
+    color: #fff; box-shadow: var(--shadow-lg); position: relative; overflow: hidden;
+  }
+  .cta-card::before { content: ""; position: absolute; inset: auto -10% -60% auto; width: 60%; height: 140%; background: radial-gradient(circle, rgba(255,255,255,.18), transparent 60%); }
+  .cta-card h2 { font-size: var(--fs-h2); position: relative; }
+  .cta-card p { color: rgba(255,255,255,.85); margin: .75rem auto 0; max-width: 48ch; position: relative; }
+  .cta-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); justify-content: center; margin-top: 2rem; position: relative; }
+  .cta-card .btn-ghost { color: #fff; border-color: rgba(255,255,255,.5); }
+  .cta-card .btn-ghost:hover { background: rgba(255,255,255,.12); color: #fff; }
+
+  /* ---------- Footer ---------- */
+  footer.site { border-top: 1px solid var(--line); padding: 3rem 0 2.5rem; }
+  .foot-grid { display: grid; gap: 2rem; grid-template-columns: 1fr; }
+  @media (min-width: 720px) { .foot-grid { grid-template-columns: 1.4fr 1fr 1fr 1fr; } }
+  .foot-grid h5 { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 0 0 .9rem; font-weight: 700; }
+  .foot-grid ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
+  .foot-grid a { font-size: var(--fs-sm); color: var(--ink-2); transition: color var(--t-fast); }
+  .foot-grid a:hover { color: var(--brand-strong); }
+  .foot-note { color: var(--muted); font-size: var(--fs-sm); margin-top: .8rem; max-width: 34ch; }
+  .foot-bottom { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: center; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--line); color: var(--muted); font-size: var(--fs-sm); }
+
+  @media (min-width: 860px) { .nav-links { display: flex; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+    .card:hover, .btn-primary:hover, .btn-accent:hover { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap nav">
+    <a class="brand" href="#" aria-label="Northbeam home">
+      <span class="logo" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v5h-5"/></svg>
+      </span>
+      Northbeam
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="#features">Features</a>
+      <a href="#workflow">Workflow</a>
+      <a href="#compare">Compare</a>
+      <a href="#solutions">Solutions</a>
+    </nav>
+    <div class="nav-cta">
+      <a class="btn btn-ghost" href="#">Sign in</a>
+      <a class="btn btn-accent" href="#cta">Start free trial</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- HERO -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap">
+      <div class="hero-grid">
+        <div>
+          <span class="eyebrow">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg>
+            Operations platform for scaling teams
+          </span>
+          <h1 id="hero-title">One platform to run <span class="grad">every part of your operation</span></h1>
+          <p class="lede">Northbeam unifies analytics, automation, billing, and team workflows so your B2B business moves faster without stitching together a dozen tools.</p>
+          <div class="hero-actions">
+            <a class="btn btn-accent btn-lg" href="#cta">Start free trial
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+            </a>
+            <a class="btn btn-ghost btn-lg" href="#workflow">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5v14l11-7z"/></svg>
+              Watch product tour
+            </a>
+          </div>
+          <div class="hero-meta">
+            <div class="stat"><b>4,200+</b> teams onboarded</div>
+            <div class="stat"><b>99.98%</b> uptime SLA</div>
+            <div class="stat"><b>SOC 2</b> Type II certified</div>
+          </div>
+        </div>
+
+        <div class="panel" role="img" aria-label="Product dashboard preview showing revenue metrics and a weekly activity chart">
+          <div class="panel-top" aria-hidden="true">
+            <span class="dot" style="background:#f87171"></span>
+            <span class="dot" style="background:#fbbf24"></span>
+            <span class="dot" style="background:#34d399"></span>
+            <span style="margin-left:.75rem;font-size:var(--fs-xs);color:var(--muted);font-weight:600">app.northbeam.io / overview</span>
+          </div>
+          <div class="panel-body">
+            <div class="mini-cards">
+              <div class="mini"><div class="lbl">MRR</div><div class="val">$182k</div><div class="up">+12.4%</div></div>
+              <div class="mini"><div class="lbl">Active</div><div class="val">9,841</div><div class="up">+3.1%</div></div>
+              <div class="mini"><div class="lbl">Churn</div><div class="val">1.2%</div><div class="up">-0.4%</div></div>
+            </div>
+            <div class="chartbox">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+                <strong style="font-size:var(--fs-sm)">Weekly activity</strong>
+                <span style="font-size:var(--fs-xs);color:var(--muted)">Last 7 days</span>
+              </div>
+              <div class="bars" aria-hidden="true">
+                <span class="bar" style="height:48%;animation-delay:.02s"></span>
+                <span class="bar" style="height:66%;animation-delay:.08s"></span>
+                <span class="bar" style="height:40%;animation-delay:.14s"></span>
+                <span class="bar" style="height:82%;animation-delay:.2s"></span>
+                <span class="bar" style="height:58%;animation-delay:.26s"></span>
+                <span class="bar" style="height:94%;animation-delay:.32s"></span>
+                <span class="bar" style="height:72%;animation-delay:.38s"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="logos">
+        <p>Trusted by operations teams at</p>
+        <div class="logo-row" aria-label="Customer logos">
+          <svg viewBox="0 0 120 24" role="img" aria-label="Quantio"><text x="0" y="18" font-family="Plus Jakarta Sans" font-size="18" font-weight="800" fill="currentColor">Quantio</text></svg>
+          <svg viewBox="0 0 110 24" role="img" aria-label="Helmsford"><text x="0" y="18" font-family="Plus Jakarta Sans" font-size="18" font-weight="800" fill="currentColor">Helmsford</text></svg>
+          <svg viewBox="0 0 90 24" role="img" aria-label="Vectra"><text x="0" y="18" font-family="Plus Jakarta Sans" font-size="18" font-weight="800" fill="currentColor">Vectra</text></svg>
+          <svg viewBox="0 0 100 24" role="img" aria-label="Northpeak"><text x="0" y="18" font-family="Plus Jakarta Sans" font-size="18" font-weight="800" fill="currentColor">Northpeak</text></svg>
+          <svg viewBox="0 0 80 24" role="img" aria-label="Loop"><text x="0" y="18" font-family="Plus Jakarta Sans" font-size="18" font-weight="800" fill="currentColor">Loop</text></svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURE GRID -->
+  <section id="features" aria-labelledby="features-title">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Everything in one place</span>
+        <h2 id="features-title">A complete toolkit for modern operations</h2>
+        <p>Six tightly integrated modules replace the patchwork of disconnected tools your team is paying for today.</p>
+      </div>
+
+      <div class="feature-grid">
+        <article class="card cat-feature">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg></div>
+          <h3>Real-time analytics</h3>
+          <p>Live dashboards across revenue, usage, and retention with drill-downs your whole company can read.</p>
+          <span class="tag">Reporting &rarr;</span>
+        </article>
+
+        <article class="card cat-info">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.9 4.9l2.8 2.8"/><path d="M16.3 16.3l2.8 2.8"/><path d="M2 12h4"/><path d="M18 12h4"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <h3>Workflow automation</h3>
+          <p>Trigger multi-step actions across teams with a visual builder. No engineering tickets required.</p>
+          <span class="tag">Automation &rarr;</span>
+        </article>
+
+        <article class="card cat-benefit">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/></svg></div>
+          <h3>Billing &amp; invoicing</h3>
+          <p>Usage-based pricing, dunning, and tax handling built in, with payouts reconciled automatically.</p>
+          <span class="tag">Revenue &rarr;</span>
+        </article>
+
+        <article class="card cat-brand">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <h3>Team collaboration</h3>
+          <p>Shared inboxes, granular roles, and audit logs keep every department aligned and accountable.</p>
+          <span class="tag">Teamwork &rarr;</span>
+        </article>
+
+        <article class="card cat-accent">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+          <h3>Security &amp; compliance</h3>
+          <p>SSO, SCIM, encryption at rest, and SOC 2 controls so your data passes any procurement review.</p>
+          <span class="tag">Trust &rarr;</span>
+        </article>
+
+        <article class="card cat-info">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 18l6-6-6-6"/><path d="M8 6l-6 6 6 6"/><path d="M14 4l-4 16"/></svg></div>
+          <h3>Open API &amp; webhooks</h3>
+          <p>A documented REST API, webhooks, and native connectors integrate Northbeam with your stack.</p>
+          <span class="tag">Developers &rarr;</span>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROBLEM / SOLUTION -->
+  <section id="solutions" class="section-alt" aria-labelledby="ps-title">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">From chaos to clarity</span>
+        <h2 id="ps-title">Stop paying for tools that don't talk to each other</h2>
+        <p>Fragmented operations cost teams hours every week. Northbeam closes the gaps with one connected system.</p>
+      </div>
+
+      <div class="ps-grid">
+        <div class="ps problem">
+          <h3><span class="ps-pill">The problem</span> Tool sprawl slows you down</h3>
+          <ul>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg> Data scattered across 8+ disconnected apps</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg> Manual exports and brittle spreadsheets</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg> No single source of truth for leadership</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg> Surprise renewal bills across vendors</li>
+          </ul>
+        </div>
+        <div class="ps solution">
+          <h3><span class="ps-pill">The solution</span> Everything connected by default</h3>
+          <ul>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Unified data model shared across modules</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Automations replace repetitive manual work</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> One live dashboard for the whole org</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> One predictable bill, fully transparent</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INTERACTIVE FEATURE TOGGLE -->
+  <section id="workflow" aria-labelledby="demo-title">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">See it in action</span>
+        <h2 id="demo-title">One workflow, every module working together</h2>
+        <p>Select a stage to see how Northbeam moves work forward automatically.</p>
+      </div>
+
+      <div class="demo">
+        <div class="tabs" role="tablist" aria-label="Workflow stages">
+          <button class="tab cat-feature" role="tab" id="tab-1" aria-selected="true" aria-controls="pane-1" data-tab="1">
+            <span class="ic-sm" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg></span>
+            <span><b>Capture</b><span>Ingest events &amp; usage in real time</span></span>
+          </button>
+          <button class="tab cat-info" role="tab" id="tab-2" aria-selected="false" aria-controls="pane-2" data-tab="2">
+            <span class="ic-sm" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4"/></svg></span>
+            <span><b>Automate</b><span>Route and trigger across teams</span></span>
+          </button>
+          <button class="tab cat-benefit" role="tab" id="tab-3" aria-selected="false" aria-controls="pane-3" data-tab="3">
+            <span class="ic-sm" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg></span>
+            <span><b>Bill</b><span>Reconcile revenue automatically</span></span>
+          </button>
+        </div>
+
+        <div class="demo-stage">
+          <div class="demo-pane active" id="pane-1" role="tabpanel" aria-labelledby="tab-1">
+            <h4>Capture every signal</h4>
+            <p>Northbeam streams product events, billing usage, and support touchpoints into one timeline per account, with no nightly batch jobs.</p>
+            <div class="kv">
+              <div class="box"><small>Events / sec</small><b>12,400</b></div>
+              <div class="box"><small>Sources</small><b>9</b></div>
+              <div class="box"><small>Latency</small><b>240ms</b></div>
+            </div>
+            <div class="progress" aria-hidden="true"><i style="width:88%"></i></div>
+          </div>
+          <div class="demo-pane" id="pane-2" role="tabpanel" aria-labelledby="tab-2" hidden>
+            <h4>Automate the busywork</h4>
+            <p>Build branching workflows that assign owners, notify the right channel, and update records the moment a threshold is crossed.</p>
+            <div class="kv">
+              <div class="box"><small>Active flows</small><b>146</b></div>
+              <div class="box"><small>Hours saved/wk</small><b>38</b></div>
+              <div class="box"><small>Success rate</small><b>99.6%</b></div>
+            </div>
+            <div class="progress" aria-hidden="true"><i style="width:96%"></i></div>
+          </div>
+          <div class="demo-pane" id="pane-3" role="tabpanel" aria-labelledby="tab-3" hidden>
+            <h4>Bill without leakage</h4>
+            <p>Usage rolls straight into invoices with tax, proration, and dunning handled, then reconciles to your ledger automatically.</p>
+            <div class="kv">
+              <div class="box"><small>Collected</small><b>$182k</b></div>
+              <div class="box"><small>Failed retries</small><b>2.1%</b></div>
+              <div class="box"><small>Reconciled</small><b>100%</b></div>
+            </div>
+            <div class="progress" aria-hidden="true"><i style="width:100%"></i></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMPARISON TABLE -->
+  <section id="compare" class="section-alt" aria-labelledby="cmp-title">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Why teams switch</span>
+        <h2 id="cmp-title">Northbeam vs. the stitched-together stack</h2>
+        <p>What you get in one platform versus assembling point tools yourself.</p>
+      </div>
+
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Capability</th>
+              <th scope="col" class="center us">Northbeam</th>
+              <th scope="col" class="center">Point tools</th>
+              <th scope="col" class="center">Spreadsheets</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="feat-name">Unified data model</td>
+              <td class="center yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></td>
+              <td class="center no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></td>
+              <td class="center no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></td>
+            </tr>
+            <tr>
+              <td class="feat-name">Real-time dashboards</td>
+              <td class="center yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></td>
+              <td class="center yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></td>
+              <td class="center no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></td>
+            </tr>
+            <tr>
+              <td class="feat-name">No-code automation</td>
+              <td class="center yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></td>
+              <td class="center no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></td>
+              <td class="center no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></td>
+            </tr>
+            <tr>
+              <td class="feat-name">SOC 2 &amp; SSO</td>
+              <td class="center yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></td>
+              <td class="center yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></td>
+              <td class="center no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></td>
+            </tr>
+            <tr>
+              <td class="feat-name">Single predictable bill</td>
+              <td class="center yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></td>
+              <td class="center no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></td>
+              <td class="center yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section id="cta" class="cta">
+    <div class="wrap">
+      <div class="cta-card">
+        <h2>Run your whole operation on one platform</h2>
+        <p>Start a 14-day trial, no credit card required. Bring your team and connect your first data source in minutes.</p>
+        <div class="cta-actions">
+          <a class="btn btn-accent btn-lg" href="#">Start free trial
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+          </a>
+          <a class="btn btn-ghost btn-lg" href="#">Talk to sales</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <a class="brand" href="#" aria-label="Northbeam home">
+          <span class="logo" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v5h-5"/></svg>
+          </span>
+          Northbeam
+        </a>
+        <p class="foot-note">The connected operations platform for B2B teams that have outgrown their tool stack.</p>
+      </div>
+      <div>
+        <h5>Product</h5>
+        <ul><li><a href="#features">Features</a></li><li><a href="#workflow">Workflow</a></li><li><a href="#compare">Compare</a></li><li><a href="#">Pricing</a></li></ul>
+      </div>
+      <div>
+        <h5>Company</h5>
+        <ul><li><a href="#">About</a></li><li><a href="#">Customers</a></li><li><a href="#">Careers</a></li><li><a href="#">Blog</a></li></ul>
+      </div>
+      <div>
+        <h5>Resources</h5>
+        <ul><li><a href="#">Documentation</a></li><li><a href="#">API reference</a></li><li><a href="#">Status</a></li><li><a href="#">Security</a></li></ul>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>&copy; 2026 Northbeam, Inc.</span>
+      <span>SOC 2 Type II &middot; GDPR &middot; 99.98% uptime</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var tabs = document.querySelectorAll('.tab[role="tab"]');
+    var panes = document.querySelectorAll('.demo-pane');
+    function select(id) {
+      tabs.forEach(function (t) { t.setAttribute('aria-selected', t.dataset.tab === id ? 'true' : 'false'); });
+      panes.forEach(function (p) {
+        var on = p.id === 'pane-' + id;
+        p.classList.toggle('active', on);
+        if (on) { p.removeAttribute('hidden'); } else { p.setAttribute('hidden', ''); }
+      });
+    }
+    tabs.forEach(function (t) {
+      t.addEventListener('click', function () { select(t.dataset.tab); });
+      t.addEventListener('keydown', function (e) {
+        var list = Array.prototype.slice.call(tabs);
+        var i = list.indexOf(t);
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); var n = list[(i + 1) % list.length]; n.focus(); select(n.dataset.tab); }
+        if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); var p = list[(i - 1 + list.length) % list.length]; p.focus(); select(p.dataset.tab); }
+      });
+    });
+  })();
+</script>
+</body>
+</html>

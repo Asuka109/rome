@@ -1,0 +1,63 @@
+{
+  "name": "@rome-os/libs",
+  "version": "0.0.2",
+  "description": "Shared runtime primitives used by Rome services",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    "./net": {
+      "types": "./dist/net/index.d.ts",
+      "default": "./dist/net/index.js"
+    },
+    "./pkce": {
+      "types": "./dist/pkce/index.d.ts",
+      "default": "./dist/pkce/index.js"
+    },
+    "./oidc": {
+      "types": "./dist/oidc/index.d.ts",
+      "default": "./dist/oidc/index.js"
+    },
+    "./logger": {
+      "types": "./dist/logger.d.ts",
+      "default": "./dist/logger.js"
+    },
+    "./feature-flags": {
+      "types": "./dist/feature-flags/index.d.ts",
+      "default": "./dist/feature-flags/index.js"
+    },
+    "./feature-flags/statsig": {
+      "types": "./dist/feature-flags/statsig.d.ts",
+      "default": "./dist/feature-flags/statsig.js"
+    },
+    "./feature-flags/env-overrides": {
+      "types": "./dist/feature-flags/env-overrides.d.ts",
+      "default": "./dist/feature-flags/env-overrides.js"
+    },
+    "./feature-flags/testing": {
+      "types": "./dist/feature-flags/testing.d.ts",
+      "default": "./dist/feature-flags/testing.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepare": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "../../scripts/test-env.sh vitest run"
+  },
+  "dependencies": {
+    "@statsig/statsig-node-core": "^0.19.6",
+    "jsonwebtoken": "^9.0.3"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.1"
+  }
+}

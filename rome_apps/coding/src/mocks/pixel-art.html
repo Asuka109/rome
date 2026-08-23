@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PIXELQUEST ARCADE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
+<style>
+  /* ============ DESIGN TOKENS ============ */
+  :root {
+    /* NES-inspired limited palette */
+    --c-bg:        #1a1c2c;  /* deep night blue */
+    --c-bg-2:      #25294a;  /* panel base */
+    --c-ink:       #0b0c18;  /* black outline */
+    --c-white:     #f4f4f8;
+    --c-muted:     #8b9bb4;
+    --c-red:       #ef476f;
+    --c-orange:    #ffa630;
+    --c-yellow:    #ffd23f;
+    --c-green:     #2ee676;
+    --c-cyan:      #41ead4;
+    --c-blue:      #4d8bff;
+    --c-purple:    #b14aed;
+    --c-pink:      #ec4899;
+    --c-panel:     #2c2f5a;
+    --c-panel-hi:  #3a3e74;
+
+    /* Pixel grid */
+    --pixel:       4px;
+    --gap:         calc(var(--pixel) * 4);   /* 16px */
+    --gap-sm:      calc(var(--pixel) * 2);    /* 8px */
+    --gap-lg:      calc(var(--pixel) * 6);    /* 24px */
+
+    /* No rounding in pixel art */
+    --radius:      0px;
+
+    /* Pixel "shadow" borders (hard, no blur) */
+    --border:      var(--pixel) solid var(--c-ink);
+    --shadow-pix:  4px 4px 0 0 var(--c-ink);
+    --shadow-pix-lg: 6px 6px 0 0 var(--c-ink);
+    --shadow-inset: inset 0 0 0 var(--pixel) rgba(255,255,255,0.08);
+
+    /* Type scale */
+    --font-pixel:  'Press Start 2P', monospace;
+    --font-term:   'VT323', 'Courier New', monospace;
+    --fs-hero:     clamp(20px, 5vw, 34px);
+    --fs-h2:       clamp(12px, 2.4vw, 16px);
+    --fs-label:    10px;
+    --fs-body:     clamp(18px, 2.6vw, 22px);
+
+    /* Motion */
+    --t-instant:   0ms;
+    --t-snap:      80ms steps(2, end);
+    --t-blink:     1s steps(2, start) infinite;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { background: var(--c-bg); }
+
+  body {
+    font-family: var(--font-term);
+    color: var(--c-white);
+    font-size: var(--fs-body);
+    line-height: 1.4;
+    image-rendering: pixelated;
+    -webkit-font-smoothing: none;
+    min-height: 100vh;
+    overflow-x: hidden;
+    /* Tiled pixel grid background */
+    background-color: var(--c-bg);
+    background-image:
+      linear-gradient(rgba(77,139,255,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(77,139,255,0.06) 1px, transparent 1px);
+    background-size: 16px 16px, 16px 16px;
+  }
+
+  /* Scanline overlay */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(0,0,0,0.18) 3px,
+      rgba(0,0,0,0) 4px
+    );
+    z-index: 50;
+    mix-blend-mode: multiply;
+    animation: scan 8s linear infinite;
+  }
+  @keyframes scan { from { background-position-y: 0; } to { background-position-y: 64px; } }
+
+  .pixel-font { font-family: var(--font-pixel); line-height: 1.6; }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: var(--gap); }
+
+  /* ============ HEADER ============ */
+  header.topbar {
+    border-bottom: var(--pixel) solid var(--c-ink);
+    background: var(--c-bg-2);
+    box-shadow: 0 4px 0 0 rgba(0,0,0,0.4);
+    position: relative;
+    z-index: 10;
+  }
+  .topbar-inner {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: var(--gap-sm) var(--gap);
+    display: flex;
+    align-items: center;
+    gap: var(--gap);
+    flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: var(--gap-sm); }
+  .brand-logo {
+    width: 40px; height: 40px;
+    display: block;
+    image-rendering: pixelated;
+    flex-shrink: 0;
+  }
+  .brand-name {
+    font-family: var(--font-pixel);
+    font-size: 13px;
+    color: var(--c-yellow);
+    text-shadow: 2px 2px 0 var(--c-ink), -1px 0 0 var(--c-red);
+    letter-spacing: 1px;
+  }
+
+  nav.mainnav { margin-left: auto; }
+  nav.mainnav ul { list-style: none; display: flex; gap: var(--gap-sm); flex-wrap: wrap; }
+  nav.mainnav a {
+    font-family: var(--font-pixel);
+    font-size: var(--fs-label);
+    color: var(--c-cyan);
+    text-decoration: none;
+    padding: var(--gap-sm) calc(var(--pixel) * 2.5);
+    border: var(--pixel) solid transparent;
+    display: inline-block;
+    transition: background var(--t-snap), color var(--t-snap);
+  }
+  nav.mainnav a:hover { background: var(--c-cyan); color: var(--c-ink); }
+  nav.mainnav a[aria-current="page"] {
+    color: var(--c-yellow);
+    border-color: var(--c-yellow);
+  }
+  nav.mainnav a:focus-visible {
+    outline: var(--pixel) solid var(--c-pink);
+    outline-offset: 2px;
+  }
+
+  .coins {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--font-pixel);
+    font-size: var(--fs-label);
+    color: var(--c-yellow);
+  }
+  .coins svg { width: 18px; height: 18px; display: block; }
+
+  /* ============ HERO ============ */
+  .hero {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: var(--gap-lg);
+    align-items: stretch;
+    margin-top: var(--gap-lg);
+  }
+  @media (max-width: 760px) {
+    .hero { grid-template-columns: 1fr; }
+  }
+
+  .hero-card {
+    background: var(--c-panel);
+    border: var(--pixel) solid var(--c-ink);
+    box-shadow: var(--shadow-pix-lg);
+    padding: var(--gap-lg);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-card::before {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 80% 18%, rgba(177,74,237,0.35), transparent 45%),
+      radial-gradient(circle at 12% 88%, rgba(65,234,212,0.25), transparent 40%);
+    pointer-events: none;
+  }
+  .hero-tag {
+    display: inline-block;
+    font-family: var(--font-pixel);
+    font-size: var(--fs-label);
+    color: var(--c-ink);
+    background: var(--c-green);
+    padding: 6px 8px;
+    box-shadow: var(--shadow-pix);
+    position: relative;
+  }
+  .hero-title {
+    font-family: var(--font-pixel);
+    font-size: var(--fs-hero);
+    line-height: 1.5;
+    margin: var(--gap) 0 var(--gap-sm);
+    color: var(--c-white);
+    text-shadow: 3px 3px 0 var(--c-ink), 6px 6px 0 var(--c-red);
+    position: relative;
+  }
+  .hero-sub {
+    font-size: var(--fs-body);
+    color: var(--c-muted);
+    max-width: 46ch;
+    position: relative;
+    margin-bottom: var(--gap-lg);
+  }
+  .hero-meta {
+    display: flex; gap: var(--gap); flex-wrap: wrap;
+    position: relative;
+    margin-bottom: var(--gap-lg);
+  }
+  .meta-chip {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--font-pixel);
+    font-size: var(--fs-label);
+    color: var(--c-cyan);
+  }
+  .meta-chip svg { width: 16px; height: 16px; }
+
+  .cta-row { display: flex; gap: var(--gap); flex-wrap: wrap; position: relative; }
+
+  .btn {
+    font-family: var(--font-pixel);
+    font-size: 11px;
+    border: var(--pixel) solid var(--c-ink);
+    padding: 14px 18px;
+    cursor: pointer;
+    color: var(--c-ink);
+    background: var(--c-yellow);
+    box-shadow: var(--shadow-pix);
+    transition: transform var(--t-snap), box-shadow var(--t-snap), background var(--t-snap);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    line-height: 1;
+  }
+  .btn svg { width: 14px; height: 14px; }
+  .btn:hover { background: var(--c-white); }
+  .btn:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0 0 0 0 var(--c-ink);
+  }
+  .btn:focus-visible { outline: var(--pixel) solid var(--c-pink); outline-offset: 3px; }
+  .btn-primary { background: var(--c-green); }
+  .btn-primary:hover { background: var(--c-cyan); }
+  .btn-ghost {
+    background: var(--c-panel-hi);
+    color: var(--c-white);
+  }
+  .btn-ghost:hover { background: var(--c-blue); color: var(--c-ink); }
+
+  /* Hero sprite preview screen */
+  .preview {
+    background: var(--c-ink);
+    border: var(--pixel) solid var(--c-ink);
+    box-shadow: var(--shadow-pix-lg);
+    padding: var(--gap-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-sm);
+  }
+  .preview-screen {
+    background: #0f1024;
+    border: var(--pixel) solid #000;
+    aspect-ratio: 4 / 3;
+    position: relative;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    box-shadow: var(--shadow-inset);
+  }
+  .preview-screen svg { width: 100%; height: 100%; display: block; }
+  .preview-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: var(--font-pixel);
+    font-size: 8px;
+    color: var(--c-green);
+    padding: 4px 6px;
+  }
+  .blink { animation: var(--t-blink); }
+  @keyframes blink-kf { 50% { opacity: 0; } }
+  .blink { animation: blink-kf 1s steps(1) infinite; }
+
+  /* Floating sprite animation (frame steps) */
+  .float-sprite { animation: bob 0.9s steps(2, end) infinite; }
+  @keyframes bob { 50% { transform: translateY(-6px); } }
+
+  /* ============ SECTION HEADERS ============ */
+  .section { margin-top: calc(var(--gap-lg) * 1.6); }
+  .section-head {
+    display: flex; align-items: center; gap: var(--gap-sm);
+    margin-bottom: var(--gap);
+    flex-wrap: wrap;
+  }
+  .section-head h2 {
+    font-family: var(--font-pixel);
+    font-size: var(--fs-h2);
+    color: var(--c-white);
+    text-shadow: 2px 2px 0 var(--c-ink);
+  }
+  .section-head .accent { color: var(--c-orange); }
+  .section-line {
+    flex: 1;
+    height: var(--pixel);
+    background: repeating-linear-gradient(90deg, var(--c-panel-hi) 0 8px, transparent 8px 16px);
+    min-width: 40px;
+  }
+  .view-all {
+    font-family: var(--font-pixel);
+    font-size: var(--fs-label);
+    color: var(--c-cyan);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+  }
+  .view-all:hover { border-color: var(--c-cyan); }
+  .view-all:focus-visible { outline: var(--pixel) solid var(--c-pink); outline-offset: 2px; }
+
+  /* ============ GAME GRID ============ */
+  .game-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--gap);
+  }
+  .game-card {
+    background: var(--c-panel);
+    border: var(--pixel) solid var(--c-ink);
+    box-shadow: var(--shadow-pix);
+    overflow: hidden;
+    transition: transform var(--t-snap), box-shadow var(--t-snap);
+    display: flex;
+    flex-direction: column;
+  }
+  .game-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 0 var(--c-ink);
+  }
+  .game-art {
+    aspect-ratio: 16 / 10;
+    position: relative;
+    border-bottom: var(--pixel) solid var(--c-ink);
+    overflow: hidden;
+  }
+  .game-art svg { width: 100%; height: 100%; display: block; }
+  .game-badge {
+    position: absolute;
+    top: 6px; left: 6px;
+    font-family: var(--font-pixel);
+    font-size: 8px;
+    padding: 4px 5px;
+    color: var(--c-ink);
+    background: var(--c-yellow);
+    box-shadow: 2px 2px 0 var(--c-ink);
+  }
+  .game-badge.hot { background: var(--c-red); color: var(--c-white); }
+  .game-badge.new { background: var(--c-green); }
+  .game-body { padding: var(--gap-sm) 12px 12px; flex: 1; display: flex; flex-direction: column; }
+  .game-title {
+    font-family: var(--font-pixel);
+    font-size: var(--fs-label);
+    color: var(--c-white);
+    line-height: 1.5;
+    margin-bottom: 4px;
+  }
+  .game-genre { font-size: 18px; color: var(--c-muted); }
+  .game-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: var(--gap-sm);
+    padding-top: var(--gap-sm);
+    border-top: 2px dashed var(--c-panel-hi);
+  }
+  .stars { display: flex; gap: 2px; }
+  .stars svg { width: 14px; height: 14px; }
+  .price {
+    font-family: var(--font-pixel);
+    font-size: 9px;
+    color: var(--c-green);
+  }
+  .price.free { color: var(--c-cyan); }
+
+  /* ============ STATS / SIDEBAR LAYOUT ============ */
+  .lower {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--gap-lg);
+    margin-top: calc(var(--gap-lg) * 1.6);
+    align-items: start;
+  }
+  @media (max-width: 860px) {
+    .lower { grid-template-columns: 1fr; }
+  }
+
+  .leaderboard {
+    background: var(--c-panel);
+    border: var(--pixel) solid var(--c-ink);
+    box-shadow: var(--shadow-pix);
+  }
+  .lb-head {
+    background: var(--c-purple);
+    padding: 12px var(--gap);
+    font-family: var(--font-pixel);
+    font-size: 11px;
+    color: var(--c-white);
+    text-shadow: 2px 2px 0 var(--c-ink);
+    border-bottom: var(--pixel) solid var(--c-ink);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .lb-head svg { width: 18px; height: 18px; }
+  .lb-row {
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 12px var(--gap);
+    border-bottom: 2px solid rgba(0,0,0,0.3);
+  }
+  .lb-row:last-child { border-bottom: 0; }
+  .lb-row:nth-child(even) { background: rgba(255,255,255,0.03); }
+  .lb-rank {
+    font-family: var(--font-pixel);
+    font-size: var(--fs-label);
+    text-align: center;
+    color: var(--c-muted);
+  }
+  .lb-row:nth-child(2) .lb-rank { color: var(--c-yellow); }
+  .lb-row:nth-child(3) .lb-rank { color: #c0c8d8; }
+  .lb-row:nth-child(4) .lb-rank { color: var(--c-orange); }
+  .lb-player { display: flex; align-items: center; gap: 10px; }
+  .lb-avatar {
+    width: 28px; height: 28px;
+    border: 2px solid var(--c-ink);
+    image-rendering: pixelated;
+    flex-shrink: 0;
+  }
+  .lb-name { font-size: 20px; color: var(--c-white); }
+  .lb-score { font-family: var(--font-pixel); font-size: var(--fs-label); color: var(--c-green); }
+
+  .stat-stack { display: flex; flex-direction: column; gap: var(--gap); }
+  .stat-card {
+    background: var(--c-panel);
+    border: var(--pixel) solid var(--c-ink);
+    box-shadow: var(--shadow-pix);
+    padding: var(--gap);
+  }
+  .stat-card .label {
+    font-family: var(--font-pixel);
+    font-size: 8px;
+    color: var(--c-muted);
+    letter-spacing: 1px;
+  }
+  .stat-card .value {
+    font-family: var(--font-pixel);
+    font-size: 20px;
+    color: var(--c-yellow);
+    margin: 10px 0 8px;
+    text-shadow: 2px 2px 0 var(--c-ink);
+  }
+  .stat-card .value.cyan { color: var(--c-cyan); }
+  .stat-card .value.green { color: var(--c-green); }
+  /* Pixel progress bar */
+  .pbar {
+    height: 16px;
+    background: var(--c-ink);
+    border: 2px solid var(--c-ink);
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    overflow: hidden;
+  }
+  .pbar i {
+    flex: 1;
+    background: var(--c-panel-hi);
+  }
+  .pbar i.on { background: var(--c-green); }
+  .pbar i.on.warm { background: var(--c-orange); }
+  .stat-card .sub { font-size: 18px; color: var(--c-muted); margin-top: 8px; }
+
+  /* ============ FOOTER ============ */
+  footer.foot {
+    margin-top: calc(var(--gap-lg) * 1.8);
+    border-top: var(--pixel) solid var(--c-ink);
+    background: var(--c-bg-2);
+    padding: var(--gap-lg) var(--gap);
+  }
+  .foot-inner {
+    max-width: 1180px; margin: 0 auto;
+    display: flex; justify-content: space-between; align-items: center;
+    gap: var(--gap); flex-wrap: wrap;
+  }
+  .foot-credit {
+    font-family: var(--font-pixel);
+    font-size: var(--fs-label);
+    color: var(--c-muted);
+  }
+  .foot-credit b { color: var(--c-yellow); }
+  .foot-links { display: flex; gap: var(--gap-sm); }
+  .foot-links a {
+    width: 36px; height: 36px;
+    display: grid; place-items: center;
+    border: var(--pixel) solid var(--c-ink);
+    background: var(--c-panel);
+    box-shadow: 2px 2px 0 var(--c-ink);
+    color: var(--c-cyan);
+    transition: background var(--t-snap), transform var(--t-snap);
+  }
+  .foot-links a:hover { background: var(--c-cyan); color: var(--c-ink); }
+  .foot-links a:active { transform: translate(2px,2px); box-shadow: 0 0 0 0 var(--c-ink); }
+  .foot-links a:focus-visible { outline: var(--pixel) solid var(--c-pink); outline-offset: 2px; }
+  .foot-links svg { width: 18px; height: 18px; }
+
+  .visually-hidden {
+    position: absolute; width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0,0,0,0); border: 0;
+  }
+
+  /* ============ REDUCED MOTION ============ */
+  @media (prefers-reduced-motion: reduce) {
+    body::after { animation: none; }
+    .blink, .float-sprite { animation: none; }
+    * { transition-duration: 0ms !important; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- ============ HEADER ============ -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <svg class="brand-logo" viewBox="0 0 10 10" shape-rendering="crispEdges" role="img" aria-label="PixelQuest logo">
+          <rect width="10" height="10" fill="#0b0c18"/>
+          <rect x="3" y="1" width="4" height="1" fill="#2ee676"/>
+          <rect x="2" y="2" width="6" height="1" fill="#2ee676"/>
+          <rect x="2" y="3" width="2" height="1" fill="#f4f4f8"/>
+          <rect x="4" y="3" width="2" height="1" fill="#2ee676"/>
+          <rect x="6" y="3" width="2" height="1" fill="#f4f4f8"/>
+          <rect x="2" y="4" width="6" height="2" fill="#2ee676"/>
+          <rect x="3" y="6" width="1" height="1" fill="#0b0c18"/>
+          <rect x="6" y="6" width="1" height="1" fill="#0b0c18"/>
+          <rect x="2" y="7" width="2" height="1" fill="#ffa630"/>
+          <rect x="6" y="7" width="2" height="1" fill="#ffa630"/>
+        </svg>
+        <span class="brand-name">PIXELQUEST</span>
+      </div>
+
+      <nav class="mainnav" aria-label="Primary">
+        <ul>
+          <li><a href="#arcade" aria-current="page">ARCADE</a></li>
+          <li><a href="#library">LIBRARY</a></li>
+          <li><a href="#scores">SCORES</a></li>
+          <li><a href="#shop">SHOP</a></li>
+        </ul>
+      </nav>
+
+      <div class="coins" aria-label="42 credits available">
+        <svg viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true">
+          <rect x="2" y="0" width="4" height="1" fill="#ffd23f"/>
+          <rect x="1" y="1" width="6" height="1" fill="#ffd23f"/>
+          <rect x="0" y="2" width="8" height="4" fill="#ffd23f"/>
+          <rect x="1" y="6" width="6" height="1" fill="#ffd23f"/>
+          <rect x="2" y="7" width="4" height="1" fill="#ffd23f"/>
+          <rect x="3" y="2" width="2" height="4" fill="#ffa630"/>
+        </svg>
+        <span>42</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap" id="arcade">
+
+    <!-- ============ HERO ============ -->
+    <section class="hero" aria-label="Featured game">
+      <div class="hero-card">
+        <span class="hero-tag">FEATURED DROP</span>
+        <h1 class="hero-title">CRYPT<br>RAIDERS II</h1>
+        <p class="hero-sub">Descend into a procedurally generated dungeon, smash blocks, collect loot and battle the 8-bit Lich King across 16 hand-drawn levels.</p>
+
+        <div class="hero-meta">
+          <span class="meta-chip">
+            <svg viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><rect x="3" y="0" width="2" height="2" fill="#41ead4"/><rect x="1" y="2" width="6" height="2" fill="#41ead4"/><rect x="0" y="4" width="8" height="2" fill="#41ead4"/><rect x="1" y="6" width="2" height="2" fill="#41ead4"/><rect x="5" y="6" width="2" height="2" fill="#41ead4"/></svg>
+            CO-OP x4
+          </span>
+          <span class="meta-chip">
+            <svg viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="3" width="8" height="2" fill="#ffd23f"/><rect x="3" y="0" width="2" height="8" fill="#ffd23f"/></svg>
+            16 LEVELS
+          </span>
+          <span class="meta-chip">
+            <svg viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="1" width="6" height="6" fill="none"/><rect x="2" y="2" width="4" height="4" fill="#ec4899"/><rect x="0" y="0" width="2" height="2" fill="#ec4899"/><rect x="6" y="0" width="2" height="2" fill="#ec4899"/><rect x="0" y="6" width="2" height="2" fill="#ec4899"/><rect x="6" y="6" width="2" height="2" fill="#ec4899"/></svg>
+            PVP RANKED
+          </span>
+        </div>
+
+        <div class="cta-row">
+          <a href="#play" class="btn btn-primary">
+            <svg viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><rect x="2" y="1" width="1" height="6" fill="#0b0c18"/><rect x="3" y="2" width="1" height="4" fill="#0b0c18"/><rect x="4" y="3" width="1" height="2" fill="#0b0c18"/></svg>
+            PLAY NOW
+          </a>
+          <a href="#wishlist" class="btn btn-ghost">
+            <svg viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="1" width="2" height="2" fill="#ffd23f"/><rect x="5" y="1" width="2" height="2" fill="#ffd23f"/><rect x="0" y="2" width="8" height="2" fill="#ffd23f"/><rect x="1" y="4" width="6" height="1" fill="#ffd23f"/><rect x="2" y="5" width="4" height="1" fill="#ffd23f"/><rect x="3" y="6" width="2" height="1" fill="#ffd23f"/></svg>
+            WISHLIST
+          </a>
+        </div>
+      </div>
+
+      <!-- Preview screen with animated sprite -->
+      <div class="preview">
+        <div class="preview-bar">
+          <span class="blink">&#9658; LIVE</span>
+          <span>WORLD 1-1</span>
+        </div>
+        <div class="preview-screen">
+          <svg viewBox="0 0 64 48" shape-rendering="crispEdges" role="img" aria-label="Pixel art game scene: a knight sprite on a dungeon platform under a moonlit sky">
+            <!-- sky -->
+            <rect width="64" height="48" fill="#0f1024"/>
+            <!-- stars -->
+            <rect x="6" y="5" width="1" height="1" fill="#f4f4f8"/>
+            <rect x="20" y="9" width="1" height="1" fill="#f4f4f8"/>
+            <rect x="40" y="4" width="1" height="1" fill="#ffd23f"/>
+            <rect x="55" y="11" width="1" height="1" fill="#f4f4f8"/>
+            <rect x="48" y="8" width="1" height="1" fill="#f4f4f8"/>
+            <!-- moon -->
+            <rect x="46" y="6" width="6" height="6" fill="#ffd23f"/>
+            <rect x="48" y="6" width="2" height="1" fill="#0f1024"/>
+            <rect x="46" y="8" width="1" height="2" fill="#0f1024"/>
+            <!-- distant towers -->
+            <rect x="2" y="20" width="8" height="16" fill="#25294a"/>
+            <rect x="4" y="16" width="4" height="4" fill="#25294a"/>
+            <rect x="54" y="22" width="9" height="14" fill="#25294a"/>
+            <!-- ground -->
+            <rect x="0" y="36" width="64" height="12" fill="#3a3e74"/>
+            <rect x="0" y="36" width="64" height="2" fill="#4d8bff"/>
+            <!-- bricks -->
+            <rect x="4" y="40" width="6" height="1" fill="#2c2f5a"/>
+            <rect x="14" y="40" width="6" height="1" fill="#2c2f5a"/>
+            <rect x="24" y="40" width="6" height="1" fill="#2c2f5a"/>
+            <rect x="34" y="40" width="6" height="1" fill="#2c2f5a"/>
+            <rect x="44" y="40" width="6" height="1" fill="#2c2f5a"/>
+            <rect x="54" y="40" width="6" height="1" fill="#2c2f5a"/>
+            <!-- floating coin -->
+            <g class="float-sprite">
+              <rect x="42" y="24" width="4" height="6" fill="#ffd23f"/>
+              <rect x="43" y="24" width="2" height="6" fill="#ffa630"/>
+            </g>
+            <!-- knight sprite -->
+            <g class="float-sprite">
+              <!-- helmet -->
+              <rect x="14" y="22" width="6" height="5" fill="#c0c8d8"/>
+              <rect x="14" y="24" width="2" height="2" fill="#41ead4"/>
+              <rect x="18" y="24" width="2" height="2" fill="#41ead4"/>
+              <rect x="13" y="21" width="2" height="2" fill="#ef476f"/>
+              <!-- body -->
+              <rect x="14" y="27" width="6" height="6" fill="#4d8bff"/>
+              <rect x="13" y="28" width="1" height="3" fill="#2ee676"/>
+              <!-- shield -->
+              <rect x="20" y="28" width="2" height="4" fill="#ffd23f"/>
+              <!-- legs -->
+              <rect x="14" y="33" width="2" height="3" fill="#2c2f5a"/>
+              <rect x="18" y="33" width="2" height="3" fill="#2c2f5a"/>
+            </g>
+          </svg>
+        </div>
+        <div class="preview-bar">
+          <span>SCORE 028450</span>
+          <span style="color:var(--c-red)">&#9829;&#9829;&#9829;</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ GAME GRID ============ -->
+    <section class="section" id="library" aria-labelledby="lib-h">
+      <div class="section-head">
+        <h2 id="lib-h">TRENDING <span class="accent">CARTRIDGES</span></h2>
+        <span class="section-line" aria-hidden="true"></span>
+        <a href="#all" class="view-all">VIEW ALL &#9654;</a>
+      </div>
+
+      <div class="game-grid">
+
+        <!-- Card 1 -->
+        <article class="game-card">
+          <div class="game-art">
+            <span class="game-badge hot">HOT</span>
+            <svg viewBox="0 0 64 40" shape-rendering="crispEdges" role="img" aria-label="Spaceship shooter cover art">
+              <rect width="64" height="40" fill="#1a1c2c"/>
+              <rect x="4" y="4" width="1" height="1" fill="#f4f4f8"/><rect x="22" y="9" width="1" height="1" fill="#f4f4f8"/><rect x="50" y="6" width="1" height="1" fill="#41ead4"/><rect x="38" y="14" width="1" height="1" fill="#f4f4f8"/>
+              <rect x="28" y="14" width="8" height="4" fill="#4d8bff"/>
+              <rect x="30" y="12" width="4" height="2" fill="#c0c8d8"/>
+              <rect x="26" y="18" width="2" height="3" fill="#ffa630"/>
+              <rect x="36" y="18" width="2" height="3" fill="#ffa630"/>
+              <rect x="31" y="6" width="2" height="6" fill="#2ee676"/>
+              <rect x="20" y="28" width="6" height="6" fill="#ef476f"/>
+              <rect x="44" y="30" width="5" height="5" fill="#b14aed"/>
+            </svg>
+          </div>
+          <div class="game-body">
+            <h3 class="game-title">VOID DRIFTER</h3>
+            <p class="game-genre">Arcade shoot 'em up</p>
+            <div class="game-foot">
+              <div class="stars" aria-label="Rated 5 of 5 stars">
+                <svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect x="3" y="0" width="2" height="8" fill="#ffd23f"/><rect x="0" y="3" width="8" height="2" fill="#ffd23f"/></svg>
+                <svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect x="3" y="0" width="2" height="8" fill="#ffd23f"/><rect x="0" y="3" width="8" height="2" fill="#ffd23f"/></svg>
+                <svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect x="3" y="0" width="2" height="8" fill="#ffd23f"/><rect x="0" y="3" width="8" height="2" fill="#ffd23f"/></svg>
+                <svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect x="3" y="0" width="2" height="8" fill="#ffd23f"/><rect x="0" y="3" width="8" height="2" fill="#ffd23f"/></svg>
+                <svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect x="3" y="0" width="2" height="8" fill="#ffd23f"/><rect x="0" y="3" width="8" height="2" fill="#ffd23f"/></svg>
+              </div>
+              <span class="price">$ 9.99</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 2 -->
+        <article class="game-card">
+          <div class="game-art">
+            <span class="game-badge new">NEW</span>
+            <svg viewBox="0 0 64 40" shape-rendering="crispEdges" role="img" aria-label="Farming sim cover art">
+              <rect width="64" height="40" fill="#2ee676"/>
+              <rect x="0" y="0" width="64" height="14" fill="#41ead4"/>
+              <rect x="48" y="3" width="6" height="6" fill="#ffd23f"/>
+              <rect x="8" y="20" width="6" height="6" fill="#ffa630"/><rect x="10" y="18" width="2" height="2" fill="#2ee676"/>
+              <rect x="22" y="22" width="6" height="6" fill="#ef476f"/><rect x="24" y="20" width="2" height="2" fill="#2ee676"/>
+              <rect x="36" y="20" width="6" height="6" fill="#b14aed"/><rect x="38" y="18" width="2" height="2" fill="#2ee676"/>
+              <rect x="0" y="32" width="64" height="8" fill="#3a3e74"/>
+              <rect x="4" y="34" width="8" height="2" fill="#25294a"/><rect x="20" y="34" width="8" height="2" fill="#25294a"/><rect x="40" y="34" width="8" height="2" fill="#25294a"/>
+            </svg>
+          </div>
+          <div class="game-body">
+            <h3 class="game-title">HARVEST PIXEL</h3>
+            <p class="game-genre">Cozy farming sim</p>
+            <div class="game-foot">
+              <div class="stars" aria-label="Rated 4 of 5 stars">
+                <svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect x="3" y="0" width="2" height="8" fill="#ffd23f"/><rect x="0" y="3" width="8" height="2" fill="#ffd23f"/></svg>
+                <svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect x="3" y="0" width="2" height="8" fill="#ffd23f"/><rect x="0" y="3" width="8" height="2" fill="#ffd23f"/></svg>
+                <svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect x="3" y="0" width="2" height="8" fill="#ffd23f"/><rect x="0" y="3" width="8" height="2" fill="#ffd23f"/></svg>
+                <svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect x="3" y="0" width="2" height="8" fill="#ffd23f"/><rect x="0" y="3" width="8" height="2" fill="#ffd23f"/></svg>
+                <svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect x="3" y="0" width="2" height="8" fill="#3a3e74"/><rect x="0" y="3" width="8" height="2" fill="#3a3e74"/></svg>
+              </div>
+              <span class="price free">FREE</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 3 -->
+        <article class="game-card">
+          <div class="game-art">
+            <svg viewBox="0 0 64 40" shape-rendering="crispEdges" role="img" aria-label="Dungeon crawler cover art">
+              <rect width="64" height="40" fill="#0f1024"/>
+              <rect x="0" y="0" width="64" height="40" fill="#0f1024"/>
+              <rect x="8" y="8" width="48" height="24" fill="#25294a"/>
+              <rect x="8" y="8" width="48" height="2" fill="#4d8bff"/>
+              <rect x="26" y="14" width="12" height="14" fill="#0b0c18"/>
+              <rect x="29" y="16" width="2" height="2" fill="#ef476f"/><rect x="33" y="16" width="2" height="2" fill="#ef476f"/>
+              <rect x="28" y="22" width="8" height="1" fill="#ffd23f"/>
+              <rect x="14" y="18" width="3" height="3" fill="#ffa630"/>
+              <rect x="47" y="18" width="3" height="3" fill="#ffa630"/>
+            </svg>
+          </div>
+          <div class="game-body">
+            <h3 class="game-title">CRYPT RAIDERS</h3>
+            <p class="game-genre">Roguelike dungeon</p>
+            <div class="game-foot">
+              <div class="stars" aria-label="Rated 5 of 5 stars">
+                <svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect x="3" y="0" width="2" height="8" fill="#ffd23f"/><rect x="0" y="3" width="8" height="2" fill="#ffd23f"/></svg>
+                <svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect x="3" y="0" width="2" height="8" fill="#ffd23f"/><rect x="0" y="3" width="8" height="2" fill="#ffd23f"/></svg>
+                <svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect x="3" y="0" width="2" height="8" fill="#ffd23f"/><rect x="0" y="3" width="8" height="2" fill="#ffd23f"/></svg>
+                <svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect x="3" y="0" width="2" height="8" fill="#ffd23f"/><rect x="0" y="3" width="8" height="2" fill="#ffd23f"/></svg>
+                <svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect x="3" y="0" width="2" height="8" fill="#ffd23f"/><rect x="0" y="3" width="8" height="2" fill="#ffd23f"/></svg>
+              </div>
+              <span class="price">$ 14.99</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 4 -->
+        <article class="game-card">
+          <div class="game-art">
+            <svg viewBox="0 0 64 40" shape-rendering="crispEdges" role="img" aria-label="Racing game cover art">
+              <rect width="64" height="40" fill="#b14aed"/>
+              <rect x="0" y="22" width="64" height="18" fill="#1a1c2c"/>
+              <rect x="0" y="22" width="64" height="2" fill="#ec4899"/>
+              <rect x="14" y="26" width="6" height="2" fill="#ffd23f"/><rect x="44" y="26" width="6" height="2" fill="#ffd23f"/>
+              <rect x="20" y="32" width="6" height="2" fill="#ffd23f"/><rect x="38" y="32" width="6" height="2" fill="#ffd23f"/>
+              <rect x="26" y="28" width="12" height="6" fill="#ef476f"/>
+              <rect x="28" y="26" width="8" height="2" fill="#c0c8d8"/>
+              <rect x="26" y="34" width="3" height="2" fill="#0b0c18"/><rect x="35" y="34" width="3" height="2" fill="#0b0c18"/>
+              <rect x="6" y="4" width="6" height="6" fill="#ffd23f"/>
+            </svg>
+          </div>
+          <div class="game-body">
+            <h3 class="game-title">TURBO BYTE GP</h3>
+            <p class="game-genre">Retro kart racer</p>
+            <div class="game-foot">
+              <div class="stars" aria-label="Rated 4 of 5 stars">
+                <svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect x="3" y="0" width="2" height="8" fill="#ffd23f"/><rect x="0" y="3" width="8" height="2" fill="#ffd23f"/></svg>
+                <svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect x="3" y="0" width="2" height="8" fill="#ffd23f"/><rect x="0" y="3" width="8" height="2" fill="#ffd23f"/></svg>
+                <svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect x="3" y="0" width="2" height="8" fill="#ffd23f"/><rect x="0" y="3" width="8" height="2" fill="#ffd23f"/></svg>
+                <svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect x="3" y="0" width="2" height="8" fill="#ffd23f"/><rect x="0" y="3" width="8" height="2" fill="#ffd23f"/></svg>
+                <svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect x="3" y="0" width="2" height="8" fill="#3a3e74"/><rect x="0" y="3" width="8" height="2" fill="#3a3e74"/></svg>
+              </div>
+              <span class="price">$ 6.99</span>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ============ LEADERBOARD + STATS ============ -->
+    <section class="lower" id="scores" aria-label="Player statistics and leaderboard">
+
+      <div class="leaderboard">
+        <div class="lb-head">
+          <svg viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="0" width="6" height="1" fill="#ffd23f"/><rect x="0" y="1" width="8" height="2" fill="#ffd23f"/><rect x="1" y="3" width="6" height="1" fill="#ffd23f"/><rect x="2" y="4" width="4" height="2" fill="#ffd23f"/><rect x="1" y="6" width="6" height="2" fill="#ffa630"/></svg>
+          WEEKLY HIGH SCORES
+        </div>
+
+        <div class="lb-row">
+          <span class="lb-rank">#1</span>
+          <span class="lb-player">
+            <svg class="lb-avatar" viewBox="0 0 8 8" shape-rendering="crispEdges" role="img" aria-label="avatar"><rect width="8" height="8" fill="#ef476f"/><rect x="2" y="2" width="1" height="2" fill="#0b0c18"/><rect x="5" y="2" width="1" height="2" fill="#0b0c18"/><rect x="2" y="5" width="4" height="1" fill="#0b0c18"/></svg>
+            <span class="lb-name">PixelKing_88</span>
+          </span>
+          <span class="lb-score">1,204,500</span>
+        </div>
+
+        <div class="lb-row">
+          <span class="lb-rank">#2</span>
+          <span class="lb-player">
+            <svg class="lb-avatar" viewBox="0 0 8 8" shape-rendering="crispEdges" role="img" aria-label="avatar"><rect width="8" height="8" fill="#41ead4"/><rect x="2" y="2" width="1" height="2" fill="#0b0c18"/><rect x="5" y="2" width="1" height="2" fill="#0b0c18"/><rect x="2" y="5" width="1" height="1" fill="#0b0c18"/><rect x="5" y="5" width="1" height="1" fill="#0b0c18"/></svg>
+            <span class="lb-name">N3on_Ghost</span>
+          </span>
+          <span class="lb-score">988,210</span>
+        </div>
+
+        <div class="lb-row">
+          <span class="lb-rank">#3</span>
+          <span class="lb-player">
+            <svg class="lb-avatar" viewBox="0 0 8 8" shape-rendering="crispEdges" role="img" aria-label="avatar"><rect width="8" height="8" fill="#ffd23f"/><rect x="2" y="2" width="1" height="2" fill="#0b0c18"/><rect x="5" y="2" width="1" height="2" fill="#0b0c18"/><rect x="3" y="5" width="2" height="1" fill="#0b0c18"/></svg>
+            <span class="lb-name">ByteRunner</span>
+          </span>
+          <span class="lb-score">742,090</span>
+        </div>
+
+        <div class="lb-row">
+          <span class="lb-rank">#4</span>
+          <span class="lb-player">
+            <svg class="lb-avatar" viewBox="0 0 8 8" shape-rendering="crispEdges" role="img" aria-label="avatar"><rect width="8" height="8" fill="#4d8bff"/><rect x="2" y="2" width="1" height="2" fill="#0b0c18"/><rect x="5" y="2" width="1" height="2" fill="#0b0c18"/><rect x="2" y="4" width="4" height="2" fill="#0b0c18"/></svg>
+            <span class="lb-name">QuestMaster</span>
+          </span>
+          <span class="lb-score">655,300</span>
+        </div>
+
+        <div class="lb-row">
+          <span class="lb-rank">#5</span>
+          <span class="lb-player">
+            <svg class="lb-avatar" viewBox="0 0 8 8" shape-rendering="crispEdges" role="img" aria-label="avatar"><rect width="8" height="8" fill="#2ee676"/><rect x="2" y="2" width="1" height="2" fill="#0b0c18"/><rect x="5" y="2" width="1" height="2" fill="#0b0c18"/><rect x="2" y="5" width="4" height="1" fill="#0b0c18"/></svg>
+            <span class="lb-name">CRT_Dreamer</span>
+          </span>
+          <span class="lb-score">510,775</span>
+        </div>
+      </div>
+
+      <div class="stat-stack">
+        <div class="stat-card">
+          <p class="label">CURRENT QUEST XP</p>
+          <p class="value">LVL 27</p>
+          <div class="pbar" role="progressbar" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100" aria-label="Experience to next level">
+            <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i>
+          </div>
+          <p class="sub">3,200 / 4,500 XP to LVL 28</p>
+        </div>
+
+        <div class="stat-card">
+          <p class="label">DAILY STREAK</p>
+          <p class="value green">14 DAYS</p>
+          <div class="pbar" role="progressbar" aria-valuenow="90" aria-valuemin="0" aria-valuemax="100" aria-label="Streak progress to bonus">
+            <i class="on warm"></i><i class="on warm"></i><i class="on warm"></i><i class="on warm"></i><i class="on warm"></i><i class="on warm"></i><i class="on warm"></i><i class="on warm"></i><i class="on warm"></i><i></i>
+          </div>
+          <p class="sub">1 more day = bonus chest</p>
+        </div>
+
+        <div class="stat-card">
+          <p class="label">ACHIEVEMENTS</p>
+          <p class="value cyan">48 / 60</p>
+          <p class="sub">12 trophies remaining</p>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="foot" id="shop">
+    <div class="foot-inner">
+      <p class="foot-credit">INSERT COIN &#9733; <b>PIXELQUEST ARCADE</b> &#9733; EST. 1986</p>
+      <nav class="foot-links" aria-label="Social links">
+        <a href="#discord" aria-label="Discord community">
+          <svg viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="1" width="6" height="4" fill="currentColor"/><rect x="2" y="2" width="1" height="1" fill="#0b0c18"/><rect x="5" y="2" width="1" height="1" fill="#0b0c18"/><rect x="0" y="5" width="3" height="2" fill="currentColor"/><rect x="5" y="5" width="3" height="2" fill="currentColor"/></svg>
+        </a>
+        <a href="#twitch" aria-label="Twitch channel">
+          <svg viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="0" width="6" height="6" fill="currentColor"/><rect x="3" y="2" width="1" height="2" fill="#0b0c18"/><rect x="5" y="2" width="1" height="2" fill="#0b0c18"/><rect x="3" y="6" width="1" height="2" fill="currentColor"/></svg>
+        </a>
+        <a href="#youtube" aria-label="YouTube channel">
+          <svg viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="1" width="8" height="6" fill="currentColor"/><rect x="3" y="3" width="2" height="2" fill="#0b0c18"/></svg>
+        </a>
+      </nav>
+    </div>
+  </footer>
+
+</body>
+</html>

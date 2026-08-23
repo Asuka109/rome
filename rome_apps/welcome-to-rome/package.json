@@ -1,0 +1,27 @@
+{
+  "name": "@rome/app-welcome-to-rome",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "rome build && mkdir -p dist/web/assets && cp src/web/assets/rome-logo-2.mp4 dist/web/assets/rome-logo-2.mp4",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "@rome-os/app-runtime": "latest",
+    "@rome-os/app-web-sdk": "^0.2.0",
+    "@rome-os/ui": "^0.2.1",
+    "canvas-confetti": "^1.9.4",
+    "drizzle-orm": "^0.45.1",
+    "lucide-react": "^0.468.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "drizzle-kit": "^0.31.9",
+    "typescript": "^5.9.3"
+  }
+}

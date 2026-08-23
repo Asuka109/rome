@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Executive Dashboard — Q2 Performance Overview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Core palette (dark professional BI) */
+    --primary:#0F172A;
+    --secondary:#1E293B;
+    --bg:#020617;
+    --fg:#F8FAFC;
+    --card:#0E1223;
+    --card-fg:#F8FAFC;
+    --muted:#1A1E2F;
+    --muted-fg:#94A3B8;
+    --border:#334155;
+    --ring:#3B82F6;
+    --accent:#22C55E;
+
+    /* KPI / status semantics */
+    --status-green:#22C55E;
+    --status-yellow:#F59E0B;
+    --status-red:#EF4444;
+    --status-neutral:#94A3B8;
+    --positive:#22C55E;
+    --negative:#EF4444;
+
+    /* Typography */
+    --font-sans:'Fira Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-mono:'Fira Code', ui-monospace, 'SFMono-Regular', monospace;
+    --kpi-font-size:clamp(2rem, 5vw, 3rem); /* 48px cap */
+    --fs-xs:0.6875rem;
+    --fs-sm:0.8125rem;
+    --fs-base:0.9375rem;
+    --fs-lg:1.125rem;
+    --fs-xl:1.375rem;
+
+    /* Radius */
+    --r-sm:6px;
+    --r-md:10px;
+    --r-lg:16px;
+
+    /* Shadow / hierarchy */
+    --shadow-1:0 1px 2px rgba(2,6,23,.6);
+    --shadow-2:0 4px 14px rgba(2,6,23,.55), 0 1px 2px rgba(2,6,23,.6);
+    --shadow-lift:0 14px 36px rgba(2,6,23,.7), 0 2px 6px rgba(2,6,23,.6);
+
+    /* Spacing scale */
+    --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px;
+    --sp-5:24px; --sp-6:32px; --sp-7:48px;
+
+    /* Sparkline */
+    --sparkline-height:34px;
+    --card-min-width:280px;
+
+    /* Motion */
+    --t-fast:120ms cubic-bezier(.4,0,.2,1);
+    --t-base:240ms cubic-bezier(.4,0,.2,1);
+    --t-slow:480ms cubic-bezier(.4,0,.2,1);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--font-sans);
+    background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(34,197,94,.06), transparent 60%),
+      radial-gradient(900px 500px at -5% 110%, rgba(59,130,246,.07), transparent 55%),
+      var(--bg);
+    color:var(--fg);
+    font-size:var(--fs-base);
+    line-height:1.45;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- Layout shell ---------- */
+  .shell{
+    max-width:1320px;
+    margin:0 auto;
+    padding:var(--sp-5) var(--sp-5) var(--sp-7);
+  }
+
+  /* ---------- Header / Nav ---------- */
+  header.topbar{
+    display:flex;
+    align-items:center;
+    gap:var(--sp-5);
+    flex-wrap:wrap;
+    padding:var(--sp-4) var(--sp-5);
+    background:linear-gradient(180deg, rgba(30,41,59,.65), rgba(14,18,35,.65));
+    border:1px solid var(--border);
+    border-radius:var(--r-lg);
+    box-shadow:var(--shadow-2);
+    backdrop-filter:blur(8px);
+  }
+  .brand{display:flex;align-items:center;gap:var(--sp-3);min-width:0;}
+  .logo{
+    width:38px;height:38px;flex:0 0 auto;
+    border-radius:var(--r-sm);
+    background:linear-gradient(135deg, var(--accent), #0ea5e9);
+    display:grid;place-items:center;
+    box-shadow:0 0 0 1px rgba(255,255,255,.06) inset;
+  }
+  .logo svg{width:22px;height:22px;color:#04130a;}
+  .brand-text{min-width:0;}
+  .brand-text .name{font-weight:700;font-size:var(--fs-lg);letter-spacing:-.01em;line-height:1.1;}
+  .brand-text .sub{font-size:var(--fs-xs);color:var(--muted-fg);text-transform:uppercase;letter-spacing:.12em;}
+
+  nav.mainnav{
+    display:flex;gap:var(--sp-1);flex-wrap:wrap;
+    margin-left:auto;
+  }
+  nav.mainnav a{
+    color:var(--muted-fg);
+    text-decoration:none;
+    font-size:var(--fs-sm);
+    font-weight:500;
+    padding:var(--sp-2) var(--sp-3);
+    border-radius:var(--r-sm);
+    transition:color var(--t-fast), background var(--t-fast);
+  }
+  nav.mainnav a:hover{color:var(--fg);background:rgba(148,163,184,.1);}
+  nav.mainnav a[aria-current="page"]{color:var(--fg);background:rgba(59,130,246,.16);}
+  nav.mainnav a:focus-visible{outline:2px solid var(--ring);outline-offset:2px;}
+
+  .topbar-actions{display:flex;align-items:center;gap:var(--sp-3);}
+  .icon-btn{
+    width:38px;height:38px;flex:0 0 auto;
+    display:grid;place-items:center;
+    background:var(--muted);
+    border:1px solid var(--border);
+    border-radius:var(--r-sm);
+    color:var(--muted-fg);
+    cursor:pointer;
+    transition:color var(--t-fast), border-color var(--t-fast), transform var(--t-fast);
+  }
+  .icon-btn:hover{color:var(--fg);border-color:var(--ring);}
+  .icon-btn:active{transform:translateY(1px);}
+  .icon-btn:focus-visible{outline:2px solid var(--ring);outline-offset:2px;}
+  .icon-btn svg{width:18px;height:18px;}
+  .avatar{
+    width:38px;height:38px;flex:0 0 auto;border-radius:50%;
+    background:linear-gradient(135deg,#3B82F6,#6366f1);
+    display:grid;place-items:center;font-weight:700;font-size:var(--fs-sm);color:#fff;
+    border:1px solid rgba(255,255,255,.12);
+  }
+
+  /* ---------- Title block + controls ---------- */
+  .page-head{
+    display:flex;align-items:flex-end;justify-content:space-between;
+    gap:var(--sp-4);flex-wrap:wrap;
+    margin:var(--sp-6) 0 var(--sp-5);
+  }
+  .page-head h1{
+    margin:0;font-size:var(--fs-xl);font-weight:700;letter-spacing:-.02em;
+  }
+  .page-head .period{
+    display:flex;align-items:center;gap:var(--sp-2);
+    margin-top:var(--sp-1);color:var(--muted-fg);font-size:var(--fs-sm);
+    font-family:var(--font-mono);
+  }
+  .period .live-dot{
+    width:8px;height:8px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 0 0 rgba(34,197,94,.6);
+    animation:pulse 2.4s ease-out infinite;
+  }
+  .controls{display:flex;gap:var(--sp-2);flex-wrap:wrap;align-items:center;}
+  .seg{
+    display:inline-flex;background:var(--muted);border:1px solid var(--border);
+    border-radius:var(--r-sm);padding:2px;
+  }
+  .seg button{
+    border:none;background:transparent;color:var(--muted-fg);
+    font-family:var(--font-mono);font-size:var(--fs-xs);font-weight:600;
+    padding:var(--sp-2) var(--sp-3);border-radius:4px;cursor:pointer;
+    transition:color var(--t-fast), background var(--t-fast);
+  }
+  .seg button:hover{color:var(--fg);}
+  .seg button[aria-pressed="true"]{background:var(--secondary);color:var(--fg);box-shadow:var(--shadow-1);}
+  .seg button:focus-visible{outline:2px solid var(--ring);outline-offset:2px;}
+  .btn-primary{
+    display:inline-flex;align-items:center;gap:var(--sp-2);
+    background:linear-gradient(135deg,var(--accent),#16a34a);
+    color:#04130a;font-weight:700;font-size:var(--fs-sm);
+    border:none;border-radius:var(--r-sm);
+    padding:var(--sp-3) var(--sp-4);cursor:pointer;
+    box-shadow:var(--shadow-2);
+    transition:transform var(--t-fast), box-shadow var(--t-fast), filter var(--t-fast);
+  }
+  .btn-primary svg{width:16px;height:16px;}
+  .btn-primary:hover{filter:brightness(1.06);box-shadow:var(--shadow-lift);}
+  .btn-primary:active{transform:translateY(1px);box-shadow:var(--shadow-1);}
+  .btn-primary:focus-visible{outline:2px solid var(--fg);outline-offset:2px;}
+
+  /* ---------- KPI grid ---------- */
+  .kpi-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(var(--card-min-width), 1fr));
+    gap:var(--sp-4);
+  }
+  .kpi{
+    position:relative;
+    background:linear-gradient(180deg, var(--secondary), var(--card));
+    border:1px solid var(--border);
+    border-left:4px solid var(--status-neutral);
+    border-radius:var(--r-md);
+    padding:var(--sp-5);
+    box-shadow:var(--shadow-2);
+    transition:transform var(--t-base), box-shadow var(--t-base), border-color var(--t-base);
+    overflow:hidden;
+  }
+  .kpi:hover{transform:translateY(-4px);box-shadow:var(--shadow-lift);}
+  .kpi.is-green{border-left-color:var(--status-green);}
+  .kpi.is-red{border-left-color:var(--status-red);}
+  .kpi.is-yellow{border-left-color:var(--status-yellow);}
+  .kpi-top{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--sp-3);}
+  .kpi-label{
+    font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.1em;
+    color:var(--muted-fg);font-weight:600;
+  }
+  .kpi-badge{
+    display:inline-flex;align-items:center;gap:4px;
+    font-family:var(--font-mono);font-size:var(--fs-xs);font-weight:700;
+    padding:3px 8px;border-radius:999px;
+  }
+  .kpi-badge svg{width:12px;height:12px;}
+  .up{color:var(--positive);background:rgba(34,197,94,.12);}
+  .down{color:var(--negative);background:rgba(239,68,68,.12);}
+  .flat{color:var(--status-neutral);background:rgba(148,163,184,.12);}
+  .kpi-value{
+    font-family:var(--font-mono);
+    font-size:var(--kpi-font-size);
+    font-weight:700;line-height:1.05;letter-spacing:-.02em;
+    margin:var(--sp-3) 0 var(--sp-1);
+  }
+  .kpi-meta{font-size:var(--fs-xs);color:var(--muted-fg);font-family:var(--font-mono);}
+  .sparkline{height:var(--sparkline-height);width:100%;margin-top:var(--sp-4);display:block;}
+
+  /* ---------- Lower section grid ---------- */
+  .lower{
+    display:grid;
+    grid-template-columns:2fr 1fr;
+    gap:var(--sp-4);
+    margin-top:var(--sp-4);
+  }
+  .panel{
+    background:linear-gradient(180deg, rgba(30,41,59,.5), var(--card));
+    border:1px solid var(--border);
+    border-radius:var(--r-md);
+    box-shadow:var(--shadow-2);
+    padding:var(--sp-5);
+    min-width:0;
+  }
+  .panel-head{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);margin-bottom:var(--sp-4);}
+  .panel-head h2{margin:0;font-size:var(--fs-lg);font-weight:600;letter-spacing:-.01em;}
+  .panel-head .hint{font-size:var(--fs-xs);color:var(--muted-fg);font-family:var(--font-mono);}
+
+  /* Revenue chart */
+  .chart-wrap{position:relative;width:100%;}
+  .chart-wrap svg{width:100%;height:auto;display:block;}
+  .legend{display:flex;gap:var(--sp-4);flex-wrap:wrap;margin-top:var(--sp-3);}
+  .legend span{display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-xs);color:var(--muted-fg);font-family:var(--font-mono);}
+  .legend i{width:12px;height:3px;border-radius:2px;display:inline-block;}
+
+  /* Status / alerts list */
+  .status-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-3);}
+  .status-item{
+    display:flex;align-items:center;gap:var(--sp-3);
+    padding:var(--sp-3);
+    background:var(--muted);
+    border:1px solid var(--border);
+    border-radius:var(--r-sm);
+  }
+  .traffic{width:10px;height:10px;border-radius:50%;flex:0 0 auto;}
+  .traffic.g{background:var(--status-green);}
+  .traffic.y{background:var(--status-yellow);}
+  .traffic.r{background:var(--status-red);box-shadow:0 0 0 0 rgba(239,68,68,.6);animation:pulse-red 1.8s ease-out infinite;}
+  .status-item .t-main{flex:1 1 auto;min-width:0;}
+  .status-item .t-main strong{display:block;font-size:var(--fs-sm);font-weight:600;}
+  .status-item .t-main span{font-size:var(--fs-xs);color:var(--muted-fg);}
+  .status-item .t-val{font-family:var(--font-mono);font-size:var(--fs-sm);font-weight:600;}
+
+  /* Objectives bars */
+  .obj{margin-top:var(--sp-4);}
+  .obj-row{margin-bottom:var(--sp-4);}
+  .obj-row:last-child{margin-bottom:0;}
+  .obj-top{display:flex;justify-content:space-between;font-size:var(--fs-sm);margin-bottom:6px;}
+  .obj-top .pct{font-family:var(--font-mono);color:var(--muted-fg);}
+  .bar{height:8px;background:var(--muted);border-radius:999px;overflow:hidden;}
+  .bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#3B82F6,var(--accent));transition:width var(--t-slow);}
+  .bar i.warn{background:linear-gradient(90deg,#f59e0b,#ef4444);}
+
+  /* ---------- Footer meta ---------- */
+  footer.meta{
+    margin-top:var(--sp-6);
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:var(--sp-3);
+    color:var(--muted-fg);font-size:var(--fs-xs);font-family:var(--font-mono);
+    padding-top:var(--sp-4);border-top:1px solid var(--border);
+  }
+
+  /* ---------- Animations ---------- */
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.5);}70%{box-shadow:0 0 0 8px rgba(34,197,94,0);}100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}}
+  @keyframes pulse-red{0%{box-shadow:0 0 0 0 rgba(239,68,68,.55);}70%{box-shadow:0 0 0 7px rgba(239,68,68,0);}100%{box-shadow:0 0 0 0 rgba(239,68,68,0);}}
+  @keyframes dash{to{stroke-dashoffset:0;}}
+  .draw-line{stroke-dasharray:600;stroke-dashoffset:600;animation:dash 2s ease-out forwards;}
+
+  /* ---------- Responsive ---------- */
+  @media (max-width:900px){
+    .lower{grid-template-columns:1fr;}
+  }
+  @media (max-width:600px){
+    .shell{padding:var(--sp-4) var(--sp-3) var(--sp-6);}
+    nav.mainnav{order:3;width:100%;margin-left:0;}
+    .page-head{flex-direction:column;align-items:flex-start;}
+    .controls{width:100%;}
+    .kpi{padding:var(--sp-4);}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;}
+    .draw-line{stroke-dashoffset:0;}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ===== Top bar ===== -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
+      </span>
+      <span class="brand-text">
+        <span class="name">Meridian Capital</span>
+        <span class="sub">Executive Console</span>
+      </span>
+    </div>
+
+    <nav class="mainnav" aria-label="Primary">
+      <a href="#" aria-current="page">Overview</a>
+      <a href="#">Revenue</a>
+      <a href="#">Operations</a>
+      <a href="#">Forecast</a>
+      <a href="#">Reports</a>
+    </nav>
+
+    <div class="topbar-actions">
+      <button class="icon-btn" aria-label="Search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      </button>
+      <button class="icon-btn" aria-label="Notifications, 3 unread">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      </button>
+      <span class="avatar" aria-label="Eleanor Voss, CFO" title="Eleanor Voss, CFO">EV</span>
+    </div>
+  </header>
+
+  <!-- ===== Page title + controls ===== -->
+  <div class="page-head">
+    <div>
+      <h1>Q2 Performance Overview</h1>
+      <p class="period"><span class="live-dot" aria-hidden="true"></span> Live · FY2026 · updated 09:42 GMT</p>
+    </div>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Time range">
+        <button type="button">WTD</button>
+        <button type="button">MTD</button>
+        <button type="button" aria-pressed="true">QTD</button>
+        <button type="button">YTD</button>
+      </div>
+      <button class="btn-primary" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M5 21h14"/></svg>
+        Export Brief
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== KPI cards ===== -->
+  <main>
+    <section class="kpi-grid" aria-label="Key performance indicators">
+
+      <article class="kpi is-green">
+        <div class="kpi-top">
+          <span class="kpi-label">Net Revenue</span>
+          <span class="kpi-badge up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg>12.4%</span>
+        </div>
+        <div class="kpi-value" data-count="48.2" data-prefix="$" data-suffix="M">$0M</div>
+        <div class="kpi-meta">vs $42.9M prior quarter · target $46M</div>
+        <svg class="sparkline" viewBox="0 0 280 34" preserveAspectRatio="none" aria-hidden="true">
+          <polyline class="draw-line" fill="none" stroke="#22C55E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="0,28 28,26 56,29 84,22 112,24 140,18 168,20 196,12 224,15 252,7 280,4"/>
+        </svg>
+      </article>
+
+      <article class="kpi is-green">
+        <div class="kpi-top">
+          <span class="kpi-label">Gross Margin</span>
+          <span class="kpi-badge up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg>2.1 pt</span>
+        </div>
+        <div class="kpi-value" data-count="61.8" data-suffix="%">0%</div>
+        <div class="kpi-meta">vs 59.7% prior quarter · target 60%</div>
+        <svg class="sparkline" viewBox="0 0 280 34" preserveAspectRatio="none" aria-hidden="true">
+          <polyline class="draw-line" fill="none" stroke="#22C55E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="0,20 28,22 56,18 84,21 112,16 140,17 168,13 196,15 224,11 252,9 280,8"/>
+        </svg>
+      </article>
+
+      <article class="kpi is-red">
+        <div class="kpi-top">
+          <span class="kpi-label">Customer Churn</span>
+          <span class="kpi-badge down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>0.9 pt</span>
+        </div>
+        <div class="kpi-value" data-count="4.6" data-suffix="%">0%</div>
+        <div class="kpi-meta">vs 3.7% prior quarter · target &lt;3.5%</div>
+        <svg class="sparkline" viewBox="0 0 280 34" preserveAspectRatio="none" aria-hidden="true">
+          <polyline class="draw-line" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="0,24 28,22 56,25 84,20 112,21 140,17 168,18 196,13 224,14 252,9 280,6"/>
+        </svg>
+      </article>
+
+      <article class="kpi is-yellow">
+        <div class="kpi-top">
+          <span class="kpi-label">Cash Runway</span>
+          <span class="kpi-badge flat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 12h14"/></svg>0.0 mo</span>
+        </div>
+        <div class="kpi-value" data-count="18" data-suffix=" mo">0 mo</div>
+        <div class="kpi-meta">stable vs prior quarter · floor 12 mo</div>
+        <svg class="sparkline" viewBox="0 0 280 34" preserveAspectRatio="none" aria-hidden="true">
+          <polyline class="draw-line" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="0,16 28,17 56,16 84,18 112,17 140,16 168,17 196,16 224,17 252,16 280,16"/>
+        </svg>
+      </article>
+
+    </section>
+
+    <!-- ===== Lower panels ===== -->
+    <section class="lower" aria-label="Detailed summaries">
+
+      <!-- Revenue vs target chart -->
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Revenue vs Target</h2>
+          <span class="hint">$M · last 8 quarters</span>
+        </div>
+        <div class="chart-wrap">
+          <svg viewBox="0 0 640 260" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Line chart comparing actual revenue to target over eight quarters; actual revenue trends upward and exceeds target in the latest quarter.">
+            <defs>
+              <linearGradient id="fillArea" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#22C55E" stop-opacity="0.28"/>
+                <stop offset="100%" stop-color="#22C55E" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <!-- gridlines -->
+            <g stroke="#334155" stroke-width="1" opacity="0.5">
+              <line x1="40" y1="40" x2="620" y2="40"/>
+              <line x1="40" y1="95" x2="620" y2="95"/>
+              <line x1="40" y1="150" x2="620" y2="150"/>
+              <line x1="40" y1="205" x2="620" y2="205"/>
+            </g>
+            <!-- y labels -->
+            <g fill="#94A3B8" font-family="Fira Code, monospace" font-size="11">
+              <text x="8" y="44">50</text>
+              <text x="8" y="99">40</text>
+              <text x="8" y="154">30</text>
+              <text x="8" y="209">20</text>
+            </g>
+            <!-- x labels -->
+            <g fill="#94A3B8" font-family="Fira Code, monospace" font-size="11" text-anchor="middle">
+              <text x="40" y="230">Q3</text>
+              <text x="123" y="230">Q4</text>
+              <text x="206" y="230">Q1</text>
+              <text x="289" y="230">Q2</text>
+              <text x="372" y="230">Q3</text>
+              <text x="455" y="230">Q4</text>
+              <text x="538" y="230">Q1</text>
+              <text x="620" y="230">Q2</text>
+            </g>
+            <!-- target line (dashed) -->
+            <polyline fill="none" stroke="#94A3B8" stroke-width="2" stroke-dasharray="5 6" points="40,150 123,143 206,138 289,130 372,122 455,115 538,108 620,100"/>
+            <!-- actual area -->
+            <polygon fill="url(#fillArea)" points="40,170 123,158 206,150 289,135 372,120 455,108 538,82 620,58 620,205 40,205"/>
+            <!-- actual line -->
+            <polyline class="draw-line" fill="none" stroke="#22C55E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="40,170 123,158 206,150 289,135 372,120 455,108 538,82 620,58"/>
+            <!-- data points -->
+            <g fill="#22C55E"><circle cx="620" cy="58" r="4.5"/><circle cx="538" cy="82" r="3.5"/></g>
+          </svg>
+        </div>
+        <div class="legend">
+          <span><i style="background:#22C55E"></i> Actual revenue</span>
+          <span><i style="background:#94A3B8"></i> Board target</span>
+        </div>
+      </div>
+
+      <!-- Status / objectives column -->
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Risk Signals</h2>
+          <span class="hint">3 active</span>
+        </div>
+        <ul class="status-list">
+          <li class="status-item">
+            <span class="traffic r" aria-hidden="true"></span>
+            <span class="t-main"><strong>EMEA pipeline</strong><span>Coverage below 2.0x for Q3</span></span>
+            <span class="t-val" style="color:var(--status-red)">1.6x</span>
+          </li>
+          <li class="status-item">
+            <span class="traffic y" aria-hidden="true"></span>
+            <span class="t-main"><strong>Headcount plan</strong><span>Engineering hiring 14% behind</span></span>
+            <span class="t-val" style="color:var(--status-yellow)">−14%</span>
+          </li>
+          <li class="status-item">
+            <span class="traffic g" aria-hidden="true"></span>
+            <span class="t-main"><strong>Cash position</strong><span>Within board covenant</span></span>
+            <span class="t-val" style="color:var(--status-green)">OK</span>
+          </li>
+        </ul>
+
+        <div class="obj">
+          <div class="panel-head" style="margin-top:var(--sp-5)">
+            <h2 style="font-size:var(--fs-base)">Annual Objectives</h2>
+            <span class="hint">vs plan</span>
+          </div>
+          <div class="obj-row">
+            <div class="obj-top"><span>ARR growth</span><span class="pct">82%</span></div>
+            <div class="bar"><i style="width:82%"></i></div>
+          </div>
+          <div class="obj-row">
+            <div class="obj-top"><span>NRR &gt; 115%</span><span class="pct">94%</span></div>
+            <div class="bar"><i style="width:94%"></i></div>
+          </div>
+          <div class="obj-row">
+            <div class="obj-top"><span>EBITDA margin</span><span class="pct">58%</span></div>
+            <div class="bar"><i class="warn" style="width:58%"></i></div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <footer class="meta">
+    <span>Source: Meridian Finance Data Warehouse · reconciled 30 May 2026</span>
+    <span>Confidential — Board &amp; Executive distribution only</span>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function format(val, prefix, suffix){
+    var dec = (val % 1 !== 0) ? 1 : 0;
+    return (prefix||'') + val.toFixed(dec) + (suffix||'');
+  }
+
+  function countUp(el){
+    var target = parseFloat(el.getAttribute('data-count'));
+    var prefix = el.getAttribute('data-prefix') || '';
+    var suffix = el.getAttribute('data-suffix') || '';
+    if (reduce){ el.textContent = format(target, prefix, suffix); return; }
+    var start = null, dur = 1100;
+    function step(ts){
+      if(!start) start = ts;
+      var p = Math.min((ts - start)/dur, 1);
+      var eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = format(target * eased, prefix, suffix);
+      if(p < 1) requestAnimationFrame(step);
+      else el.textContent = format(target, prefix, suffix);
+    }
+    requestAnimationFrame(step);
+  }
+
+  var kpis = document.querySelectorAll('.kpi-value[data-count]');
+  if ('IntersectionObserver' in window && !reduce){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){ countUp(e.target); io.unobserve(e.target); }
+      });
+    }, {threshold:0.4});
+    kpis.forEach(function(el){ io.observe(el); });
+  } else {
+    kpis.forEach(countUp);
+  }
+
+  // Segmented control toggle
+  document.querySelectorAll('.seg').forEach(function(seg){
+    seg.addEventListener('click', function(ev){
+      var b = ev.target.closest('button');
+      if(!b) return;
+      seg.querySelectorAll('button').forEach(function(x){ x.setAttribute('aria-pressed','false'); });
+      b.setAttribute('aria-pressed','true');
+    });
+  });
+})();
+</script>
+</body>
+</html>

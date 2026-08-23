@@ -1,0 +1,1 @@
+ALTER TABLE `rome_sessions` ADD `archived_at` integer;

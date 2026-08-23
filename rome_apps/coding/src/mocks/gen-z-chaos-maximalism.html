@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HYPRWAV — drop incoming</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Epilogue:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* ---- Clashing brights (CSV primary) ---- */
+    --chaos-pink:   #FF00FF;
+    --chaos-green:  #00FF00;
+    --chaos-yellow: #FFFF00;
+    --chaos-blue:   #0000FF;
+    --chaos-cyan:   #00E0FF;
+    --chaos-orange: #FF5A00;
+
+    /* ---- Surfaces ---- */
+    --ink:    #0a0a0a;
+    --paper:  #f4f0e6;
+    --void:   #060606;
+    --grid:   rgba(255,255,255,0.06);
+
+    /* ---- Type scale ---- */
+    --font-display: 'Anton', Impact, sans-serif;
+    --font-body: 'Epilogue', system-ui, -apple-system, sans-serif;
+    --fs-mega: clamp(3.2rem, 16vw, 11rem);
+    --fs-h2:   clamp(1.8rem, 6vw, 4rem);
+    --fs-lg:   clamp(1.05rem, 2.4vw, 1.5rem);
+    --fs-base: 1rem;
+    --fs-sm:   0.8rem;
+
+    /* ---- Spacing ---- */
+    --sp-1: 0.5rem;
+    --sp-2: 1rem;
+    --sp-3: 1.5rem;
+    --sp-4: 2.5rem;
+    --sp-5: 4rem;
+
+    /* ---- Radius / shadow ---- */
+    --r-sm: 6px;
+    --r-md: 14px;
+    --r-lg: 26px;
+    --shadow-hard: 6px 6px 0 var(--ink);
+    --shadow-pop: 10px 10px 0 var(--chaos-blue);
+
+    /* ---- Chaos / motion ---- */
+    --jitter-amount: 5deg;
+    --saturate: 150%;
+    --t-fast: 120ms;
+    --t-med: 280ms;
+    --ease-pop: cubic-bezier(.34,1.56,.64,1);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: var(--font-body);
+    background: var(--void);
+    color: var(--paper);
+    filter: saturate(var(--saturate));
+    overflow-x: hidden;
+    line-height: 1.45;
+  }
+
+  /* noise + grid texture layer */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+      radial-gradient(circle at 20% 10%, rgba(255,0,255,0.18), transparent 45%),
+      radial-gradient(circle at 85% 80%, rgba(0,224,255,0.18), transparent 45%);
+    background-size: 42px 42px, 42px 42px, 100% 100%, 100% 100%;
+    mix-blend-mode: screen;
+    opacity: 0.7;
+  }
+
+  a { color: inherit; }
+  img, svg { display: block; }
+
+  /* ====== MARQUEE ====== */
+  .marquee {
+    position: relative;
+    z-index: 3;
+    background: var(--chaos-yellow);
+    color: var(--ink);
+    border-block: 4px solid var(--ink);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .marquee__track {
+    display: inline-flex;
+    gap: 1.5rem;
+    padding-block: 0.5rem;
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    animation: scroll-x 18s linear infinite;
+    will-change: transform;
+  }
+  .marquee__track span { display: inline-flex; align-items: center; gap: 1.5rem; }
+  .marquee__star { color: var(--chaos-pink); }
+  @keyframes scroll-x { to { transform: translateX(-50%); } }
+
+  /* ====== SHELL ====== */
+  .shell { position: relative; z-index: 2; max-width: 1280px; margin-inline: auto; padding-inline: clamp(1rem, 4vw, 3rem); }
+
+  /* ====== NAV ====== */
+  header { position: relative; z-index: 5; }
+  nav.bar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--sp-2);
+    padding-block: var(--sp-3);
+    flex-wrap: wrap;
+  }
+  .logo {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-family: var(--font-display);
+    font-size: clamp(1.4rem, 4vw, 2rem);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--paper);
+    text-decoration: none;
+    transform: rotate(-2deg);
+  }
+  .logo b { color: var(--chaos-green); -webkit-text-stroke: 1px var(--ink); }
+  .navlinks { display: flex; gap: 0.4rem; flex-wrap: wrap; list-style: none; margin: 0; padding: 0; }
+  .navlinks a {
+    text-decoration: none;
+    font-weight: 700; font-size: var(--fs-sm); text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 0.4rem 0.75rem;
+    border: 2px solid var(--paper);
+    border-radius: 999px;
+    transition: transform var(--t-fast) var(--ease-pop), background var(--t-fast), color var(--t-fast);
+  }
+  .navlinks a:nth-child(2n) { transform: rotate(2deg); }
+  .navlinks a:nth-child(3n) { transform: rotate(-3deg); }
+  .navlinks a:hover { background: var(--chaos-pink); color: var(--ink); border-color: var(--ink); transform: rotate(0) scale(1.08); }
+  .navlinks a:focus-visible { outline: 3px solid var(--chaos-cyan); outline-offset: 3px; }
+
+  /* ====== HERO ====== */
+  .hero { position: relative; padding-block: clamp(2rem, 6vw, 4rem) var(--sp-5); }
+  .hero__kicker {
+    display: inline-block;
+    background: var(--chaos-blue); color: var(--chaos-yellow);
+    font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em;
+    font-size: var(--fs-sm);
+    padding: 0.4rem 0.9rem; border-radius: var(--r-sm);
+    transform: rotate(-3deg);
+    box-shadow: var(--shadow-hard);
+  }
+  .hero__title {
+    font-family: var(--font-display);
+    font-size: var(--fs-mega);
+    line-height: 0.86;
+    text-transform: uppercase;
+    margin: var(--sp-3) 0 var(--sp-2);
+    letter-spacing: -0.01em;
+    word-break: break-word;
+  }
+  .hero__title .w1 { color: var(--chaos-pink); display: inline-block; transform: rotate(-4deg); text-shadow: 4px 4px 0 var(--chaos-cyan); }
+  .hero__title .w2 { color: var(--paper); -webkit-text-stroke: 2px var(--chaos-green); }
+  .hero__title .w3 {
+    color: var(--ink);
+    display: inline-block;
+    background: var(--chaos-yellow);
+    padding: 0 0.15em;
+    transform: rotate(2deg);
+    box-shadow: var(--shadow-pop);
+  }
+  .hero__sub { max-width: 46ch; font-size: var(--fs-lg); font-weight: 500; color: #d9d4c6; }
+  .hero__cta { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-3); align-items: center; }
+
+  .btn {
+    font-family: var(--font-display);
+    text-transform: uppercase; letter-spacing: 0.04em;
+    font-size: 1.1rem;
+    border: 3px solid var(--ink);
+    border-radius: var(--r-md);
+    padding: 0.8rem 1.6rem;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    text-decoration: none;
+    transition: transform var(--t-fast) var(--ease-pop), box-shadow var(--t-fast);
+  }
+  .btn--primary { background: var(--chaos-green); color: var(--ink); box-shadow: var(--shadow-hard); }
+  .btn--primary:hover { transform: translate(-3px,-3px) rotate(-1deg); box-shadow: 9px 9px 0 var(--ink); }
+  .btn--primary:active { transform: translate(2px,2px); box-shadow: 2px 2px 0 var(--ink); }
+  .btn--ghost { background: transparent; color: var(--paper); border-color: var(--chaos-pink); box-shadow: 5px 5px 0 var(--chaos-pink); }
+  .btn--ghost:hover { transform: translate(-3px,-3px) rotate(1deg); background: var(--chaos-pink); color: var(--ink); }
+  .btn--ghost:active { transform: translate(2px,2px); }
+  .btn:focus-visible { outline: 3px solid var(--chaos-cyan); outline-offset: 4px; }
+
+  /* scattered stickers */
+  .sticker {
+    position: absolute;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 0.95rem; letter-spacing: 0.05em;
+    padding: 0.45rem 0.8rem;
+    border: 3px solid var(--ink);
+    border-radius: 999px;
+    z-index: 4;
+    box-shadow: var(--shadow-hard);
+    pointer-events: none;
+  }
+  .sticker--1 { top: 8%; right: 2%; background: var(--chaos-cyan); color: var(--ink); transform: rotate(9deg); animation: jitter 2.4s steps(2) infinite; }
+  .sticker--2 { bottom: 14%; left: -1%; background: var(--chaos-orange); color: var(--ink); transform: rotate(-12deg); animation: jitter 3.1s steps(2) infinite; }
+  .sticker--3 { top: 42%; right: 6%; background: var(--chaos-pink); color: var(--paper); transform: rotate(-6deg); animation: jitter 2.7s steps(2) infinite reverse; }
+  @keyframes jitter {
+    0%   { transform: rotate(var(--rot, 0deg)) translate(0,0); }
+    50%  { transform: rotate(calc(var(--rot, 0deg) + var(--jitter-amount))) translate(2px,-2px); }
+    100% { transform: rotate(var(--rot, 0deg)) translate(0,0); }
+  }
+  .sticker--1 { --rot: 9deg; }
+  .sticker--2 { --rot: -12deg; }
+  .sticker--3 { --rot: -6deg; }
+
+  /* blob graphic */
+  .blob { position: absolute; inset: auto; z-index: 1; pointer-events: none; }
+
+  /* ====== DROP / TRACKLIST GRID ====== */
+  .section-head {
+    display: flex; align-items: baseline; gap: var(--sp-2); flex-wrap: wrap;
+    margin-bottom: var(--sp-3);
+  }
+  .section-head h2 {
+    font-family: var(--font-display); text-transform: uppercase;
+    font-size: var(--fs-h2); margin: 0; line-height: 0.9;
+    color: var(--chaos-yellow);
+    text-shadow: 3px 3px 0 var(--chaos-pink);
+  }
+  .section-head .tag {
+    font-weight: 800; font-size: var(--fs-sm); text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--chaos-pink); color: var(--ink); padding: 0.3rem 0.7rem; border-radius: var(--r-sm);
+    transform: rotate(-2deg);
+  }
+
+  .grid-drops {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-5);
+  }
+  .card {
+    position: relative;
+    background: #111;
+    border: 3px solid var(--paper);
+    border-radius: var(--r-lg);
+    padding: var(--sp-3);
+    overflow: hidden;
+    transition: transform var(--t-med) var(--ease-pop);
+  }
+  .card:nth-child(2n) { transform: rotate(1.4deg); border-color: var(--chaos-green); }
+  .card:nth-child(3n) { transform: rotate(-1.8deg); border-color: var(--chaos-cyan); }
+  .card:hover { transform: rotate(0) translateY(-6px); z-index: 6; }
+  .card:focus-within { transform: rotate(0) translateY(-6px); z-index: 6; }
+  .card__art {
+    aspect-ratio: 1 / 1;
+    border-radius: var(--r-md);
+    margin-bottom: var(--sp-2);
+    border: 2px solid var(--ink);
+    overflow: hidden;
+    position: relative;
+  }
+  .card__art svg { width: 100%; height: 100%; }
+  .card__meta { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+  .card h3 { font-family: var(--font-display); text-transform: uppercase; margin: 0; font-size: 1.5rem; letter-spacing: 0.02em; line-height: 1; }
+  .card .num { font-family: var(--font-display); font-size: 1.6rem; color: var(--chaos-pink); }
+  .card .row { display: flex; align-items: center; justify-content: space-between; margin-top: var(--sp-2); font-size: var(--fs-sm); color: #bdb7a8; font-weight: 600; }
+  .card .plays { display: inline-flex; align-items: center; gap: 0.35rem; }
+  .play-btn {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    background: var(--chaos-green); color: var(--ink);
+    border: 2px solid var(--ink); border-radius: 999px;
+    padding: 0.35rem 0.7rem; font-weight: 800; font-size: var(--fs-sm); text-transform: uppercase;
+    cursor: pointer; transition: transform var(--t-fast) var(--ease-pop), background var(--t-fast);
+  }
+  .play-btn:hover { transform: scale(1.1) rotate(-3deg); background: var(--chaos-yellow); }
+  .play-btn:active { transform: scale(0.94); }
+  .play-btn:focus-visible { outline: 3px solid var(--chaos-cyan); outline-offset: 3px; }
+  .badge-new {
+    position: absolute; top: 10px; right: -34px;
+    background: var(--chaos-orange); color: var(--ink);
+    font-family: var(--font-display); font-size: 0.8rem; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 0.25rem 2.5rem;
+    transform: rotate(45deg);
+    border-block: 2px solid var(--ink);
+    z-index: 2;
+  }
+
+  /* ====== SPLIT: STATS + JOIN ====== */
+  .split {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-5);
+  }
+  @media (min-width: 860px) { .split { grid-template-columns: 1.2fr 1fr; } }
+
+  .stats {
+    background: var(--chaos-blue);
+    color: var(--paper);
+    border: 3px solid var(--ink);
+    border-radius: var(--r-lg);
+    padding: var(--sp-4);
+    box-shadow: var(--shadow-hard);
+    transform: rotate(-1deg);
+  }
+  .stats h2 { font-family: var(--font-display); text-transform: uppercase; margin: 0 0 var(--sp-3); font-size: var(--fs-h2); color: var(--chaos-yellow); line-height: 0.9; }
+  .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-3); }
+  .stat .n { font-family: var(--font-display); font-size: clamp(2rem, 7vw, 3.4rem); line-height: 0.9; color: var(--chaos-green); }
+  .stat .l { font-size: var(--fs-sm); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+
+  .join {
+    background: var(--paper);
+    color: var(--ink);
+    border: 3px solid var(--ink);
+    border-radius: var(--r-lg);
+    padding: var(--sp-4);
+    box-shadow: 8px 8px 0 var(--chaos-pink);
+    transform: rotate(1.2deg);
+  }
+  .join h2 { font-family: var(--font-display); text-transform: uppercase; margin: 0 0 var(--sp-1); font-size: var(--fs-h2); line-height: 0.9; }
+  .join p { margin: 0 0 var(--sp-3); font-weight: 600; }
+  .field { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+  .field input {
+    flex: 1 1 180px; min-width: 0;
+    font-family: var(--font-body); font-weight: 600; font-size: var(--fs-base);
+    padding: 0.85rem 1rem;
+    border: 3px solid var(--ink); border-radius: var(--r-md);
+    background: #fff; color: var(--ink);
+  }
+  .field input::placeholder { color: #555; }
+  .field input:focus-visible { outline: 3px solid var(--chaos-blue); outline-offset: 2px; }
+  .field .btn { flex: 0 0 auto; }
+  .join small { display: block; margin-top: var(--sp-2); font-weight: 600; color: #444; }
+
+  /* ====== FOOTER ====== */
+  footer {
+    position: relative; z-index: 2;
+    border-top: 4px solid var(--chaos-green);
+    padding-block: var(--sp-4);
+    margin-top: var(--sp-4);
+  }
+  .foot { display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: center; justify-content: space-between; }
+  .socials { display: flex; gap: var(--sp-1); }
+  .socials a {
+    display: inline-flex; width: 44px; height: 44px; align-items: center; justify-content: center;
+    border: 3px solid var(--paper); border-radius: var(--r-md);
+    transition: transform var(--t-fast) var(--ease-pop), background var(--t-fast), color var(--t-fast);
+  }
+  .socials a:hover { background: var(--chaos-yellow); color: var(--ink); border-color: var(--ink); transform: rotate(-6deg) scale(1.12); }
+  .socials a:focus-visible { outline: 3px solid var(--chaos-cyan); outline-offset: 3px; }
+  .socials svg { width: 22px; height: 22px; }
+  .foot .copy { font-weight: 700; font-size: var(--fs-sm); text-transform: uppercase; letter-spacing: 0.06em; color: #bdb7a8; }
+
+  .visually-hidden {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  /* ====== REDUCED MOTION ====== */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; scroll-behavior: auto !important; transition-duration: 1ms !important; }
+    .marquee__track { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+  <header>
+    <!-- top marquee -->
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee__track">
+        <span>NEW DROP FRIDAY <i class="marquee__star">✦</i> LIMITED VINYL <i class="marquee__star">✦</i> TOUR 2026 <i class="marquee__star">✦</i> NO SKIPS <i class="marquee__star">✦</i> HYPRWAV RADIO LIVE <i class="marquee__star">✦</i></span>
+        <span>NEW DROP FRIDAY <i class="marquee__star">✦</i> LIMITED VINYL <i class="marquee__star">✦</i> TOUR 2026 <i class="marquee__star">✦</i> NO SKIPS <i class="marquee__star">✦</i> HYPRWAV RADIO LIVE <i class="marquee__star">✦</i></span>
+      </div>
+    </div>
+
+    <div class="shell">
+      <nav class="bar" aria-label="Primary">
+        <a class="logo" href="#top">
+          <svg width="34" height="34" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <rect x="2" y="2" width="28" height="28" rx="7" fill="var(--chaos-pink)" stroke="black" stroke-width="2"/>
+            <path d="M7 20 L11 11 L16 22 L21 9 L25 20" stroke="black" stroke-width="3" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+          </svg>
+          HYPR<b>WAV</b>
+        </a>
+        <ul class="navlinks">
+          <li><a href="#drops">Drops</a></li>
+          <li><a href="#stats">Stats</a></li>
+          <li><a href="#join">Fan Club</a></li>
+          <li><a href="#join">Tour</a></li>
+          <li><a href="#join">Shop</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top" class="shell">
+
+    <!-- HERO -->
+    <section class="hero" aria-labelledby="hero-title">
+      <span class="hero__kicker">Album #04 · loading...</span>
+      <h1 class="hero__title" id="hero-title">
+        <span class="w1">LOUD</span>
+        <span class="w2">&amp;</span>
+        <span class="w3">PROUD</span>
+      </h1>
+      <p class="hero__sub">Twelve unhinged tracks, zero quiet moments. Stream the chaos, grab the vinyl, and crash the comments with the rest of the crew.</p>
+      <div class="hero__cta">
+        <a class="btn btn--primary" href="#drops">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          Play the drop
+        </a>
+        <a class="btn btn--ghost" href="#join">Join fan club</a>
+      </div>
+
+      <!-- scattered sticker overlays -->
+      <span class="sticker sticker--1" aria-hidden="true">↑ 100% volume</span>
+      <span class="sticker sticker--2" aria-hidden="true">★ certified slaps</span>
+      <span class="sticker sticker--3" aria-hidden="true">no skips !!!</span>
+    </section>
+
+    <!-- DROPS GRID -->
+    <section id="drops" aria-labelledby="drops-h">
+      <div class="section-head">
+        <h2 id="drops-h">The Tracklist</h2>
+        <span class="tag">12 tracks · 38 min</span>
+      </div>
+
+      <div class="grid-drops">
+        <!-- card 1 -->
+        <article class="card">
+          <span class="badge-new" aria-hidden="true">new</span>
+          <div class="card__art" aria-hidden="true">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+              <defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF00FF"/><stop offset="1" stop-color="#00E0FF"/></linearGradient></defs>
+              <rect width="100" height="100" fill="url(#g1)"/>
+              <circle cx="30" cy="35" r="22" fill="#FFFF00" opacity="0.85"/>
+              <path d="M0 70 Q25 50 50 70 T100 70 V100 H0 Z" fill="#0000FF" opacity="0.7"/>
+            </svg>
+          </div>
+          <div class="card__meta">
+            <h3>Static Hymn</h3>
+            <span class="num">01</span>
+          </div>
+          <div class="row">
+            <span class="plays">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 13h2v-2H3v2zm4 4h2V7H7v10zm4 3h2V4h-2v16zm4-3h2V7h-2v10zm4-6v2h2v-2h-2z"/></svg>
+              2.4M plays
+            </span>
+            <button class="play-btn" type="button"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Play</button>
+          </div>
+        </article>
+
+        <!-- card 2 -->
+        <article class="card">
+          <div class="card__art" aria-hidden="true">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+              <defs><linearGradient id="g2" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#00FF00"/><stop offset="1" stop-color="#FF5A00"/></linearGradient></defs>
+              <rect width="100" height="100" fill="url(#g2)"/>
+              <polygon points="50,10 65,45 95,45 70,65 80,95 50,75 20,95 30,65 5,45 35,45" fill="#FF00FF" opacity="0.9"/>
+            </svg>
+          </div>
+          <div class="card__meta">
+            <h3>Glitch Crush</h3>
+            <span class="num">02</span>
+          </div>
+          <div class="row">
+            <span class="plays">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 13h2v-2H3v2zm4 4h2V7H7v10zm4 3h2V4h-2v16zm4-3h2V7h-2v10zm4-6v2h2v-2h-2z"/></svg>
+              1.1M plays
+            </span>
+            <button class="play-btn" type="button"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Play</button>
+          </div>
+        </article>
+
+        <!-- card 3 -->
+        <article class="card">
+          <div class="card__art" aria-hidden="true">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+              <rect width="100" height="100" fill="#FFFF00"/>
+              <rect x="0" y="0" width="50" height="50" fill="#0000FF"/>
+              <rect x="50" y="50" width="50" height="50" fill="#FF00FF"/>
+              <circle cx="75" cy="25" r="18" fill="#00FF00"/>
+              <line x1="0" y1="100" x2="100" y2="0" stroke="black" stroke-width="4"/>
+            </svg>
+          </div>
+          <div class="card__meta">
+            <h3>404 Lover</h3>
+            <span class="num">03</span>
+          </div>
+          <div class="row">
+            <span class="plays">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 13h2v-2H3v2zm4 4h2V7H7v10zm4 3h2V4h-2v16zm4-3h2V7h-2v10zm4-6v2h2v-2h-2z"/></svg>
+              890K plays
+            </span>
+            <button class="play-btn" type="button"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Play</button>
+          </div>
+        </article>
+
+        <!-- card 4 -->
+        <article class="card">
+          <div class="card__art" aria-hidden="true">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+              <defs><radialGradient id="g4"><stop offset="0" stop-color="#00E0FF"/><stop offset="1" stop-color="#FF00FF"/></radialGradient></defs>
+              <rect width="100" height="100" fill="url(#g4)"/>
+              <path d="M20 80 Q50 0 80 80" stroke="#FFFF00" stroke-width="8" fill="none"/>
+              <circle cx="50" cy="50" r="10" fill="black"/>
+            </svg>
+          </div>
+          <div class="card__meta">
+            <h3>Doomscroll</h3>
+            <span class="num">04</span>
+          </div>
+          <div class="row">
+            <span class="plays">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 13h2v-2H3v2zm4 4h2V7H7v10zm4 3h2V4h-2v16zm4-3h2V7h-2v10zm4-6v2h2v-2h-2z"/></svg>
+              640K plays
+            </span>
+            <button class="play-btn" type="button"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Play</button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- SPLIT: STATS + JOIN -->
+    <section class="split">
+      <div class="stats" id="stats" aria-labelledby="stats-h">
+        <h2 id="stats-h">By the numbers</h2>
+        <div class="stat-grid">
+          <div class="stat"><div class="n">48M</div><div class="l">Monthly listeners</div></div>
+          <div class="stat"><div class="n">#1</div><div class="l">Viral chart</div></div>
+          <div class="stat"><div class="n">22</div><div class="l">Cities on tour</div></div>
+          <div class="stat"><div class="n">∞</div><div class="l">Replay value</div></div>
+        </div>
+      </div>
+
+      <form class="join" id="join" aria-labelledby="join-h" onsubmit="return false;">
+        <h2 id="join-h">Get the drop</h2>
+        <p>Early access, secret shows, and the unhinged group chat. No spam, just chaos.</p>
+        <div class="field">
+          <label class="visually-hidden" for="email">Email address</label>
+          <input id="email" type="email" name="email" placeholder="you@hyprwav.fm" autocomplete="email" required />
+          <button class="btn btn--primary" type="submit">Send it</button>
+        </div>
+        <small>By joining you accept maximum loudness levels.</small>
+      </form>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="shell foot">
+      <a class="logo" href="#top">HYPR<b>WAV</b></a>
+      <nav class="socials" aria-label="Social media">
+        <a href="#join" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+        </a>
+        <a href="#join" aria-label="TikTok">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 3c.3 2.3 1.8 4 4 4.3v3.1c-1.5.1-2.9-.3-4-1v6.1A6 6 0 1 1 10 9.5v3.2a2.8 2.8 0 1 0 2.8 2.8V3H16z"/></svg>
+        </a>
+        <a href="#join" aria-label="YouTube">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="4"/><path d="M10 9l5 3-5 3z" fill="currentColor" stroke="none"/></svg>
+        </a>
+      </nav>
+      <span class="copy">© 2026 HYPRWAV · all caps no chill</span>
+    </div>
+  </footer>
+
+  <script>
+    // Tiny vanilla play-state toggle — demo only, no deps.
+    document.querySelectorAll('.play-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var playing = btn.getAttribute('data-playing') === '1';
+        document.querySelectorAll('.play-btn[data-playing="1"]').forEach(function (b) {
+          b.setAttribute('data-playing', '0');
+          b.lastChild.textContent = 'Play';
+        });
+        if (!playing) {
+          btn.setAttribute('data-playing', '1');
+          btn.lastChild.textContent = 'Now';
+        } else {
+          btn.setAttribute('data-playing', '0');
+          btn.lastChild.textContent = 'Play';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

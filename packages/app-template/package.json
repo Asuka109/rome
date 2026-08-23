@@ -1,0 +1,7 @@
+{
+  "name": "@rome-os/app-template",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Static template tree copied into ~/.rome/<profile>/projects/apps/<appId>/ by app_management op:create. Files live under template/ and ship as-is in the published bundle.",
+  "type": "module"
+}

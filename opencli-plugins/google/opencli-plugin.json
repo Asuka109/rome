@@ -1,0 +1,6 @@
+{
+  "name": "rome-google",
+  "description": "Rome extensions for OpenCLI's Google site commands",
+  "version": "0.1.0",
+  "opencli": ">=1.8.0"
+}

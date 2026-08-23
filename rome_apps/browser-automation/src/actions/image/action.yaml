@@ -1,0 +1,8 @@
+name: chatgpt_image
+type: custom
+description: Generate an image in ChatGPT Images via browser automation and save it to disk
+entry: ./index.ts
+complexity: moderate
+speed: slow
+reliability: medium
+sideEffects: write

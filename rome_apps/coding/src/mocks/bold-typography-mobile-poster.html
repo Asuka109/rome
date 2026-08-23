@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOIR — Type as Hero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Color tokens — from CSV Design System Variables */
+    --bg: #0A0A0A;
+    --fg: #FAFAFA;
+    --muted: #1A1A1A;
+    --muted-fg: #737373;
+    --accent: #FF3D00;
+    --accent-fg: #0A0A0A;
+    --border: #262626;
+
+    /* Typography tokens */
+    --font-primary: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+    /* Type scale (CSV: 12 label, 16 body, 22 sub, 32 section, 40 H2, 56 H1, 72 hero) */
+    --t-label: 0.75rem;
+    --t-body: 1rem;
+    --t-sub: 1.375rem;
+    --t-section: 2rem;
+    --t-h2: 2.5rem;
+    --t-h1: 3.5rem;
+    --t-hero: clamp(3.5rem, 18vw, 4.75rem);
+
+    /* Spacing — large vertical rhythm (CSV: 60px+ between sections) */
+    --pad-x: 24px;
+    --gap-section: 64px;
+    --gap-block: 32px;
+
+    /* Radius — strictly 0 */
+    --radius: 0px;
+
+    /* Motion — 200ms, no bounce */
+    --ease: cubic-bezier(0.25, 0, 0, 1);
+    --dur: 200ms;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { background: #000; }
+
+  body {
+    font-family: var(--font-primary);
+    color: var(--fg);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    /* Backdrop framing the phone column on desktop */
+    background:
+      radial-gradient(120% 80% at 50% 0%, #141414 0%, #000 60%);
+    padding: 0;
+  }
+
+  /* Phone-sized poster column */
+  .frame {
+    width: 100%;
+    max-width: 430px;
+    min-height: 100vh;
+    background: var(--bg);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ---------- Header / Nav ---------- */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px var(--pad-x);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(10,10,10,0.85);
+    backdrop-filter: blur(8px);
+  }
+
+  .brand {
+    font-family: var(--font-mono);
+    font-size: var(--t-label);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--fg);
+  }
+  .brand .mark { width: 14px; height: 14px; color: var(--accent); display: block; }
+
+  nav { display: flex; align-items: center; gap: 18px; }
+  .nav-link {
+    background: none;
+    border: none;
+    color: var(--muted-fg);
+    font-family: var(--font-mono);
+    font-size: var(--t-label);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    padding: 6px 0;
+    position: relative;
+    transition: color var(--dur) var(--ease);
+  }
+  .nav-link::after {
+    content: "";
+    position: absolute;
+    left: 0; bottom: 0;
+    width: 100%; height: 2px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--dur) var(--ease);
+  }
+  .nav-link[aria-current="true"] { color: var(--fg); }
+  .nav-link[aria-current="true"]::after { transform: scaleX(1); }
+  .nav-link:hover { color: var(--fg); }
+  .nav-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  .menu-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--fg); width: 24px; height: 24px; padding: 0;
+    display: none;
+  }
+  .menu-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    padding: 56px var(--pad-x) var(--gap-section);
+    border-bottom: 1px solid var(--border);
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--t-label);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    margin-bottom: 28px;
+  }
+  .eyebrow span:last-child { color: var(--muted-fg); }
+
+  .hero h1 {
+    font-family: var(--font-primary);
+    font-weight: 800;
+    font-size: var(--t-hero);
+    line-height: 0.98;
+    letter-spacing: -2px;
+    /* slight bleed off the edge */
+    margin-left: -2px;
+    margin-right: -14px;
+  }
+  .hero h1 .accentword { color: var(--accent); }
+  .hero h1 .outline {
+    color: transparent;
+    -webkit-text-stroke: 1.5px var(--fg);
+  }
+
+  .hero-meta {
+    margin-top: 36px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px 40px;
+  }
+  .meta-item .k {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted-fg);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .meta-item .v {
+    font-size: var(--t-body);
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+
+  /* CTA group */
+  .cta-row { margin-top: 40px; display: flex; flex-direction: column; gap: 20px; align-items: flex-start; }
+
+  /* Inverted box CTA — 0 radius */
+  .btn-box {
+    font-family: var(--font-primary);
+    font-weight: 700;
+    font-size: var(--t-body);
+    letter-spacing: -0.2px;
+    background: var(--fg);
+    color: var(--accent-fg);
+    border: 1px solid var(--fg);
+    border-radius: var(--radius);
+    padding: 16px 28px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  }
+  .btn-box svg { width: 16px; height: 16px; }
+  .btn-box:hover { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+  .btn-box:active { background: #e63600; }
+  .btn-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+
+  /* Underline CTA */
+  .btn-underline {
+    font-family: var(--font-primary);
+    font-weight: 600;
+    font-size: var(--t-body);
+    background: none;
+    border: none;
+    color: var(--fg);
+    cursor: pointer;
+    padding: 4px 0 8px;
+    position: relative;
+    letter-spacing: -0.2px;
+  }
+  .btn-underline::after {
+    content: "";
+    position: absolute;
+    left: 0; bottom: 0;
+    width: 100%; height: 3px;
+    background: var(--accent);
+    transition: transform var(--dur) var(--ease);
+    transform-origin: left;
+  }
+  .btn-underline:hover { color: var(--accent); }
+  .btn-underline:hover::after { transform: scaleY(1.6); }
+  .btn-underline:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+
+  /* ---------- Section shell ---------- */
+  section.block { padding: var(--gap-section) var(--pad-x); border-bottom: 1px solid var(--border); }
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: var(--gap-block);
+    gap: 16px;
+  }
+  .section-head h2 {
+    font-weight: 800;
+    font-size: var(--t-section);
+    letter-spacing: -1px;
+    line-height: 1.05;
+  }
+  .section-head .idx {
+    font-family: var(--font-mono);
+    font-size: var(--t-label);
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  /* ---------- Program list (editorial rows) ---------- */
+  .program { list-style: none; }
+  .program li {
+    border-top: 1px solid var(--border);
+    padding: 22px 0;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 6px 16px;
+    align-items: start;
+    cursor: pointer;
+    transition: background var(--dur) var(--ease);
+  }
+  .program li:hover { background: var(--muted); }
+  .program li:hover .ev-title { color: var(--accent); }
+  .program li:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .ev-time {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--muted-fg);
+    padding-top: 4px;
+  }
+  .ev-title {
+    font-size: var(--t-sub);
+    font-weight: 700;
+    letter-spacing: -0.6px;
+    line-height: 1.1;
+    transition: color var(--dur) var(--ease);
+  }
+  .ev-sub {
+    grid-column: 2;
+    font-size: 0.875rem;
+    color: var(--muted-fg);
+    margin-top: 4px;
+    letter-spacing: -0.1px;
+  }
+  .ev-tag {
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--accent-fg);
+    background: var(--accent);
+    padding: 4px 7px;
+    align-self: start;
+    white-space: nowrap;
+  }
+  .ev-tag.alt { background: none; color: var(--muted-fg); border: 1px solid var(--border); }
+
+  /* ---------- Pull quote (Playfair Italic) ---------- */
+  .quote { padding: var(--gap-section) var(--pad-x); border-bottom: 1px solid var(--border); }
+  .quote blockquote {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: clamp(1.75rem, 8vw, 2.25rem);
+    line-height: 1.25;
+    letter-spacing: -0.5px;
+  }
+  .quote blockquote .hl { color: var(--accent); }
+  .quote .cite {
+    margin-top: 24px;
+    font-family: var(--font-mono);
+    font-size: var(--t-label);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted-fg);
+  }
+
+  /* ---------- Stats strip ---------- */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .stat {
+    background: var(--bg);
+    padding: 28px var(--pad-x);
+  }
+  .stat .num {
+    font-weight: 800;
+    font-size: 2rem;
+    letter-spacing: -1.5px;
+    line-height: 1;
+  }
+  .stat .num em { color: var(--accent); font-style: normal; }
+  .stat .lbl {
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted-fg);
+    margin-top: 10px;
+    display: block;
+  }
+
+  /* ---------- Ticket panel ---------- */
+  .ticket { padding: var(--gap-section) var(--pad-x); }
+  .ticket-card {
+    border: 1px solid var(--border);
+    background: var(--muted);
+    padding: 28px 24px;
+  }
+  .ticket-card h3 {
+    font-weight: 800;
+    font-size: var(--t-h2);
+    letter-spacing: -1.5px;
+    line-height: 1;
+  }
+  .ticket-card .price-sub { font-family: var(--font-mono); font-size: var(--t-label); color: var(--muted-fg); letter-spacing: 1px; margin-top: 8px; text-transform: uppercase; }
+  .ticket-list { list-style: none; margin: 24px 0; }
+  .ticket-list li {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0;
+    font-size: 0.9375rem;
+    color: var(--fg);
+    border-top: 1px solid var(--border);
+  }
+  .ticket-list li:first-child { border-top: none; }
+  .ticket-list svg { width: 16px; height: 16px; color: var(--accent); flex-shrink: 0; }
+  .ticket-card .btn-box { width: 100%; justify-content: center; margin-top: 8px; }
+
+  /* ---------- Footer ---------- */
+  footer {
+    padding: var(--gap-section) var(--pad-x) 40px;
+    border-top: 1px solid var(--border);
+  }
+  footer .big {
+    font-weight: 800;
+    font-size: clamp(2.5rem, 14vw, 3.25rem);
+    letter-spacing: -2px;
+    line-height: 0.95;
+    margin-right: -10px;
+  }
+  footer .big .o { color: transparent; -webkit-text-stroke: 1.5px var(--muted-fg); }
+  .foot-row {
+    margin-top: 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: var(--t-label);
+    color: var(--muted-fg);
+    letter-spacing: 0.5px;
+  }
+  .socials { display: flex; gap: 14px; }
+  .socials a { color: var(--muted-fg); transition: color var(--dur) var(--ease); display: inline-flex; }
+  .socials a:hover { color: var(--accent); }
+  .socials a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .socials svg { width: 18px; height: 18px; }
+
+  /* ---------- Entrance animation (non-essential) ---------- */
+  .reveal { opacity: 0; transform: translateY(10px); animation: rise var(--dur) var(--ease) forwards; }
+  .reveal.d1 { animation-delay: 60ms; }
+  .reveal.d2 { animation-delay: 120ms; }
+  .reveal.d3 { animation-delay: 180ms; }
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+
+  @media (max-width: 460px) {
+    .nav-links-desktop { display: none; }
+    .menu-btn { display: block; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+    .reveal { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <header>
+      <div class="brand">
+        <svg class="mark" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <rect x="2" y="2" width="20" height="20" fill="currentColor"/>
+          <rect x="8" y="8" width="8" height="8" fill="#0A0A0A"/>
+        </svg>
+        NOIR&nbsp;/&nbsp;FEST
+      </div>
+      <nav aria-label="Primary">
+        <span class="nav-links-desktop" style="display:flex;gap:18px;">
+          <button class="nav-link" aria-current="true">Program</button>
+          <button class="nav-link">Artists</button>
+          <button class="nav-link">Venue</button>
+        </span>
+        <button class="menu-btn" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <line x1="3" y1="7" x2="21" y2="7"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="17" x2="21" y2="17"/>
+          </svg>
+        </button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <p class="eyebrow reveal"><span>EXHIBITION · 2026</span><span>BERLIN — KREUZBERG</span></p>
+        <h1 id="hero-title" class="reveal d1">TYPE<br><span class="accentword">IS</span> THE<br><span class="outline">SUBJECT</span></h1>
+        <div class="hero-meta reveal d2">
+          <div class="meta-item">
+            <span class="k">Dates</span>
+            <span class="v">Jun 12 — Jul 04</span>
+          </div>
+          <div class="meta-item">
+            <span class="k">Hours</span>
+            <span class="v">11:00 — 22:00</span>
+          </div>
+          <div class="meta-item">
+            <span class="k">Hall</span>
+            <span class="v">Atrium B</span>
+          </div>
+        </div>
+        <div class="cta-row reveal d3">
+          <button class="btn-box">
+            Reserve a slot
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/>
+            </svg>
+          </button>
+          <button class="btn-underline">View the full program</button>
+        </div>
+      </section>
+
+      <div class="stats" role="list" aria-label="Festival figures">
+        <div class="stat" role="listitem"><div class="num"><em>24</em></div><span class="lbl">Installations</span></div>
+        <div class="stat" role="listitem"><div class="num">18</div><span class="lbl">Artists</span></div>
+        <div class="stat" role="listitem"><div class="num">3wk</div><span class="lbl">Run time</span></div>
+      </div>
+
+      <section class="block" aria-labelledby="prog-title">
+        <div class="section-head">
+          <h2 id="prog-title">Daily<br>Program</h2>
+          <span class="idx">[ 01 / 03 ]</span>
+        </div>
+        <ul class="program">
+          <li tabindex="0">
+            <span class="ev-time">11:00</span>
+            <span class="ev-title">Letterforms at Scale</span>
+            <span class="ev-tag">Live</span>
+            <span class="ev-sub">Walkthrough with the curatorial team across the broadsheet wall.</span>
+          </li>
+          <li tabindex="0">
+            <span class="ev-time">14:30</span>
+            <span class="ev-title">The Vermillion Lectures</span>
+            <span class="ev-tag alt">Talk</span>
+            <span class="ev-sub">On negative space, restraint, and the politics of a single color.</span>
+          </li>
+          <li tabindex="0">
+            <span class="ev-time">19:00</span>
+            <span class="ev-title">Edge-to-Edge: A Print Set</span>
+            <span class="ev-tag">Live</span>
+            <span class="ev-sub">Risograph performance, audience composes the closing poster.</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="quote" aria-label="Featured statement">
+        <blockquote>
+          “A poster does not whisper. It <span class="hl">commits</span> to one idea and lets the page hold its breath.”
+        </blockquote>
+        <p class="cite">— Curatorial note, Hall B</p>
+      </section>
+
+      <section class="ticket" aria-labelledby="ticket-title">
+        <div class="section-head">
+          <h2 id="ticket-title">Get In</h2>
+          <span class="idx">[ Access ]</span>
+        </div>
+        <div class="ticket-card">
+          <h3>€18<span style="font-size:1rem;font-weight:600;letter-spacing:-0.3px;">&nbsp;/ day</span></h3>
+          <p class="price-sub">Members enter free · Students €9</p>
+          <ul class="ticket-list">
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="4 12 10 18 20 6"/></svg>
+              Full access to all 24 installations
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="4 12 10 18 20 6"/></svg>
+              Re-entry on the same day
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="4 12 10 18 20 6"/></svg>
+              Printed broadsheet catalogue
+            </li>
+          </ul>
+          <button class="btn-box">
+            Buy a day pass
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/>
+            </svg>
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="big">N<span class="o">O</span>IR<br>FEST.</div>
+      <div class="foot-row">
+        <span>© 2026 · BLN</span>
+        <div class="socials">
+          <a href="#" aria-label="Instagram">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18"/><circle cx="12" cy="12" r="4"/><line x1="17.5" y1="6.5" x2="17.5" y2="6.5"/></svg>
+          </a>
+          <a href="#" aria-label="X">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="4" y1="4" x2="20" y2="20"/><line x1="20" y1="4" x2="4" y2="20"/></svg>
+          </a>
+          <a href="#" aria-label="Email">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="14"/><polyline points="3 6 12 13 21 6"/></svg>
+          </a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // Minimal: toggle active nav state via color shift (no elevation)
+    document.querySelectorAll('.nav-link').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.querySelectorAll('.nav-link').forEach(function (x) { x.setAttribute('aria-current', 'false'); });
+        b.setAttribute('aria-current', 'true');
+      });
+    });
+    // Make program rows keyboard-activatable
+    document.querySelectorAll('.program li').forEach(function (li) {
+      li.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); li.click(); }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aria — Voice Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Core neutrals (from Primary Colors) */
+    --soft-white: #FAFAFA;
+    --muted-blue: #6B8FAF;
+    --gentle-purple: #9B8FBB;
+
+    /* Design System Variables (from CSV) */
+    --listening-color: #6B8FAF;
+    --speaking-color: #22C55E;
+    --voice-accent: #9B8FBB;
+    --waveform-height: 60px;
+    --pulse-duration: 1.5s;
+    --indicator-size: 24px;
+
+    /* Surface palette */
+    --bg: #F4F5F8;
+    --bg-grad-1: #FAFAFA;
+    --bg-grad-2: #EFF1F6;
+    --panel: #FFFFFF;
+    --panel-2: #FBFBFD;
+    --ink: #1C2230;
+    --ink-soft: #5A6478;
+    --ink-faint: #8C95A8;
+    --border: #E6E9F1;
+    --border-strong: #D7DCE8;
+
+    /* States */
+    --processing-color: var(--gentle-purple);
+    --error-color: #E0586B;
+
+    /* Radius */
+    --r-xs: 8px;
+    --r-sm: 14px;
+    --r-md: 20px;
+    --r-lg: 28px;
+    --r-pill: 999px;
+
+    /* Shadow */
+    --sh-1: 0 1px 2px rgba(28,34,48,.04), 0 2px 8px rgba(28,34,48,.05);
+    --sh-2: 0 6px 24px rgba(28,34,48,.08), 0 2px 6px rgba(28,34,48,.05);
+    --sh-glow: 0 0 0 1px rgba(107,143,175,.18), 0 14px 48px rgba(107,143,175,.28);
+
+    /* Spacing scale */
+    --s-1: 4px;
+    --s-2: 8px;
+    --s-3: 12px;
+    --s-4: 16px;
+    --s-5: 24px;
+    --s-6: 32px;
+    --s-7: 48px;
+    --s-8: 64px;
+
+    /* Type scale */
+    --fs-xs: 0.75rem;
+    --fs-sm: 0.875rem;
+    --fs-base: 1rem;
+    --fs-lg: 1.25rem;
+    --fs-xl: 1.625rem;
+    --fs-2xl: 2.25rem;
+    --fs-3xl: 3rem;
+    --font: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+    /* Motion */
+    --ease: cubic-bezier(.22,.61,.36,1);
+    --t-fast: .16s var(--ease);
+    --t-med: .28s var(--ease);
+    --t-slow: .5s var(--ease);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    color: var(--ink);
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(155,143,187,.18), transparent 60%),
+      radial-gradient(900px 500px at 0% 110%, rgba(107,143,175,.16), transparent 55%),
+      linear-gradient(160deg, var(--bg-grad-1), var(--bg-grad-2));
+    min-height: 100vh;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: inherit; text-decoration: none; }
+
+  .shell {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: var(--s-5) var(--s-5) var(--s-8);
+  }
+
+  /* ---------- Header / Nav ---------- */
+  header.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4);
+    padding: var(--s-3) var(--s-4);
+    background: rgba(255,255,255,.7);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--border);
+    border-radius: var(--r-pill);
+    box-shadow: var(--sh-1);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    font-weight: 700;
+    font-size: var(--fs-lg);
+    letter-spacing: -.01em;
+  }
+  .brand .mark {
+    width: 40px; height: 40px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: linear-gradient(150deg, var(--muted-blue), var(--gentle-purple));
+    box-shadow: 0 6px 18px rgba(107,143,175,.4);
+    flex: 0 0 auto;
+  }
+  .brand .mark svg { width: 22px; height: 22px; }
+
+  nav.mainnav { display: flex; gap: var(--s-1); }
+  nav.mainnav a {
+    padding: var(--s-2) var(--s-4);
+    border-radius: var(--r-pill);
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    color: var(--ink-soft);
+    transition: background var(--t-fast), color var(--t-fast);
+  }
+  nav.mainnav a:hover { background: rgba(107,143,175,.12); color: var(--ink); }
+  nav.mainnav a:focus-visible { outline: 3px solid var(--muted-blue); outline-offset: 2px; }
+  nav.mainnav a[aria-current="page"] {
+    background: var(--ink);
+    color: #fff;
+  }
+
+  .topbar-actions { display: flex; align-items: center; gap: var(--s-3); }
+
+  .icon-btn {
+    width: 42px; height: 42px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: transform var(--t-fast), box-shadow var(--t-fast), color var(--t-fast);
+  }
+  .icon-btn svg { width: 20px; height: 20px; }
+  .icon-btn:hover { color: var(--ink); box-shadow: var(--sh-2); transform: translateY(-1px); }
+  .icon-btn:active { transform: translateY(0) scale(.96); }
+  .icon-btn:focus-visible { outline: 3px solid var(--muted-blue); outline-offset: 2px; }
+
+  .avatar {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: linear-gradient(150deg, var(--gentle-purple), var(--muted-blue));
+    color: #fff; display: grid; place-items: center;
+    font-weight: 700; font-size: var(--fs-sm);
+    box-shadow: var(--sh-1);
+  }
+
+  /* ---------- Main grid ---------- */
+  main {
+    margin-top: var(--s-6);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--s-5);
+  }
+  @media (min-width: 900px) {
+    main { grid-template-columns: 1.15fr .85fr; align-items: start; }
+  }
+
+  /* ---------- Voice stage ---------- */
+  .stage {
+    position: relative;
+    background:
+      radial-gradient(600px 360px at 50% 30%, rgba(155,143,187,.16), transparent 70%),
+      linear-gradient(180deg, var(--panel), var(--panel-2));
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--sh-2);
+    padding: var(--s-7) var(--s-5) var(--s-6);
+    overflow: hidden;
+    text-align: center;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: var(--s-2) var(--s-4);
+    border-radius: var(--r-pill);
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    background: rgba(107,143,175,.12);
+    color: var(--muted-blue);
+    border: 1px solid rgba(107,143,175,.25);
+  }
+  .status-dot {
+    width: var(--s-2); height: var(--s-2);
+    border-radius: 50%;
+    background: var(--listening-color);
+    box-shadow: 0 0 0 0 rgba(107,143,175,.6);
+    animation: pulse-dot var(--pulse-duration) infinite var(--ease);
+  }
+  @keyframes pulse-dot {
+    0% { box-shadow: 0 0 0 0 rgba(107,143,175,.55); }
+    70% { box-shadow: 0 0 0 10px rgba(107,143,175,0); }
+    100% { box-shadow: 0 0 0 0 rgba(107,143,175,0); }
+  }
+
+  .stage h1 {
+    margin: var(--s-5) 0 var(--s-2);
+    font-size: var(--fs-2xl);
+    letter-spacing: -.02em;
+    line-height: 1.15;
+  }
+  .stage .sub {
+    margin: 0 auto;
+    max-width: 32ch;
+    color: var(--ink-soft);
+    font-size: var(--fs-base);
+  }
+
+  /* Orb + listening pulse */
+  .orb-wrap {
+    position: relative;
+    width: 200px; height: 200px;
+    margin: var(--s-6) auto var(--s-5);
+    display: grid; place-items: center;
+  }
+  .ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px solid rgba(107,143,175,.35);
+    animation: ripple calc(var(--pulse-duration) * 2) infinite var(--ease);
+  }
+  .ring.r2 { animation-delay: calc(var(--pulse-duration) * .66); }
+  .ring.r3 { animation-delay: calc(var(--pulse-duration) * 1.33); }
+  @keyframes ripple {
+    0% { transform: scale(.55); opacity: .9; }
+    100% { transform: scale(1.25); opacity: 0; }
+  }
+  .orb {
+    position: relative;
+    width: 128px; height: 128px;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 32% 28%, #ffffff, rgba(255,255,255,0) 40%),
+      conic-gradient(from 200deg, var(--muted-blue), var(--gentle-purple), var(--muted-blue));
+    box-shadow: var(--sh-glow);
+    display: grid; place-items: center;
+    cursor: pointer;
+    border: none;
+    transition: transform var(--t-med), box-shadow var(--t-med);
+    animation: breathe 4s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.04); }
+  }
+  .orb svg { width: 46px; height: 46px; color: #fff; filter: drop-shadow(0 2px 6px rgba(28,34,48,.25)); }
+  .orb:hover { box-shadow: 0 0 0 1px rgba(107,143,175,.25), 0 20px 60px rgba(155,143,187,.4); }
+  .orb:active { transform: scale(.95); }
+  .orb:focus-visible { outline: 4px solid var(--muted-blue); outline-offset: 6px; }
+
+  /* Waveform */
+  .waveform {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 5px;
+    height: var(--waveform-height);
+    margin: var(--s-4) auto var(--s-5);
+    max-width: 360px;
+  }
+  .waveform .bar {
+    width: 5px;
+    border-radius: var(--r-pill);
+    background: linear-gradient(180deg, var(--gentle-purple), var(--muted-blue));
+    animation: wave 1.1s ease-in-out infinite;
+  }
+  @keyframes wave {
+    0%, 100% { height: 16%; opacity: .55; }
+    50% { height: 100%; opacity: 1; }
+  }
+
+  /* transcript line */
+  .transcript {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+    max-width: 90%;
+    margin: 0 auto;
+    padding: var(--s-3) var(--s-5);
+    background: rgba(28,34,48,.04);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--r-md);
+    color: var(--ink);
+    font-size: var(--fs-base);
+    font-style: italic;
+  }
+  .transcript .caret {
+    width: 2px; height: 1.1em;
+    background: var(--voice-accent);
+    animation: blink 1s steps(2) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .controls {
+    margin-top: var(--s-6);
+    display: flex;
+    gap: var(--s-3);
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+    border: none;
+    cursor: pointer;
+    font-family: var(--font);
+    font-weight: 700;
+    font-size: var(--fs-base);
+    padding: var(--s-3) var(--s-5);
+    border-radius: var(--r-pill);
+    transition: transform var(--t-fast), box-shadow var(--t-fast), background var(--t-fast);
+  }
+  .btn svg { width: 20px; height: 20px; }
+  .btn-primary {
+    background: var(--ink);
+    color: #fff;
+    box-shadow: var(--sh-2);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(28,34,48,.22); }
+  .btn-primary:active { transform: translateY(0) scale(.98); }
+  .btn-ghost {
+    background: var(--panel);
+    color: var(--ink);
+    border: 1px solid var(--border-strong);
+  }
+  .btn-ghost:hover { background: rgba(107,143,175,.1); transform: translateY(-2px); }
+  .btn-ghost:active { transform: translateY(0) scale(.98); }
+  .btn:focus-visible { outline: 3px solid var(--muted-blue); outline-offset: 3px; }
+
+  /* ---------- Side column ---------- */
+  .side { display: grid; gap: var(--s-5); }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    box-shadow: var(--sh-1);
+    padding: var(--s-5);
+  }
+  .card h2 {
+    margin: 0 0 var(--s-4);
+    font-size: var(--fs-base);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  /* conversation log */
+  .log { display: grid; gap: var(--s-4); }
+  .turn { display: flex; gap: var(--s-3); align-items: flex-start; }
+  .turn .who {
+    flex: 0 0 auto;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+  }
+  .turn .who svg { width: 18px; height: 18px; }
+  .turn.user .who { background: rgba(107,143,175,.16); color: var(--muted-blue); }
+  .turn.aria .who { background: linear-gradient(150deg, var(--muted-blue), var(--gentle-purple)); color: #fff; }
+  .bubble {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    padding: var(--s-3) var(--s-4);
+    font-size: var(--fs-sm);
+    color: var(--ink);
+  }
+  .turn.aria .bubble { background: rgba(155,143,187,.08); border-color: rgba(155,143,187,.25); }
+  .bubble .meta {
+    display: block;
+    margin-top: var(--s-2);
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+  }
+  /* mini reply waveform inside aria bubble */
+  .mini-wave { display: inline-flex; align-items: flex-end; gap: 3px; height: 16px; vertical-align: middle; }
+  .mini-wave span {
+    width: 3px; border-radius: 2px;
+    background: var(--speaking-color);
+    animation: wave 1s ease-in-out infinite;
+  }
+
+  /* quick commands */
+  .chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+  .chip {
+    display: inline-flex; align-items: center; gap: var(--s-2);
+    padding: var(--s-2) var(--s-3);
+    border-radius: var(--r-pill);
+    background: var(--panel-2);
+    border: 1px solid var(--border-strong);
+    color: var(--ink-soft);
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    cursor: pointer;
+    transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast), transform var(--t-fast);
+  }
+  .chip svg { width: 15px; height: 15px; color: var(--voice-accent); }
+  .chip:hover { background: rgba(155,143,187,.12); color: var(--ink); border-color: var(--voice-accent); transform: translateY(-1px); }
+  .chip:active { transform: translateY(0) scale(.97); }
+  .chip:focus-visible { outline: 3px solid var(--muted-blue); outline-offset: 2px; }
+
+  /* status / device row */
+  .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
+  .meta-tile {
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    padding: var(--s-4);
+    background: var(--panel-2);
+  }
+  .meta-tile .label { font-size: var(--fs-xs); color: var(--ink-faint); text-transform: uppercase; letter-spacing: .05em; }
+  .meta-tile .value { font-size: var(--fs-lg); font-weight: 700; margin-top: var(--s-1); display: flex; align-items: center; gap: var(--s-2); }
+  .live-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--speaking-color); }
+  .live-dot.idle { background: var(--ink-faint); }
+
+  footer.legend {
+    margin-top: var(--s-6);
+    display: flex; flex-wrap: wrap; gap: var(--s-5);
+    justify-content: center;
+    color: var(--ink-faint);
+    font-size: var(--fs-sm);
+  }
+  .legend-item { display: inline-flex; align-items: center; gap: var(--s-2); }
+  .swatch { width: 14px; height: 14px; border-radius: 4px; }
+
+  @media (max-width: 720px) {
+    .shell { padding: var(--s-4) var(--s-4) var(--s-7); }
+    nav.mainnav { display: none; }
+    .stage h1 { font-size: var(--fs-xl); }
+    .meta-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .status-dot, .ring, .orb, .waveform .bar, .transcript .caret, .mini-wave span {
+      animation: none !important;
+    }
+    .ring { opacity: .25; }
+    .orb { transform: none; }
+    .waveform .bar { height: 50% !important; opacity: .8; }
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#fff">
+            <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v1a7 7 0 0 1-14 0v-1"/>
+            <line x1="12" y1="19" x2="12" y2="22"/>
+          </svg>
+        </span>
+        <span>Aria</span>
+      </div>
+
+      <nav class="mainnav" aria-label="Primary">
+        <a href="#" aria-current="page">Assistant</a>
+        <a href="#">History</a>
+        <a href="#">Routines</a>
+        <a href="#">Devices</a>
+      </nav>
+
+      <div class="topbar-actions">
+        <button class="icon-btn" type="button" aria-label="Sound settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+          </svg>
+        </button>
+        <button class="icon-btn" type="button" aria-label="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+        <div class="avatar" aria-hidden="true">EC</div>
+      </div>
+    </header>
+
+    <main>
+      <!-- Voice stage -->
+      <section class="stage" aria-label="Voice assistant">
+        <span class="status-pill">
+          <span class="status-dot" aria-hidden="true"></span>
+          Listening
+        </span>
+
+        <h1>Hi Evan, I'm listening</h1>
+        <p class="sub">Ask anything, set a routine, or control your home — hands-free.</p>
+
+        <div class="orb-wrap" aria-hidden="true">
+          <span class="ring r1"></span>
+          <span class="ring r2"></span>
+          <span class="ring r3"></span>
+          <button class="orb" type="button" aria-label="Stop listening">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v1a7 7 0 0 1-14 0v-1"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="waveform" id="waveform" aria-hidden="true"></div>
+
+        <p class="transcript" role="status" aria-live="polite">
+          <span>Set a timer for twenty five minutes and dim the kitchen lights</span>
+          <span class="caret" aria-hidden="true"></span>
+        </p>
+
+        <div class="controls">
+          <button class="btn btn-primary" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="6" width="12" height="12" rx="2"/>
+            </svg>
+            Stop
+          </button>
+          <button class="btn btn-ghost" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12h4l3 8 4-16 3 8h4"/>
+            </svg>
+            Type instead
+          </button>
+        </div>
+      </section>
+
+      <!-- Side column -->
+      <div class="side">
+        <section class="card" aria-label="Conversation">
+          <h2>Conversation</h2>
+          <div class="log">
+            <div class="turn user">
+              <span class="who" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+              </span>
+              <div class="bubble">
+                What's the weather looking like for my run this evening?
+                <span class="meta">You · 5:42 PM</span>
+              </div>
+            </div>
+
+            <div class="turn aria">
+              <span class="who" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/>
+                </svg>
+              </span>
+              <div class="bubble">
+                Clear skies and 64°F around 6 PM — great for a run.
+                <span class="meta">
+                  Aria · speaking
+                  <span class="mini-wave" aria-hidden="true">
+                    <span style="height:40%;animation-delay:0s"></span>
+                    <span style="height:90%;animation-delay:.1s"></span>
+                    <span style="height:55%;animation-delay:.2s"></span>
+                    <span style="height:100%;animation-delay:.05s"></span>
+                    <span style="height:30%;animation-delay:.25s"></span>
+                  </span>
+                </span>
+              </div>
+            </div>
+
+            <div class="turn user">
+              <span class="who" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+              </span>
+              <div class="bubble">
+                Remind me to take water before I leave.
+                <span class="meta">You · 5:43 PM</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card" aria-label="Quick commands">
+          <h2>Try saying</h2>
+          <div class="chips">
+            <button class="chip" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+              Set a 10 minute timer
+            </button>
+            <button class="chip" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+              Play focus playlist
+            </button>
+            <button class="chip" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+              Add milk to my list
+            </button>
+            <button class="chip" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              Lock the front door
+            </button>
+          </div>
+        </section>
+
+        <section class="card" aria-label="Status">
+          <h2>Session</h2>
+          <div class="meta-grid">
+            <div class="meta-tile">
+              <div class="label">Microphone</div>
+              <div class="value"><span class="live-dot" aria-hidden="true"></span>Live</div>
+            </div>
+            <div class="meta-tile">
+              <div class="label">Language</div>
+              <div class="value">English (US)</div>
+            </div>
+            <div class="meta-tile">
+              <div class="label">Latency</div>
+              <div class="value">142 ms</div>
+            </div>
+            <div class="meta-tile">
+              <div class="label">Voice output</div>
+              <div class="value"><span class="live-dot idle" aria-hidden="true"></span>Idle</div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="legend">
+      <span class="legend-item"><span class="swatch" style="background:var(--listening-color)"></span> Listening</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--processing-color)"></span> Processing</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--speaking-color)"></span> Speaking</span>
+    </footer>
+  </div>
+
+  <script>
+    // Build the waveform bars; heights are randomized only for visual variety.
+    (function () {
+      var wf = document.getElementById('waveform');
+      if (!wf) return;
+      var count = 28;
+      for (var i = 0; i < count; i++) {
+        var bar = document.createElement('span');
+        bar.className = 'bar';
+        var delay = (i % 8) * 0.08;
+        bar.style.animationDelay = delay + 's';
+        // subtle per-bar scale so the mid is taller (mouth-shape)
+        var center = 1 - Math.abs(i - count / 2) / (count / 2);
+        bar.style.transform = 'scaleY(' + (0.5 + center * 0.5).toFixed(2) + ')';
+        wf.appendChild(bar);
+      }
+    })();
+  </script>
+</body>
+</html>

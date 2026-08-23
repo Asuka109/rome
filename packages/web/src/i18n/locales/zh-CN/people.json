@@ -1,0 +1,142 @@
+{
+  "header": {
+    "liveUpdated": "实时 · 更新于 {{time}}",
+    "loading": "加载中…",
+    "staleUpdated": "刷新失败 · 上次更新于 {{time}}",
+    "loadFailed": "无法连接到服务器",
+    "partialUpdated": "部分板块刷新失败 · 上次更新于 {{time}}",
+    "partialFailed": "部分板块加载失败",
+    "refresh": "刷新"
+  },
+  "timeAgo": {
+    "unknown": "未知",
+    "justNow": "刚刚",
+    "seconds": "{{count}} 秒前",
+    "minutes": "{{count}} 分钟前",
+    "hours": "{{count}} 小时前",
+    "days": "{{count}} 天前"
+  },
+  "bondLevels": {
+    "guardian": "守护者",
+    "innerCircle": "核心圈",
+    "acquaintance": "熟人",
+    "other": "其他",
+    "stranger": "陌生人"
+  },
+  "channels": {
+    "telegram": "Telegram",
+    "whatsapp": "WhatsApp",
+    "discord": "Discord",
+    "webchat": "网页聊天",
+    "linkedin": "领英"
+  },
+  "unmappedCalloutSingular": "有 {{count}} 位未关联发件人待处理",
+  "unmappedCalloutPlural": "有 {{count}} 位未关联发件人待处理",
+  "unmapped": {
+    "heading": "未关联发件人",
+    "description": "来自 Sentinel 日志、尚未关联到人物的新发件人",
+    "loading": "加载中…",
+    "emptyTitle": "暂无未关联发件人",
+    "emptyHint": "尚未关联到人物的新发件人将显示在这里",
+    "unknownSender": "未知发件人"
+  },
+  "known": {
+    "heading": "已知人物",
+    "description": "你在各渠道关联过的人物",
+    "loading": "加载中…",
+    "emptyTitle": "暂无已知人物",
+    "emptyHint": "为某个未关联发件人创建资料即可开始",
+    "emptyForFilter": "该亲密度下暂无人物",
+    "noChannels": "暂无渠道"
+  },
+  "filters": {
+    "groupLabel": "按关系筛选已知人物",
+    "all": "全部",
+    "innerCircle": "核心圈",
+    "acquaintance": "熟人",
+    "other": "其他"
+  },
+  "actions": {
+    "create": "创建",
+    "link": "关联",
+    "markStranger": "视为陌生人",
+    "cancel": "取消",
+    "close": "关闭",
+    "createProfile": "创建资料",
+    "creating": "创建中…",
+    "linkSubmit": "关联",
+    "linking": "关联中…",
+    "markingStranger": "标记中…"
+  },
+  "strangerConfirm": {
+    "title": "将 {{name}} 视为陌生人？",
+    "description": "Rome 会把来自 {{name}} 的消息当作陌生人发来的，并且他们将不再出现在“{{section}}”中。此操作无法在面板中撤销。"
+  },
+  "createForm": {
+    "nameLabel": "姓名",
+    "bondLevelLabel": "亲密度",
+    "relationLabel": "关系",
+    "relationPlaceholder": "你和他们是什么关系？"
+  },
+  "linkForm": {
+    "label": "关联到已有人物",
+    "selectPlaceholder": "选择一位人物…"
+  },
+  "errors": {
+    "requestFailed": "出了点问题，更改未保存。",
+    "network": "无法连接服务器，请检查网络后重试。",
+    "loadFailedTitle": "加载失败",
+    "loadFailedFallback": "出了点问题。请检查网络连接后重试。",
+    "messagesFailed": "消息加载失败",
+    "retry": "重试"
+  },
+  "whatsapp": {
+    "heading": "WhatsApp 联系人",
+    "description": "从你的 WhatsApp 通讯录同步",
+    "searchPlaceholder": "搜索姓名或号码…",
+    "emptyForSearch": "没有符合搜索条件的联系人",
+    "loadingContacts": "正在加载联系人…",
+    "emptyTitle": "暂无 WhatsApp 联系人",
+    "emptyHint": "尚未同步到任何联系人 — 若未关联 WhatsApp，请在设置中连接。",
+    "linkedTo": "已关联 · {{name}}",
+    "groupChat": "群聊",
+    "contact": "WhatsApp 联系人",
+    "messages": "消息",
+    "dialogTitle": "消息 · {{name}}",
+    "loading": "正在加载消息…",
+    "noMessages": "暂无消息",
+    "noMessagesHint": "发送一条消息开始对话",
+    "mediaPlaceholder": "[{{type}}]",
+    "composerPlaceholder": "输入消息",
+    "send": "发送",
+    "sendFailed": "未送达 · 点按重试",
+    "notConnected": "WhatsApp 未连接 — 请在设置中关联后再发送。",
+    "today": "今天",
+    "yesterday": "昨天",
+    "reactedTo": "对早前的一条消息回应了 {{emoji}}",
+    "reactedToYou": "你对早前的一条消息回应了 {{emoji}}"
+  },
+  "linkedin": {
+    "heading": "领英消息",
+    "description": "由领英连接从你的领英收件箱同步",
+    "searchPlaceholder": "搜索姓名或消息预览…",
+    "emptyForSearch": "没有匹配的对话",
+    "loadingThreads": "正在加载对话…",
+    "emptyTitle": "暂无领英对话",
+    "emptyHint": "还没有同步内容——如果尚未连接领英,请到设置中连接。",
+    "groupChat": "群组对话",
+    "participants": "{{count}} 位参与者",
+    "thread": "领英对话",
+    "unread": "未读",
+    "messages": "消息",
+    "dialogTitle": "消息 · {{name}}",
+    "openInLinkedIn": "在领英中打开",
+    "loading": "正在加载消息…",
+    "noMessages": "尚未同步到消息",
+    "noMessagesHint": "消息会在下次同步后出现——Rome 每小时检查数次。",
+    "composerPlaceholder": "在领英中回复",
+    "send": "发送",
+    "sendFailed": "领英回复发送失败 — 点按重试",
+    "notConnected": "领英尚未连接 — 请先在设置中连接再回复。"
+  }
+}

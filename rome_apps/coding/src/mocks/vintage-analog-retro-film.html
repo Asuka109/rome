@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Halcyon Film Lab — Analog Photography Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Palette derived from style row */
+    --cream: #F5E6C8;
+    --sepia: #D4A574;
+    --teal: #4A7B7C;
+    --pink: #E8B4B8;
+    --paper: #EADBBE;
+    --paper-deep: #E0CDA6;
+    --ink: #3A2E22;
+    --ink-soft: #5C4B38;
+    --shadow-blue: #2E3A4A;
+    --leak-orange: #F4A14A;
+
+    /* Vintage design system variables */
+    --sepia-amount: 20%;
+    --contrast: 1.1;
+    --saturation: 0.8;
+    --grain-opacity: 0.15;
+    --light-leak-color: rgba(255, 200, 100, 0.2);
+    --warm-tint: #F5E6C8;
+
+    /* Radius */
+    --r-sm: 4px;
+    --r-md: 8px;
+    --r-lg: 14px;
+
+    /* Shadows */
+    --sh-soft: 0 8px 28px rgba(58, 46, 34, 0.18);
+    --sh-card: 0 14px 40px rgba(46, 58, 74, 0.22);
+    --sh-inset: inset 0 0 0 1px rgba(58, 46, 34, 0.08);
+
+    /* Spacing */
+    --sp-1: 6px;
+    --sp-2: 12px;
+    --sp-3: 20px;
+    --sp-4: 32px;
+    --sp-5: 52px;
+    --sp-6: 80px;
+
+    /* Type */
+    --font-display: 'Abril Fatface', Georgia, serif;
+    --font-body: 'Merriweather', Georgia, 'Times New Roman', serif;
+    --fs-hero: clamp(2.8rem, 8vw, 6rem);
+    --fs-h2: clamp(1.6rem, 3.4vw, 2.6rem);
+    --fs-h3: clamp(1.1rem, 2vw, 1.4rem);
+    --fs-body: 1rem;
+    --fs-small: 0.82rem;
+
+    /* Motion */
+    --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --t-fast: 160ms;
+    --t-mid: 360ms;
+    --t-slow: 800ms;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-body);
+    font-weight: 300;
+    color: var(--ink);
+    background-color: var(--paper);
+    background-image:
+      radial-gradient(120% 80% at 80% -10%, rgba(244, 161, 74, 0.22), transparent 55%),
+      radial-gradient(90% 70% at -10% 110%, rgba(74, 123, 124, 0.18), transparent 60%),
+      linear-gradient(160deg, var(--paper) 0%, var(--paper-deep) 100%);
+    line-height: 1.65;
+    overflow-x: hidden;
+    position: relative;
+    min-height: 100vh;
+    filter: sepia(var(--sepia-amount)) contrast(var(--contrast)) saturate(var(--saturation));
+  }
+
+  /* Film grain overlay */
+  .grain {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: var(--grain-opacity);
+    mix-blend-mode: multiply;
+  }
+  .grain svg { width: 100%; height: 100%; }
+
+  /* Light leak */
+  .leak {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 38vw;
+    max-width: 520px;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 1;
+    background: linear-gradient(120deg, transparent 0%, var(--light-leak-color) 40%, rgba(244, 161, 74, 0.32) 70%, transparent 100%);
+    mix-blend-mode: screen;
+    animation: leakDrift 9s var(--ease) infinite alternate;
+  }
+  @keyframes leakDrift {
+    0% { opacity: 0.5; transform: translateX(8%) skewX(-4deg); }
+    100% { opacity: 0.95; transform: translateX(-2%) skewX(2deg); }
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 var(--sp-3); position: relative; z-index: 2; }
+
+  /* Header */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: blur(6px);
+    background: linear-gradient(180deg, rgba(234, 219, 190, 0.92), rgba(234, 219, 190, 0.62));
+    border-bottom: 1px solid rgba(58, 46, 34, 0.16);
+  }
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    padding: var(--sp-2) 0;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); }
+  .brand .mark {
+    width: 38px; height: 38px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--cream);
+    box-shadow: var(--sh-inset);
+    flex-shrink: 0;
+  }
+  .brand .name {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    letter-spacing: 0.5px;
+    line-height: 1;
+  }
+  .brand .name small { display: block; font-family: var(--font-body); font-size: 0.58rem; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); }
+
+  nav ul { list-style: none; display: flex; gap: var(--sp-3); align-items: center; }
+  nav a {
+    color: var(--ink-soft);
+    text-decoration: none;
+    font-size: var(--fs-small);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 6px 2px;
+    border-bottom: 2px solid transparent;
+    transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+  }
+  nav a:hover { color: var(--ink); border-bottom-color: var(--teal); }
+  nav a:focus-visible { outline: 2px dashed var(--teal); outline-offset: 4px; border-radius: 2px; }
+  .nav-links { display: flex; align-items: center; gap: var(--sp-3); }
+
+  .btn {
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: var(--fs-small);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    border: 2px solid var(--ink);
+    background: var(--teal);
+    color: var(--cream);
+    padding: 11px 22px;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 4px 4px 0 var(--ink);
+    transition: transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+  }
+  .btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--ink); background: #3f6c6d; }
+  .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+  .btn:focus-visible { outline: 2px dashed var(--leak-orange); outline-offset: 4px; }
+  .btn.ghost { background: transparent; color: var(--ink); box-shadow: 4px 4px 0 var(--sepia); }
+  .btn.ghost:hover { background: var(--cream); box-shadow: 6px 6px 0 var(--sepia); }
+
+  /* Hero */
+  .hero { padding: var(--sp-6) 0 var(--sp-5); }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: var(--sp-5);
+    align-items: center;
+  }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: var(--fs-small);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--teal);
+    font-weight: 700;
+    margin-bottom: var(--sp-3);
+  }
+  .eyebrow::before { content: ""; width: 34px; height: 2px; background: var(--teal); display: inline-block; }
+
+  h1.headline {
+    font-family: var(--font-display);
+    font-size: var(--fs-hero);
+    line-height: 0.96;
+    color: var(--ink);
+    letter-spacing: -1px;
+    text-shadow: 3px 3px 0 rgba(232, 180, 184, 0.55);
+  }
+  h1.headline em { font-style: normal; color: var(--teal); }
+  .hero p.lede {
+    font-size: 1.12rem;
+    max-width: 46ch;
+    margin: var(--sp-3) 0 var(--sp-4);
+    color: var(--ink-soft);
+  }
+  .hero-actions { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+
+  /* Polaroid stack */
+  .polaroid-stack { position: relative; min-height: 420px; display: grid; place-items: center; }
+  .polaroid {
+    background: #fbf3df;
+    padding: 12px 12px 44px;
+    border-radius: var(--r-sm);
+    box-shadow: var(--sh-card);
+    position: absolute;
+    width: min(74%, 280px);
+    transition: transform var(--t-mid) var(--ease), box-shadow var(--t-mid) var(--ease);
+  }
+  .polaroid .frame { aspect-ratio: 1 / 1; border-radius: 2px; overflow: hidden; position: relative; }
+  .polaroid figcaption {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    text-align: center;
+    margin-top: 12px;
+    color: var(--ink-soft);
+  }
+  .polaroid.p1 { transform: rotate(-7deg) translate(-32%, -8%); z-index: 2; }
+  .polaroid.p2 { transform: rotate(5deg) translate(28%, 6%); z-index: 3; }
+  .polaroid.p3 { transform: rotate(-2deg) translate(-2%, 22%); z-index: 4; }
+  .polaroid-stack:hover .polaroid.p1 { transform: rotate(-10deg) translate(-38%, -12%); }
+  .polaroid-stack:hover .polaroid.p2 { transform: rotate(8deg) translate(34%, 8%); }
+  .polaroid-stack:hover .polaroid.p3 { transform: rotate(0deg) translate(-2%, 18%) scale(1.03); animation: shake 0.5s var(--ease); }
+  @keyframes shake {
+    0%,100% { rotate: 0deg; } 25% { rotate: -2deg; } 75% { rotate: 2deg; }
+  }
+
+  /* Section heading */
+  .sec { padding: var(--sp-6) 0; }
+  .sec-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-3); margin-bottom: var(--sp-4); flex-wrap: wrap; }
+  .sec-head h2 { font-family: var(--font-display); font-size: var(--fs-h2); color: var(--ink); line-height: 1; }
+  .sec-head .meta { font-size: var(--fs-small); letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); }
+
+  /* Film strip gallery */
+  .filmstrip {
+    border: 3px solid var(--ink);
+    border-radius: var(--r-md);
+    background: var(--shadow-blue);
+    padding: 16px 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .filmstrip::before, .filmstrip::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    height: 14px;
+    background-image: repeating-linear-gradient(90deg, #1c2533 0 10px, #fbf3df 10px 22px);
+    opacity: 0.85;
+  }
+  .filmstrip::before { top: 0; }
+  .filmstrip::after { bottom: 0; }
+  .strip-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 16px 4px; }
+  .shot {
+    aspect-ratio: 4 / 3;
+    border-radius: var(--r-sm);
+    overflow: hidden;
+    position: relative;
+    border: 2px solid rgba(251, 243, 223, 0.5);
+    cursor: pointer;
+    transition: transform var(--t-fast) var(--ease), filter var(--t-fast) var(--ease);
+  }
+  .shot:hover { transform: scale(1.04); filter: saturate(1.1) brightness(1.05); }
+  .shot:focus-visible { outline: 3px solid var(--leak-orange); outline-offset: 2px; }
+  .shot .tag {
+    position: absolute; bottom: 6px; left: 6px;
+    font-size: 0.62rem; letter-spacing: 1px; text-transform: uppercase;
+    background: rgba(58, 46, 34, 0.78); color: var(--cream);
+    padding: 2px 7px; border-radius: 2px;
+  }
+
+  /* Service cards */
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); }
+  .card {
+    background: linear-gradient(165deg, #fbf3df, #efdebc);
+    border: 1px solid rgba(58, 46, 34, 0.2);
+    border-radius: var(--r-lg);
+    padding: var(--sp-4);
+    box-shadow: var(--sh-soft);
+    transition: transform var(--t-mid) var(--ease), box-shadow var(--t-mid) var(--ease);
+    position: relative;
+    overflow: hidden;
+  }
+  .card::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(135deg, transparent 60%, rgba(244, 161, 74, 0.18));
+    pointer-events: none;
+  }
+  .card:hover { transform: translateY(-6px); box-shadow: var(--sh-card); }
+  .card .ic {
+    width: 48px; height: 48px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    display: grid; place-items: center;
+    margin-bottom: var(--sp-3);
+    background: var(--pink);
+    color: var(--ink);
+  }
+  .card h3 { font-family: var(--font-display); font-size: var(--fs-h3); margin-bottom: 8px; }
+  .card p { font-size: 0.95rem; color: var(--ink-soft); }
+  .card .price { margin-top: var(--sp-3); font-family: var(--font-display); font-size: 1.5rem; color: var(--teal); }
+  .card .price span { font-family: var(--font-body); font-size: 0.7rem; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-soft); }
+
+  /* Stats / metadata bar */
+  .ticker {
+    border-top: 2px dashed rgba(58, 46, 34, 0.35);
+    border-bottom: 2px dashed rgba(58, 46, 34, 0.35);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--sp-3);
+    padding: var(--sp-4) 0;
+    margin: var(--sp-5) 0;
+  }
+  .ticker .stat { text-align: center; }
+  .ticker .num { font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 2.8rem); color: var(--ink); line-height: 1; }
+  .ticker .lbl { font-size: var(--fs-small); letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); margin-top: 6px; }
+
+  /* CTA band */
+  .cta-band {
+    background: var(--shadow-blue);
+    color: var(--cream);
+    border-radius: var(--r-lg);
+    padding: var(--sp-5) var(--sp-4);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--sh-card);
+  }
+  .cta-band::before {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(115deg, transparent 30%, rgba(244, 161, 74, 0.4) 60%, transparent 90%);
+    mix-blend-mode: screen;
+  }
+  .cta-band h2 { font-family: var(--font-display); font-size: var(--fs-h2); position: relative; }
+  .cta-band p { max-width: 50ch; margin: var(--sp-2) auto var(--sp-4); position: relative; color: rgba(245, 230, 200, 0.85); }
+  .cta-band .btn { position: relative; background: var(--leak-orange); color: var(--ink); border-color: var(--cream); box-shadow: 4px 4px 0 rgba(245,230,200,0.5); }
+  .cta-band .btn:hover { background: #f6b365; }
+
+  /* Footer */
+  footer { padding: var(--sp-5) 0 var(--sp-4); border-top: 1px solid rgba(58, 46, 34, 0.18); margin-top: var(--sp-5); }
+  .foot-grid { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
+  .foot-grid p { font-size: var(--fs-small); color: var(--ink-soft); }
+  .socials { display: flex; gap: var(--sp-2); }
+  .socials a { width: 36px; height: 36px; border: 1.5px solid var(--ink); border-radius: 50%; display: grid; place-items: center; color: var(--ink); transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease); }
+  .socials a:hover { background: var(--ink); color: var(--cream); }
+  .socials a:focus-visible { outline: 2px dashed var(--teal); outline-offset: 3px; }
+
+  /* gradient image fills (no rasters) */
+  .img-a { background: radial-gradient(120% 100% at 30% 20%, var(--pink), #b06a72 80%), linear-gradient(160deg, var(--leak-orange), var(--shadow-blue)); }
+  .img-b { background: linear-gradient(155deg, var(--teal), #2c4f50 60%, var(--shadow-blue)); }
+  .img-c { background: radial-gradient(90% 90% at 70% 30%, var(--leak-orange), var(--sepia) 70%); }
+  .img-d { background: linear-gradient(150deg, var(--sepia), var(--cream) 50%, var(--pink)); }
+  .img-e { background: radial-gradient(120% 100% at 20% 80%, #6f9b9c, var(--shadow-blue)); }
+  .img-f { background: linear-gradient(140deg, var(--pink), var(--leak-orange) 70%); }
+  .vintage-fill { filter: sepia(0.35) contrast(1.05) saturate(0.85); }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .hero-grid { grid-template-columns: 1fr; gap: var(--sp-4); }
+    .polaroid-stack { min-height: 360px; margin-top: var(--sp-3); }
+    .cards { grid-template-columns: 1fr; }
+    .strip-row { grid-template-columns: repeat(2, 1fr); }
+    .ticker { grid-template-columns: repeat(2, 1fr); gap: var(--sp-4); }
+  }
+  @media (max-width: 620px) {
+    .nav-links nav { display: none; }
+    .hero { padding: var(--sp-5) 0 var(--sp-4); }
+    h1.headline { text-shadow: 2px 2px 0 rgba(232,180,184,0.55); }
+    .leak { width: 60vw; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+    .leak { opacity: 0.7; }
+  }
+</style>
+</head>
+<body>
+  <!-- Film grain overlay -->
+  <div class="grain" aria-hidden="true">
+    <svg xmlns="http://www.w3.org/2000/svg">
+      <filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+      <rect width="100%" height="100%" filter="url(#noise)"/>
+    </svg>
+  </div>
+  <div class="leak" aria-hidden="true"></div>
+
+  <header>
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="Halcyon Film Lab home">
+        <span class="mark" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.2"/>
+            <path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>
+          </svg>
+        </span>
+        <span class="name">Halcyon<small>Film Lab · Est. 1974</small></span>
+      </a>
+      <div class="nav-links">
+        <nav aria-label="Primary">
+          <ul>
+            <li><a href="#work">Work</a></li>
+            <li><a href="#services">Develop</a></li>
+            <li><a href="#stats">Lab</a></li>
+            <li><a href="#book">Journal</a></li>
+          </ul>
+        </nav>
+        <a class="btn" href="#book">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 4 8.5 15.5 4 11"/><path d="M20 4v6h-6" opacity="0"/></svg>
+          Book a Roll
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- Hero -->
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div class="hero-grid">
+        <div>
+          <span class="eyebrow">35mm · Hand-Developed · Grain Forever</span>
+          <h1 class="headline" id="hero-title">Shot on film,<br/>printed with <em>soul.</em></h1>
+          <p class="lede">A small analog lab developing 35mm, 120, and Super 8 since the disco years. We scan warm, dust your negatives by hand, and ship prints that feel like a memory you almost forgot.</p>
+          <div class="hero-actions">
+            <a class="btn" href="#book">Send Your Film</a>
+            <a class="btn ghost" href="#work">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="6 4 20 12 6 20" fill="currentColor" stroke="none"/></svg>
+              View Gallery
+            </a>
+          </div>
+        </div>
+        <div class="polaroid-stack" aria-label="Sample developed prints">
+          <figure class="polaroid p1">
+            <div class="frame img-a vintage-fill" role="img" aria-label="Sunset portrait, soft pink tones"></div>
+            <figcaption>Golden Hour, '79</figcaption>
+          </figure>
+          <figure class="polaroid p2">
+            <div class="frame img-b vintage-fill" role="img" aria-label="Coastal landscape in muted teal"></div>
+            <figcaption>Pacific Fog</figcaption>
+          </figure>
+          <figure class="polaroid p3">
+            <div class="frame img-c vintage-fill" role="img" aria-label="Warm light leak over street scene"></div>
+            <figcaption>Leak No. 12</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- Film strip gallery -->
+    <section class="sec wrap" id="work" aria-labelledby="work-title">
+      <div class="sec-head">
+        <h2 id="work-title">Recent Develops</h2>
+        <span class="meta">Roll 0042 · Portra 400 · ISO 400</span>
+      </div>
+      <div class="filmstrip">
+        <div class="strip-row">
+          <a class="shot img-d vintage-fill" href="#work" aria-label="Frame 01 — desert dunes"><span class="tag">01 · Dunes</span></a>
+          <a class="shot img-e vintage-fill" href="#work" aria-label="Frame 02 — harbour dawn"><span class="tag">02 · Harbour</span></a>
+          <a class="shot img-f vintage-fill" href="#work" aria-label="Frame 03 — neon diner"><span class="tag">03 · Diner</span></a>
+          <a class="shot img-a vintage-fill" href="#work" aria-label="Frame 04 — portrait study"><span class="tag">04 · Portrait</span></a>
+          <a class="shot img-c vintage-fill" href="#work" aria-label="Frame 05 — meadow noon"><span class="tag">05 · Meadow</span></a>
+          <a class="shot img-b vintage-fill" href="#work" aria-label="Frame 06 — coastal cliffs"><span class="tag">06 · Cliffs</span></a>
+          <a class="shot img-f vintage-fill" href="#work" aria-label="Frame 07 — twilight market"><span class="tag">07 · Market</span></a>
+          <a class="shot img-d vintage-fill" href="#work" aria-label="Frame 08 — old highway"><span class="tag">08 · Highway</span></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Services -->
+    <section class="sec wrap" id="services" aria-labelledby="svc-title">
+      <div class="sec-head">
+        <h2 id="svc-title">In the Darkroom</h2>
+        <span class="meta">Turnaround 3–5 days</span>
+      </div>
+      <div class="cards">
+        <article class="card">
+          <div class="ic" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7h2.5l1.5-2h6l1.5 2H21v12H3z"/><circle cx="12" cy="13" r="3.6"/></svg>
+          </div>
+          <h3>Develop &amp; Scan</h3>
+          <p>C-41, E-6, and black &amp; white processed by hand, then scanned warm on our Noritsu for that unmistakable analog softness.</p>
+          <div class="price">$14<span> / roll</span></div>
+        </article>
+        <article class="card">
+          <div class="ic" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>
+          </div>
+          <h3>Fine Art Prints</h3>
+          <p>Archival giclée and silver gelatin prints on cotton rag. Light leaks, grain, and all the happy accidents preserved.</p>
+          <div class="price">$32<span> / print</span></div>
+        </article>
+        <article class="card">
+          <div class="ic" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 6h13v12H4z"/><path d="M17 9l3-2v10l-3-2z"/></svg>
+          </div>
+          <h3>Super 8 Transfer</h3>
+          <p>Your old home-movie reels digitized frame-by-frame, color-graded with a true VHS-era palette and ready to share.</p>
+          <div class="price">$48<span> / reel</span></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Stats ticker -->
+    <section class="wrap" id="stats" aria-label="Lab statistics">
+      <div class="ticker">
+        <div class="stat"><div class="num">12,480</div><div class="lbl">Rolls Developed</div></div>
+        <div class="stat"><div class="num">51</div><div class="lbl">Years Open</div></div>
+        <div class="stat"><div class="num">98%</div><div class="lbl">Dust-Free Scans</div></div>
+        <div class="stat"><div class="num">3 day</div><div class="lbl">Avg. Turnaround</div></div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="sec wrap" id="book" aria-labelledby="cta-title">
+      <div class="cta-band">
+        <h2 id="cta-title">Mail us a roll. Get back a memory.</h2>
+        <p>Drop your exposed film in any pre-paid Halcyon mailer and we'll handle the rest — developed, scanned, and gently graded the way film was meant to look.</p>
+        <a class="btn" href="#book">Request a Free Mailer</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap foot-grid">
+      <p>© 1974–2026 Halcyon Film Lab · 17 Cedar Row, Portland OR</p>
+      <div class="socials" aria-label="Social links">
+        <a href="#book" aria-label="Instagram"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"/></svg></a>
+        <a href="#book" aria-label="Film community forum"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z"/></svg></a>
+        <a href="#book" aria-label="Email the lab"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

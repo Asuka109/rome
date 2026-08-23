@@ -1,0 +1,16 @@
+# Auto-fix staged files with Biome (format + safe lint fixes) and re-stage them,
+# so fixable issues land in this commit instead of blocking it. lint-staged does
+# the heavy lifting — it scopes Biome to the staged set, stashes unstaged hunks
+# so partially-staged files are handled correctly, and re-stages what it changed.
+# An unfixable lint error makes Biome (and so the commit) fail: catch it here
+# rather than in CI, where `biome check .` remains the hard gate.
+#
+# Runs in Node via lint-staged, so there are no shell-portability gotchas
+# (GNU vs BSD utils, dash vs bash). If deps aren't installed yet (fresh clone
+# before `pnpm install`), skip gracefully instead of failing the commit.
+if [ ! -x node_modules/.bin/lint-staged ]; then
+  echo "husky/pre-commit: lint-staged not found — run 'pnpm install'. Skipping." >&2
+  exit 0
+fi
+
+exec node_modules/.bin/lint-staged

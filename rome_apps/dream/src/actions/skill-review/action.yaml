@@ -1,0 +1,8 @@
+name: skill_review
+type: custom
+description: Reviews the current session and saves or updates a skill if the work was non-trivial
+entry: ./index.ts
+complexity: moderate
+speed: slow
+reliability: high
+sideEffects: write

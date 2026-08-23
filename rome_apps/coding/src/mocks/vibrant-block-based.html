@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUPERBLOCK — Creative Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Vibrant block palette (4-6 vivid colors) */
+    --neon-green:#39FF14;
+    --electric-purple:#BF00FF;
+    --vivid-pink:#FF1493;
+    --bright-cyan:#00FFFF;
+    --sunburst:#FFAA00;
+    --shocking-pink:#FF006E;
+    --orange:#FF7F00;
+    --lime:#CCFF00;
+
+    /* Surface */
+    --ink:#0A0A0F;
+    --ink-soft:#15151F;
+    --paper:#F7F4EC;
+    --paper-2:#FFFFFF;
+
+    /* Tokens */
+    --block-gap:48px;
+    --block-gap-sm:24px;
+    --radius:0px;          /* hard geometric blocks */
+    --radius-pill:999px;
+    --border:4px solid var(--ink);
+    --shadow:10px 10px 0 var(--ink);
+    --shadow-sm:6px 6px 0 var(--ink);
+    --shadow-press:3px 3px 0 var(--ink);
+
+    /* Type scale */
+    --fs-mega:clamp(3rem,11vw,8.5rem);
+    --fs-xl:clamp(2rem,5vw,3.75rem);
+    --fs-lg:clamp(1.5rem,3vw,2.5rem);
+    --fs-md:1.25rem;
+    --fs-base:1.0625rem;
+    --fs-sm:0.8125rem;
+    --display:"Archivo Black","Arial Black",system-ui,sans-serif;
+    --body:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+
+    /* Motion */
+    --t-fast:200ms cubic-bezier(.2,.8,.2,1);
+    --t-med:280ms cubic-bezier(.2,.8,.2,1);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:var(--body);
+    font-size:var(--fs-base);
+    line-height:1.5;
+    color:var(--ink);
+    background:var(--paper);
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+    /* animated dotted texture */
+    background-image:radial-gradient(var(--ink) 1.5px,transparent 1.5px);
+    background-size:26px 26px;
+    background-position:0 0;
+    animation:drift 24s linear infinite;
+  }
+  @keyframes drift{to{background-position:26px 26px}}
+
+  a{color:inherit;text-decoration:none}
+  img,svg{display:block}
+  .wrap{width:100%;max-width:1280px;margin:0 auto;padding:0 20px}
+
+  /* ---------- HEADER ---------- */
+  header{
+    position:sticky;top:0;z-index:50;
+    background:var(--neon-green);
+    border-bottom:var(--border);
+  }
+  .nav{display:flex;align-items:center;gap:16px;height:72px}
+  .brand{display:flex;align-items:center;gap:12px;font-family:var(--display);font-size:1.4rem;letter-spacing:-.02em}
+  .brand .mark{
+    width:40px;height:40px;background:var(--ink);
+    display:grid;place-items:center;flex:none;
+  }
+  .brand .mark svg{width:24px;height:24px}
+  .nav-links{display:none;gap:6px;margin-left:auto}
+  .nav-links a{
+    font-weight:700;padding:8px 14px;border:3px solid transparent;
+    transition:background var(--t-fast),color var(--t-fast),border-color var(--t-fast);
+  }
+  .nav-links a:hover{background:var(--ink);color:var(--neon-green)}
+  .nav-links a:focus-visible{outline:none;border-color:var(--ink);background:var(--paper-2)}
+  .nav-cta{margin-left:auto}
+  @media(min-width:900px){
+    .nav-links{display:flex}
+    .nav-cta{margin-left:24px}
+  }
+
+  .btn{
+    display:inline-flex;align-items:center;gap:10px;
+    font-family:var(--body);font-weight:700;font-size:var(--fs-base);
+    padding:13px 22px;border:var(--border);background:var(--paper-2);color:var(--ink);
+    box-shadow:var(--shadow-sm);cursor:pointer;
+    transition:transform var(--t-fast),box-shadow var(--t-fast),background var(--t-fast),color var(--t-fast);
+  }
+  .btn svg{width:18px;height:18px}
+  .btn:hover{transform:translate(-2px,-2px);box-shadow:var(--shadow);background:var(--sunburst)}
+  .btn:focus-visible{outline:none;box-shadow:0 0 0 4px var(--bright-cyan),var(--shadow-sm)}
+  .btn:active{transform:translate(3px,3px);box-shadow:var(--shadow-press)}
+  .btn-primary{background:var(--vivid-pink);color:var(--paper-2)}
+  .btn-primary:hover{background:var(--shocking-pink);color:var(--paper-2)}
+  .btn-ink{background:var(--ink);color:var(--neon-green)}
+  .btn-ink:hover{background:var(--electric-purple);color:var(--paper-2)}
+
+  /* ---------- HERO ---------- */
+  main{display:block}
+  .hero{
+    border-bottom:var(--border);
+    background:
+      linear-gradient(135deg,transparent 60%,var(--bright-cyan) 60%),
+      var(--paper);
+    overflow:hidden;
+  }
+  .hero-inner{
+    display:grid;gap:var(--block-gap);
+    grid-template-columns:1fr;
+    padding-top:56px;padding-bottom:56px;
+  }
+  @media(min-width:1000px){
+    .hero-inner{grid-template-columns:1.15fr .85fr;align-items:center}
+  }
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:8px;
+    font-weight:700;font-size:var(--fs-sm);letter-spacing:.14em;text-transform:uppercase;
+    background:var(--electric-purple);color:var(--paper-2);
+    padding:7px 14px;border:var(--border);box-shadow:var(--shadow-press);
+  }
+  .hero h1{
+    font-family:var(--display);
+    font-size:var(--fs-mega);line-height:.92;letter-spacing:-.03em;
+    margin:22px 0 18px;text-transform:uppercase;
+  }
+  .hero h1 .hl1{color:var(--vivid-pink)}
+  .hero h1 .hl2{
+    color:var(--electric-purple);
+    -webkit-text-stroke:2px var(--ink);
+    text-stroke:2px var(--ink);
+  }
+  .hero p.lead{font-size:var(--fs-md);max-width:46ch;font-weight:500}
+  .hero-cta{display:flex;flex-wrap:wrap;gap:16px;margin-top:30px}
+
+  /* collage panel */
+  .collage{
+    position:relative;aspect-ratio:1/1;min-height:300px;
+    background:var(--ink);border:var(--border);box-shadow:var(--shadow);
+    display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
+  }
+  .collage > i{display:block}
+  .c1{background:var(--neon-green)}
+  .c2{background:var(--sunburst);grid-column:span 2}
+  .c3{background:var(--vivid-pink)}
+  .c4{background:var(--bright-cyan)}
+  .c5{background:var(--orange)}
+  .c6{background:var(--electric-purple)}
+  .c7{background:var(--lime)}
+  .collage .blob{
+    position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;
+  }
+  .collage .blob svg{width:54%;height:54%;color:var(--ink)}
+  .collage .spin{animation:spin 16s linear infinite;transform-origin:center}
+
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* marquee strip */
+  .strip{
+    background:var(--ink);color:var(--neon-green);
+    border-bottom:var(--border);overflow:hidden;
+  }
+  .marquee{display:flex;white-space:nowrap;will-change:transform;animation:slide 22s linear infinite}
+  .marquee span{
+    font-family:var(--display);font-size:1.5rem;text-transform:uppercase;
+    padding:14px 28px;display:inline-flex;align-items:center;gap:28px;letter-spacing:.02em;
+  }
+  .marquee span::after{content:"";width:14px;height:14px;background:var(--vivid-pink);transform:rotate(45deg)}
+  @keyframes slide{to{transform:translateX(-50%)}}
+
+  /* ---------- SECTION SHELL ---------- */
+  section{padding:var(--block-gap) 0;scroll-snap-align:start}
+  .snap{scroll-snap-type:y proximity}
+  .sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:var(--block-gap-sm)}
+  .sec-head h2{font-family:var(--display);font-size:var(--fs-xl);line-height:1;text-transform:uppercase;letter-spacing:-.02em}
+  .sec-head .tag{font-weight:700;font-size:var(--fs-sm);letter-spacing:.14em;text-transform:uppercase;background:var(--lime);border:3px solid var(--ink);padding:6px 12px}
+
+  /* ---------- WORK GRID ---------- */
+  .work{background:var(--vivid-pink);border-top:var(--border);border-bottom:var(--border)}
+  .work .sec-head h2{color:var(--paper-2);-webkit-text-stroke:2px var(--ink);text-stroke:2px var(--ink)}
+  .grid{display:grid;gap:var(--block-gap-sm);grid-template-columns:1fr}
+  @media(min-width:680px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media(min-width:1040px){.grid{grid-template-columns:repeat(3,1fr)}}
+
+  .card{
+    background:var(--paper-2);border:var(--border);box-shadow:var(--shadow-sm);
+    display:flex;flex-direction:column;
+    transition:transform var(--t-med),box-shadow var(--t-med);
+  }
+  .card:hover{transform:translate(-4px,-4px);box-shadow:var(--shadow)}
+  .card:focus-within{box-shadow:0 0 0 4px var(--bright-cyan),var(--shadow)}
+  .card .thumb{aspect-ratio:4/3;border-bottom:var(--border);position:relative;overflow:hidden}
+  .card .thumb svg{position:absolute;inset:0;width:100%;height:100%}
+  .card .body{padding:18px 18px 20px}
+  .card .cat{font-weight:700;font-size:var(--fs-sm);letter-spacing:.12em;text-transform:uppercase;color:var(--electric-purple)}
+  .card h3{font-family:var(--display);font-size:var(--fs-md);margin:6px 0 8px;line-height:1.05}
+  .card .meta{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:var(--fs-sm);font-weight:700}
+  .chip{padding:4px 10px;border:3px solid var(--ink);background:var(--sunburst)}
+  .chip.cy{background:var(--bright-cyan)}
+  .chip.gn{background:var(--neon-green)}
+
+  /* ---------- STATS ---------- */
+  .stats{background:var(--bright-cyan);border-bottom:var(--border)}
+  .stat-grid{display:grid;gap:var(--block-gap-sm);grid-template-columns:repeat(2,1fr)}
+  @media(min-width:880px){.stat-grid{grid-template-columns:repeat(4,1fr)}}
+  .stat{background:var(--ink);color:var(--paper-2);border:var(--border);box-shadow:var(--shadow-sm);padding:24px}
+  .stat .num{font-family:var(--display);font-size:var(--fs-xl);line-height:.9;color:var(--neon-green)}
+  .stat .lbl{margin-top:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:var(--fs-sm)}
+  .stat:nth-child(2) .num{color:var(--sunburst)}
+  .stat:nth-child(3) .num{color:var(--vivid-pink)}
+  .stat:nth-child(4) .num{color:var(--bright-cyan)}
+
+  /* ---------- SERVICES ---------- */
+  .svc-grid{display:grid;gap:var(--block-gap-sm);grid-template-columns:1fr}
+  @media(min-width:760px){.svc-grid{grid-template-columns:repeat(3,1fr)}}
+  .svc{background:var(--paper-2);border:var(--border);box-shadow:var(--shadow-sm);padding:24px;transition:background var(--t-fast),transform var(--t-fast),box-shadow var(--t-fast)}
+  .svc:hover{transform:translate(-3px,-3px);box-shadow:var(--shadow);background:var(--lime)}
+  .svc .icon{width:56px;height:56px;display:grid;place-items:center;border:var(--border);background:var(--electric-purple);color:var(--paper-2);margin-bottom:16px}
+  .svc:nth-child(2) .icon{background:var(--orange)}
+  .svc:nth-child(3) .icon{background:var(--shocking-pink)}
+  .svc .icon svg{width:30px;height:30px}
+  .svc h3{font-family:var(--display);font-size:var(--fs-md);margin-bottom:8px;text-transform:uppercase}
+  .svc p{font-weight:500}
+
+  /* ---------- CTA BANNER ---------- */
+  .cta{
+    background:var(--electric-purple);color:var(--paper-2);
+    border-top:var(--border);border-bottom:var(--border);
+    background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.07) 0 18px,transparent 18px 36px);
+  }
+  .cta-inner{display:grid;gap:var(--block-gap-sm);align-items:center;grid-template-columns:1fr}
+  @media(min-width:880px){.cta-inner{grid-template-columns:1.4fr auto}}
+  .cta h2{font-family:var(--display);font-size:var(--fs-xl);line-height:.95;text-transform:uppercase}
+  .cta p{font-size:var(--fs-md);font-weight:500;max-width:40ch;margin-top:12px}
+  .cta-actions{display:flex;flex-wrap:wrap;gap:16px}
+
+  /* ---------- FOOTER ---------- */
+  footer{background:var(--ink);color:var(--paper);padding:var(--block-gap) 0 28px}
+  .foot-top{display:grid;gap:var(--block-gap-sm);grid-template-columns:1fr}
+  @media(min-width:760px){.foot-top{grid-template-columns:2fr 1fr 1fr}}
+  .foot-brand .brand{color:var(--neon-green)}
+  .foot-brand .mark{background:var(--neon-green)}
+  .foot-brand .mark svg{color:var(--ink)}
+  .foot-brand p{margin-top:14px;max-width:34ch;font-weight:500;color:#cfcfd6}
+  .foot-col h4{font-family:var(--display);text-transform:uppercase;font-size:var(--fs-sm);letter-spacing:.1em;color:var(--sunburst);margin-bottom:12px}
+  .foot-col a{display:block;padding:5px 0;font-weight:500;transition:color var(--t-fast)}
+  .foot-col a:hover{color:var(--neon-green)}
+  .foot-col a:focus-visible{outline:2px solid var(--neon-green);outline-offset:2px}
+  .socials{display:flex;gap:12px;margin-top:18px}
+  .socials a{width:44px;height:44px;display:grid;place-items:center;border:3px solid var(--paper);transition:background var(--t-fast),color var(--t-fast),transform var(--t-fast)}
+  .socials a svg{width:20px;height:20px}
+  .socials a:hover{background:var(--vivid-pink);transform:translateY(-3px)}
+  .socials a:focus-visible{outline:2px solid var(--neon-green);outline-offset:2px}
+  .foot-bottom{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-top:var(--block-gap-sm);padding-top:20px;border-top:3px solid #2a2a36;font-size:var(--fs-sm);font-weight:500;color:#9a9aa6}
+
+  .skip{position:absolute;left:-9999px;top:0;background:var(--ink);color:var(--neon-green);padding:10px 16px;font-weight:700;z-index:100}
+  .skip:focus{left:8px;top:8px}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important;scroll-behavior:auto !important}
+    .marquee{animation:none}
+    html{scroll-behavior:auto}
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#" aria-label="SUPERBLOCK home">
+      <span class="mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--neon-green)" stroke-width="2.5" stroke-linecap="square">
+          <rect x="3" y="3" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/>
+          <path d="M13 3h8v8"/><path d="M3 21l8-8"/>
+        </svg>
+      </span>
+      SUPERBLOCK
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="#work">Work</a>
+      <a href="#services">Services</a>
+      <a href="#stats">Studio</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <a class="btn btn-ink nav-cta" href="#contact">
+      Start a project
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+    </a>
+  </div>
+</header>
+
+<main id="main" class="snap">
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap hero-inner">
+      <div>
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.3L22 9.2l-5 4.7 1.3 6.9L12 17.5 5.7 20.8 7 13.9 2 9.2l7.1-.9z"/></svg>
+          Creative studio · est. 2020
+        </span>
+        <h1 id="hero-title">We build <span class="hl1">loud</span> <span class="hl2">brands</span> that move</h1>
+        <p class="lead">A block-by-block design studio for startups, gaming, and culture brands that refuse to blend in. Strategy, identity, and product — at full volume.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="#work">
+            See the work
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+          </a>
+          <a class="btn" href="#showreel">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5l13 7-13 7z"/></svg>
+            Watch showreel
+          </a>
+        </div>
+      </div>
+
+      <div class="collage" role="img" aria-label="Geometric color block collage of the studio's visual language">
+        <i class="c1"></i><i class="c2"></i>
+        <i class="c3"></i><i class="c4"></i><i class="c5"></i>
+        <i class="c6"></i><i class="c7"></i><i class="c4"></i>
+        <span class="blob" aria-hidden="true">
+          <svg class="spin" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="square">
+            <polygon points="50,8 92,50 50,92 8,50"/>
+            <circle cx="50" cy="50" r="20"/>
+          </svg>
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <div class="strip" aria-hidden="true">
+    <div class="marquee">
+      <span>Branding</span><span>Motion</span><span>Web</span><span>Product</span><span>Type</span><span>Identity</span>
+      <span>Branding</span><span>Motion</span><span>Web</span><span>Product</span><span>Type</span><span>Identity</span>
+    </div>
+  </div>
+
+  <section class="work" id="work" aria-labelledby="work-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 id="work-title">Selected work</h2>
+        <span class="tag">12 projects · 2024–25</span>
+      </div>
+      <div class="grid">
+        <article class="card">
+          <a href="#" aria-label="View project: Nova Energy Drink rebrand">
+            <div class="thumb">
+              <svg viewBox="0 0 200 150" aria-hidden="true"><rect width="200" height="150" fill="#FFAA00"/><circle cx="60" cy="75" r="45" fill="#FF1493"/><rect x="110" y="20" width="70" height="110" fill="#0A0A0F"/><path d="M120 30h50v20h-50z" fill="#39FF14"/></svg>
+            </div>
+          </a>
+          <div class="body">
+            <span class="cat">Branding · Packaging</span>
+            <h3>NOVA Energy</h3>
+            <p>Full rebrand and can system for a youth energy startup.</p>
+            <div class="meta"><span class="chip">Identity</span><span class="chip cy">Motion</span></div>
+          </div>
+        </article>
+
+        <article class="card">
+          <a href="#" aria-label="View project: Pixel Arena game UI">
+            <div class="thumb">
+              <svg viewBox="0 0 200 150" aria-hidden="true"><rect width="200" height="150" fill="#BF00FF"/><rect x="20" y="20" width="50" height="50" fill="#00FFFF"/><rect x="80" y="40" width="50" height="50" fill="#CCFF00"/><rect x="130" y="20" width="50" height="110" fill="#0A0A0F"/><rect x="20" y="90" width="100" height="40" fill="#FF006E"/></svg>
+            </div>
+          </a>
+          <div class="body">
+            <span class="cat">Product · Game UI</span>
+            <h3>Pixel Arena</h3>
+            <p>HUD, lobby and store interface for a mobile battler.</p>
+            <div class="meta"><span class="chip gn">UI/UX</span><span class="chip">Web</span></div>
+          </div>
+        </article>
+
+        <article class="card">
+          <a href="#" aria-label="View project: Loopcast podcast network">
+            <div class="thumb">
+              <svg viewBox="0 0 200 150" aria-hidden="true"><rect width="200" height="150" fill="#00FFFF"/><circle cx="100" cy="75" r="55" fill="#0A0A0F"/><circle cx="100" cy="75" r="30" fill="#FFAA00"/><rect x="0" y="0" width="60" height="60" fill="#FF1493"/></svg>
+            </div>
+          </a>
+          <div class="body">
+            <span class="cat">Identity · Audio</span>
+            <h3>Loopcast</h3>
+            <p>Visual system for a creator-first podcast network.</p>
+            <div class="meta"><span class="chip cy">Brand</span><span class="chip">Type</span></div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="stats" id="stats" aria-labelledby="stats-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 id="stats-title">Studio in numbers</h2>
+        <span class="tag">Since launch</span>
+      </div>
+      <div class="stat-grid">
+        <div class="stat"><div class="num">140+</div><div class="lbl">Projects shipped</div></div>
+        <div class="stat"><div class="num">38</div><div class="lbl">Brands launched</div></div>
+        <div class="stat"><div class="num">9</div><div class="lbl">Design awards</div></div>
+        <div class="stat"><div class="num">4.9</div><div class="lbl">Client rating</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="services" aria-labelledby="svc-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 id="svc-title">What we make</h2>
+        <span class="tag">Capabilities</span>
+      </div>
+      <div class="svc-grid">
+        <article class="svc">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square"><path d="M12 2l3 7 7 .5-5.5 4.5 2 7L12 17l-6.5 4 2-7L2 9.5 9 9z"/></svg>
+          </span>
+          <h3>Brand identity</h3>
+          <p>Logos, type systems and color worlds engineered to be unmistakable across every block of your product.</p>
+        </article>
+        <article class="svc">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square"><rect x="3" y="4" width="18" height="13"/><path d="M3 20h18M9 8l4 2-4 2z"/></svg>
+          </span>
+          <h3>Motion & web</h3>
+          <p>High-energy sites and showreels with animated patterns, scroll motion and bold transitions that convert.</p>
+        </article>
+        <article class="svc">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square"><rect x="6" y="2" width="12" height="20" rx="1"/><path d="M10 18h4"/></svg>
+          </span>
+          <h3>Product design</h3>
+          <p>App and game interfaces built on a block layout system — playful, fast, and ruthlessly usable.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta" id="contact" aria-labelledby="cta-title">
+    <div class="wrap cta-inner">
+      <div>
+        <h2 id="cta-title">Got a brand that needs to shout?</h2>
+        <p>Tell us what you're building. We reply within one working day with a plan and a price.</p>
+      </div>
+      <div class="cta-actions">
+        <a class="btn btn-primary" href="#" id="showreel">
+          Book a call
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </a>
+        <a class="btn" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" aria-hidden="true"><rect x="3" y="5" width="18" height="14"/><path d="M3 6l9 7 9-7"/></svg>
+          hello@superblock.studio
+        </a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-brand">
+        <span class="brand">
+          <span class="mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+              <rect x="3" y="3" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/>
+              <path d="M13 3h8v8"/><path d="M3 21l8-8"/>
+            </svg>
+          </span>
+          SUPERBLOCK
+        </span>
+        <p>An independent creative studio building loud, block-based brands for the next generation of culture-first companies.</p>
+        <div class="socials">
+          <a href="#" aria-label="SUPERBLOCK on X"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 3l7.5 9.5L3.3 21H6l5.6-6.4L16.3 21H21l-7.9-10L20.4 3H17.8l-5 5.7L8.4 3z"/></svg></a>
+          <a href="#" aria-label="SUPERBLOCK on Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg></a>
+          <a href="#" aria-label="SUPERBLOCK on YouTube"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12c0-2.5-.3-4-.3-4a2.6 2.6 0 0 0-1.8-1.8C18.2 6 12 6 12 6s-6.2 0-7.9.2A2.6 2.6 0 0 0 2.3 8S2 9.5 2 12s.3 4 .3 4a2.6 2.6 0 0 0 1.8 1.8c1.7.2 7.9.2 7.9.2s6.2 0 7.9-.2A2.6 2.6 0 0 0 21.7 16s.3-1.5.3-4zM10 15V9l5 3z"/></svg></a>
+        </div>
+      </div>
+      <nav class="foot-col" aria-label="Studio">
+        <h4>Studio</h4>
+        <a href="#work">Work</a>
+        <a href="#services">Services</a>
+        <a href="#stats">About</a>
+        <a href="#">Careers</a>
+      </nav>
+      <nav class="foot-col" aria-label="More">
+        <h4>More</h4>
+        <a href="#">Journal</a>
+        <a href="#">Press kit</a>
+        <a href="#contact">Contact</a>
+        <a href="#">Privacy</a>
+      </nav>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 SUPERBLOCK Studio. All rights reserved.</span>
+      <span>Made loud in Berlin · Brooklyn · Lagos</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

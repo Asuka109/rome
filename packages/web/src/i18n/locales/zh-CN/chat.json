@@ -1,0 +1,336 @@
+{
+  "title": "Rome",
+  "documentTitle": "{{guardian}} 与 {{agent}} | Rome",
+  "sidebar": {
+    "newChat": "新对话",
+    "noSessions": "暂无会话",
+    "openSidebar": "打开侧边栏"
+  },
+  "navbar": {
+    "add": "添加小组件",
+    "addShort": "加组件",
+    "more": "更多操作",
+    "pin": "置顶对话",
+    "unpin": "取消置顶",
+    "archive": "归档对话",
+    "unarchive": "取消归档",
+    "delete": "删除对话",
+    "deleteConfirm": "永久删除该对话？此操作无法撤销。"
+  },
+  "archived": {
+    "readOnly": "该对话已归档，为只读状态。",
+    "unarchive": "取消归档"
+  },
+  "share": {
+    "title": "分享对话",
+    "loading": "加载中…",
+    "createError": "无法创建链接。",
+    "selectedCount_one": "已选择 {{count}} 条消息",
+    "selectedCount_other": "已选择 {{count}} 条消息",
+    "createTitle": "创建分享链接",
+    "includeLabel": "包含在链接中",
+    "appDesc": "对访客保持可交互。该应用必须设为公开。",
+    "projectsTitle": "项目工作区",
+    "projectsDesc": "所链接项目中的所有文件与设置。",
+    "projectsDangerLead": "暴露此项目的所有文件",
+    "projectsDangerBody": "任何拿到链接的人都可读。",
+    "copy": "复制",
+    "copied": "已复制",
+    "open": "在新标签打开",
+    "existingHeading": "有效链接",
+    "revoke": "撤销",
+    "cancel": "取消",
+    "create": "创建链接",
+    "creating": "创建中…",
+    "unavailableTitle": "该分享对话不可用",
+    "unavailableBody": "链接可能已被撤销或失效。"
+  },
+  "roles": {
+    "agent": "助手"
+  },
+  "message": {
+    "copy": "复制消息",
+    "copied": "已复制",
+    "feedback": {
+      "thumbsUp": "标记为有帮助",
+      "thumbsDown": "标记为无帮助",
+      "commentPlaceholder": "可选：哪里有问题，或哪里做得好？",
+      "submit": "提交",
+      "submitting": "提交中…",
+      "submitFailed": "提交失败",
+      "recorded": "反馈已记录"
+    },
+    "branch": {
+      "open": "从此回复发起侧边对话",
+      "title": "创建侧边对话",
+      "description": "继续追问，同时不改变当前对话。",
+      "suggestionsLabel": "推荐提示词",
+      "suggestions": {
+        "mermaid": "用 Mermaid 图表呈现",
+        "simplify": "用更简单的方式解释",
+        "example": "给我一个具体示例"
+      },
+      "promptPlaceholder": "针对这条回复提问…",
+      "submit": "发起侧边对话",
+      "submitting": "正在创建…",
+      "submitFailed": "无法创建侧边对话"
+    }
+  },
+  "blocks": {
+    "thinking": "思考中...",
+    "usingTool": "正在使用 {{tool}}",
+    "resultFromTool": "{{tool}} 的结果",
+    "resultFromAction": "结果:{{action}}",
+    "agentSession": "{{agent}} 会话",
+    "sessionFallback": "会话",
+    "session": "会话",
+    "romeSession": "Rome 会话",
+    "systemPrompt": "系统提示",
+    "userPrompt": "用户提示",
+    "emptyPrompt": "(空)",
+    "emptyList": "(空列表)",
+    "emptyObject": "(空对象)",
+    "agentRunFailed": "智能体执行失败",
+    "unknownTool": "未知",
+    "showMore": "展开",
+    "showLess": "收起",
+    "input": "输入",
+    "output": "输出",
+    "itemCount_one": "{{count}} 项",
+    "itemCount_other": "{{count}} 项",
+    "keyCount_one": "{{count}} 个字段",
+    "keyCount_other": "{{count}} 个字段"
+  },
+  "errors": {
+    "providerAuthRevoked": {
+      "title": "重新连接 {{provider}}",
+      "description": "你的 {{provider}} 登录已过期或被撤销。请在 AI Tools 中重新连接，然后重新发送消息。",
+      "action": "重新连接"
+    },
+    "providerNotLoggedIn": {
+      "title": "{{provider}} 尚未登录",
+      "description": "请前往 AI Tools 登录 {{provider}}，然后重新发送消息。",
+      "action": "前往登录"
+    },
+    "providerQuotaExhausted": {
+      "title": "{{provider}} 使用额度已耗尽",
+      "description": "请查看使用情况，或选择其他可用模型。"
+    },
+    "allProvidersQuotaExhausted": {
+      "title": "所有已连接的 AI Provider 使用额度均已耗尽",
+      "description": "请登录其他账号，或等待使用额度重置。"
+    },
+    "modelUnavailable": {
+      "title": "当前模型不可用",
+      "description": "请在 AI Tools 中检查模型权限，或选择其他模型。"
+    },
+    "noProvider": {
+      "title": "没有可用的 AI Provider",
+      "description": "请连接 AI Tool，或检查当前登录和额度状态。"
+    },
+    "openAiTools": "打开 AI Tools"
+  },
+  "usage": {
+    "title": "用量",
+    "includeSubagents": "包含子智能体",
+    "includedSubagents": "已包含 {{count}} 次子智能体运行",
+    "totalTokens": "Token 总量",
+    "modelCount": "{{count}} 个模型",
+    "modelUsage": "按模型",
+    "model": "模型",
+    "mainModel": "主模型",
+    "subagentModel": "子智能体模型",
+    "runCount": "{{count}} 次运行",
+    "tokens": "Tokens",
+    "cost": "费用",
+    "contextUsage": "上下文窗口用量",
+    "cacheRead": "缓存读取:{{value}}",
+    "cacheWrite": "缓存写入:{{value}}",
+    "input": "输入:{{value}}",
+    "output": "输出:{{value}}",
+    "context": "上下文:{{used}}",
+    "contextWithWindow": "上下文:{{used}} / {{window}}",
+    "apiCost": "API 费用:{{cost}}",
+    "apiCostLabel": "API 费用",
+    "costUnknown": "未知",
+    "labels": {
+      "cacheRead": "缓存读取",
+      "cacheWrite": "缓存写入",
+      "input": "输入",
+      "output": "输出",
+      "context": "上下文",
+      "mainContext": "主智能体上下文"
+    }
+  },
+  "approvals": {
+    "headerPending": "需要守护者批准",
+    "headerResolved": "守护者批准",
+    "fallbackActionName": "操作",
+    "status": {
+      "pending": "等待批准",
+      "approved": "已批准",
+      "executing": "执行中…",
+      "executed": "已批准并完成",
+      "rejected": "已拒绝",
+      "failed": "执行失败"
+    },
+    "actions": {
+      "approve": "批准",
+      "approving": "批准中…",
+      "reject": "拒绝",
+      "rejecting": "拒绝中…"
+    },
+    "footer": {
+      "approvedRunning": "已批准 — 正在执行操作…",
+      "executedSuccess": "✓ 操作已批准并成功执行。",
+      "rejectedNotice": "操作已被守护者拒绝。"
+    },
+    "preview": {
+      "sensitiveTo": "发送至",
+      "sensitiveOn": "通过"
+    },
+    "errors": {
+      "approveFallback": "批准失败",
+      "rejectFallback": "拒绝失败",
+      "approveStatus": "批准失败({{status}})",
+      "rejectStatus": "拒绝失败({{status}})"
+    }
+  },
+  "composer": {
+    "placeholderDefault": "今天我能帮你做点什么?",
+    "placeholderWithUploads": "添加消息或直接发送已上传的文件...",
+    "uploadFiles": "上传文件",
+    "dropFiles": "拖放文件以上传",
+    "removeFile": "移除 {{name}}",
+    "filePill": "#文件 {{index}}",
+    "send": "发送",
+    "sendTitle": "发送",
+    "queueTurnTitle": "排队新一轮对话",
+    "stop": "停止",
+    "stopGenerating": "停止生成"
+  },
+  "modelSelector": {
+    "label": "模型",
+    "saveFailed": "保存模型选择失败。",
+    "options": {
+      "auto": "自动",
+      "claudeOpus": "Claude Opus",
+      "opus5": "Opus 5",
+      "opus46": "Opus 4.6",
+      "sonnet": "Sonnet",
+      "haiku": "Haiku",
+      "fable": "Fable",
+      "gpt56Sol": "GPT-5.6 Sol",
+      "gpt56Terra": "GPT-5.6 Terra",
+      "gpt56Luna": "GPT-5.6 Luna"
+    }
+  },
+  "reasoningEffort": {
+    "label": "推理强度",
+    "saveFailed": "保存推理强度失败。",
+    "options": {
+      "fast": "快速",
+      "think": "思考",
+      "ultrathink": "深度思考"
+    }
+  },
+  "agentMention": {
+    "menuTitle": "选择要对话的 agent",
+    "placeholder": "搜索 agent…",
+    "loading": "正在加载 agent…",
+    "loadFailed": "加载 agent 失败。",
+    "empty": "没有可用的 agent。",
+    "noMatch": "没有匹配的 agent。",
+    "pickApp": "请先选择左侧的 app。",
+    "agentCount_one": "{{count}} 个 agent",
+    "agentCount_other": "{{count}} 个 agent",
+    "remove": "移除 agent",
+    "pinnedTitle": "你正在和 {{agent}} 对话",
+    "draftTitle": "下一条消息会发给 {{agent}}"
+  },
+  "slashSkill": {
+    "menuTitle": "选择要使用的技能",
+    "loading": "正在加载技能…",
+    "loadFailed": "加载技能失败。",
+    "empty": "没有可用的技能。",
+    "noMatch": "没有匹配的技能。",
+    "chipTitle": "本回合将调用技能 {{name}}。",
+    "remove": "移除技能",
+    "pickApp": "请先选择左侧的 app。",
+    "skillCount_one": "{{count}} 个技能",
+    "skillCount_other": "{{count}} 个技能"
+  },
+  "impersonation": {
+    "buttonLabel": "身份扮演",
+    "menuTitle": "身份扮演",
+    "currentlySpeakingAs": "当前以 {{name}} 的身份发言。",
+    "guardianFallback": "守护者",
+    "guardianWithName": "{{name}}(守护者)",
+    "personLabel": "{{name}}({{bondLevel}})",
+    "default": "默认",
+    "noOtherUsers": "暂无其他用户。"
+  },
+  "project": {
+    "buttonLabel": "项目",
+    "changeProject": "切换项目",
+    "menuTitle": "项目",
+    "defaultPath": "默认路径:{{path}}",
+    "loading": "正在加载项目...",
+    "selected": "已选择",
+    "createTitle": "创建项目",
+    "createPlaceholder": "新项目名称",
+    "createButton": "创建",
+    "createAction": "创建项目",
+    "searchPlaceholder": "搜索项目…",
+    "listLabel": "项目列表",
+    "clearSearch": "清除搜索",
+    "noProjectsFound": "在 {{path}} 中未找到项目。",
+    "noMatches": "没有匹配的项目。",
+    "noMatchesQuery": "没有项目匹配 “{{query}}”。",
+    "noProjectSelected": "未选择项目",
+    "errors": {
+      "nameRequired": "项目名称不能为空。",
+      "loadFailed": "加载项目失败。",
+      "updateFailed": "更新项目失败。",
+      "createFailed": "创建项目失败。"
+    }
+  },
+  "stream": {
+    "errors": {
+      "createChatFallback": "创建对话失败。",
+      "createChatStatus": "创建对话失败({{status}})。",
+      "emptyStream": "连接流失败:响应流为空。",
+      "reconnectStatus": "重新连接流失败({{status}})。",
+      "sendStatus": "发送消息失败({{status}})。",
+      "sendInvalidResponse": "发送消息失败:无效响应。",
+      "sendFallback": "发送消息失败。",
+      "attachStreamStatus": "附加流失败,轮次 {{turnId}}({{status}})。",
+      "stopFallback": "停止生成失败。",
+      "stopStatus": "停止失败({{status}})。"
+    }
+  },
+  "empty": {
+    "greeting": "你好 {{name}},",
+    "greetingFallback": "欢迎,",
+    "headline": "我们从哪里开始?",
+    "pinnedChats": "置顶对话",
+    "unpin": "取消置顶",
+    "unpinChat": "取消置顶 {{name}}",
+    "romeNews": "Rome 动态",
+    "startWithPrompt": "试试这些提示"
+  },
+  "starters": {
+    "buildGame": {
+      "label": "做一个游戏",
+      "prompt": "做一个简单易懂的双人策略游戏应用，每局能在几分钟内完成。"
+    },
+    "designWorkflow": {
+      "label": "设计一个工作流",
+      "prompt": "查找在 AI 基础设施领域创业的早期阶段创始人。从 GitHub(近期有活动且星标增长迅速的仓库)、X(发布构建动态的创始人)和 LinkedIn 抓取信息。每周监控新信号,把数据填充到一个我可以一目了然查看的仪表盘中。对任何看起来有潜力的创始人,起草一封以我名义发出的暖场外联邮件。"
+    },
+    "morningBrief": {
+      "label": "早间简报",
+      "prompt": "构建一个带前端设计的早间简报应用,读取我过去 24 小时的 Gmail 邮件和即将到来的 Google 日历事件。每天上午 8:00 更新仪表盘,展示最新的优先事项、紧急邮件、重要会议、截止日期和推荐的后续行动。识别最需要我关注的事项,并在每次每日更新后通过 Telegram 给我发送简短摘要。"
+    }
+  }
+}

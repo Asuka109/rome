@@ -1,0 +1,7 @@
+/* Tailwind + the semantic-token vocabulary come from the published SDK sheet —
+   the canonical source of truth (see recap/src/web/styles.css for rationale). */
+@import "@rome-os/app-web-sdk/styles";
+
+:host {
+  color-scheme: light dark;
+}

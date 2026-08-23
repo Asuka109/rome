@@ -1,0 +1,344 @@
+# Dev recipe for Rome.
+#
+# One Compose project per git worktree; project name = worktree slug
+# (see scripts/worktree-slug.sh). The singleton `rome-traefik` project
+# routes `<slug>*.rome.localhost:3000` by hostname. The singleton `rome-obs`
+# project hosts the OTLP ingress + ClickHouse + HyperDX UI — each worktree's
+# Rome emits OTLP to it via the shared `rome-edge` network.
+#
+# Variables consumed (set by scripts/dev-up.sh):
+#   ROME_WORKTREE_SLUG  — DNS-label form of the worktree basename. Also
+#                         keys the per-worktree host dir at
+#                         ~/.rome-worktrees/<slug> that backs the
+#                         container's /rome-home/.rome.
+#   ROME_PROFILE        — Rome profile name *inside* the container.
+#                         Defaults to "default". Per-worktree state
+#                         isolation comes from the bind-mount source, not
+#                         from this. See docs/architecture/process.md.
+#   ROME_HOST_UID/GID   — host uid/gid so the rome-workspace volume + .rome
+#                         bind are writable from inside the containers.
+
+# Project name is set via `-p <slug>` on the command line by dev-up.sh.
+# Omitted here so `docker compose -f compose.dev.yml ps` parses without
+# requiring the env preamble. `./r` uses `docker exec` directly and
+# doesn't parse this file.
+
+# ---------------------------------------------------------------------------
+# Shared bits
+# ---------------------------------------------------------------------------
+
+x-rome-build: &rome-build
+  build:
+    context: .docker/rome-runtime-workspace
+    dockerfile: ../../infra/rome/Dockerfile
+  image: rome-dev:${ROME_WORKTREE_SLUG:-dev}
+  # Host uid/gid so the rome-workspace volume + per-worktree .rome bind are
+  # writable from inside the container. OrbStack / Docker Desktop on macOS
+  # forwards host ownership verbatim, so matching uids is simpler than chown
+  # dances at startup.
+  user: "${ROME_HOST_UID:-501}:${ROME_HOST_GID:-20}"
+
+x-rome-volumes: &rome-volumes
+  # /workspace is a CONTAINER-OWNED named volume, NOT a host bind-mount. Source
+  # is synced in (read-only) by the `rome-sync` sidecar via a local mutagen
+  # one-way-replica session that honors .gitignore — so node_modules, dist, and
+  # .next are never copied in, and the rome container owns every node_modules +
+  # dist inside this volume. That is what makes `pnpm install` / `pnpm
+  # db:generate` on the host safe: host and container node_modules live on
+  # disjoint filesystems and never share a writable path (the old per-package
+  # bind-mounts shared nested node_modules and corrupted each other).
+  - type: volume
+    source: rome-workspace
+    target: /workspace
+  - type: volume
+    source: rome-home
+    target: /rome-home
+  - type: bind
+    # Per-worktree host dir; isolates lockfile/DB from sibling worktrees.
+    # Created by dev-up.sh. See docs/architecture/process.md.
+    #
+    # ROME_WORKTREE_SLUG / ROME_HOST_PNPM_STORE default rather than `:?`-require:
+    # compose interpolates the whole file for EVERY subcommand, so a required var
+    # makes `down`/`stop` (and OrbStack's UI teardown, which re-parses this file)
+    # fail when the var isn't in the env. dev-up.sh is the only sanctioned `up`
+    # path and already exports both (and exits if the store can't be resolved),
+    # so the real fail-closed guard lives there; the defaults here only ever
+    # apply to teardown, where the source path is never mounted.
+    source: ${HOME}/.rome-worktrees/${ROME_WORKTREE_SLUG:-unset}
+    target: /rome-home/.rome
+  # pnpm store is content-addressed and platform-agnostic, so sharing it
+  # macOS↔linux is safe. node_modules isn't — but it never crosses this bind:
+  # it lives inside the rome-workspace volume above, written only in-container.
+  - type: bind
+    source: ${ROME_HOST_PNPM_STORE:-/var/empty/rome-pnpm-store-unset}
+    target: /pnpm-store
+
+x-rome-env: &rome-env
+  SHELL: /bin/bash
+  NODE_ENV: development
+  HOME: /rome-home
+  # pnpm reads store location via the npm-config convention, NOT a PNPM_*
+  # var: `PNPM_STORE_DIR` is silently ignored, so pnpm would fall back to a
+  # store under /workspace — wasting space in the rome-workspace volume and
+  # diverging from the host's warm store. `npm_config_store_dir` points it at
+  # the bind-mounted host store instead. Cross-fs (virtiofs store ↔ the
+  # rome-workspace volume) means pnpm copies instead of hardlinks — slower but
+  # no refetch.
+  npm_config_store_dir: /pnpm-store
+  # Registry the in-container pnpm uses at runtime — notably the per-app
+  # `pnpm install --prod` the daemon runs at boot (packages/core/src/apps/
+  # prepare.ts → runPnpm, which inherits this env). On networks where
+  # registry.npmjs.org is slow/unreachable (e.g. China), each app install
+  # hits PNPM_TIMEOUT_MS (5m) and a required app like `ask-user` never
+  # registers `ask_question` → validateGlobalActions aborts boot. Defaults
+  # to the official registry so CI/upstream are unchanged; set
+  # `ROME_NPM_REGISTRY` (same knob scripts/dev/run-local-docker.sh reads) to
+  # a mirror like https://registry.npmmirror.com to override.
+  npm_config_registry: ${ROME_NPM_REGISTRY:-https://registry.npmjs.org/}
+  ROME_PROFILE: ${ROME_PROFILE:-default}
+  # In-container profile name only — per-worktree isolation is at the
+  # bind-mount source (see x-rome-volumes), not here.
+
+  # OTEL identity. `service.instance.id` is sourced from `PANTHEON_SLUG`, the
+  # Rome-Cloud-injected tenant slug in prod. Dev is a self-hosted, tenant-less
+  # instance and deliberately sets no PANTHEON_SLUG (see below), so dev telemetry
+  # emits `service.instance.id=unknown` — shared across all worktrees, no
+  # per-worktree obs isolation. `deployment.environment` is derived from NODE_ENV
+  # (no separate var). Local dev emits to the bundled local ClickStack (`rome-obs`
+  # in infra/observability/compose.yml: Collector + ClickHouse + HyperDX UI), so
+  # telemetry is queryable offline via `obs.rome.localhost` / `ROME_OBS_QUERY_URL`
+  # with no egress. The prod-mirror standalone `otel-collector` (→ ClickHouse
+  # Cloud) is opt-in: point this at `http://otel-collector:4318` and start that
+  # service to exercise it.
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://rome-obs:4318
+  # Dev has no auth on the obs singleton; prod Rome Cloud injects a bearer token.
+  ROME_OBS_QUERY_URL: http://rome-obs:8123
+  ROME_OBS_AUTH_TOKEN: ""
+
+  # Rome's own listeners. Vite binds WEB_PORT on 0.0.0.0 so Traefik can
+  # reach it from rome-edge; the backend binds 4141 on loopback (default)
+  # and is reached only by the Vite proxy inside the same container.
+  WEB_HOST: 0.0.0.0
+  WEB_PORT: "3000"
+  INTERNAL_API_PORT: "4141"
+
+  # Auto re-apply rome_apps when source files change (dev only).
+  ROME_APP_AUTO_RELOAD: "1"
+
+  # Statsig server secret for the cloud-auth rollout gate. Forwarded from the
+  # host shell so `STATSIG_SERVER_SECRET_KEY=<key> pnpm dev:all` reaches the
+  # container; empty (the default) disables the gate and falls back to local
+  # auth. A real secret can instead live in the gitignored root `.env` (loaded
+  # via the `env_file` below).
+  STATSIG_SERVER_SECRET_KEY: ${STATSIG_SERVER_SECRET_KEY:-}
+
+  # Rome Cloud lives in a separate repository. dev-up.sh exports the shared
+  # Cloud origin (or a developer-supplied staging/tunnel origin); this literal
+  # default only keeps direct compose inspection and teardown parseable.
+  PANTHEON_BASE_ORIGIN: ${PANTHEON_BASE_ORIGIN:-https://romeos.cc}
+  PANTHEON_DOMAIN: ${PANTHEON_DOMAIN:-localhost}
+  # This instance's own browser-reachable origin, handed to Rome Cloud as the
+  # enrollment redirect target. The container isn't reachable at its own loopback
+  # (the browser reaches it via Traefik at <slug>.rome.localhost:3000), so core
+  # can't infer it — dev-up.sh exports the per-slug value; the literal default
+  # here only keeps `docker compose ps`/`build` parseable.
+  PANTHEON_INSTANCE_ORIGIN: ${PANTHEON_INSTANCE_ORIGIN:-http://dev.rome.localhost:3000}
+  # No PANTHEON_SLUG: the dev stack is a self-hosted instance (loopback origin),
+  # so it has no Rome Cloud address and brokers OAuth with no tenant.
+  # Optional cloud account/CLI token (rome_…) the Showcase preset relay falls
+  # back to when the instance is not enrolled (no romeinst_ instance token).
+  # Empty by default; set ROME_CLOUD_TOKEN in the shell to test cases publish
+  # against a real Rome Cloud. Never commit a real token here.
+  ROME_CLOUD_TOKEN: ${ROME_CLOUD_TOKEN:-}
+  # Force the `rome_cloud_auth` gate so the guardian seat binds to a Rome Cloud
+  # (Rome Cloud) account, no Statsig project needed. On by default in dev so the
+  # stack exercises the cloud path; export FEATURE_GATE_ROME_CLOUD_AUTH=off to
+  # hold the stack on local auth (e.g. CI).
+  FEATURE_GATE_ROME_CLOUD_AUTH: ${FEATURE_GATE_ROME_CLOUD_AUTH:-on}
+  # Dev escape hatch: boot un-enrolled even if ROME_INSTANCE_TOKEN is in the env,
+  # forcing the real browser consent → enroll round trip. Empty by default so the
+  # fast loop / CI keep their seeded token.
+  ROME_DEV_SKIP_TOKEN_SEED: ${ROME_DEV_SKIP_TOKEN_SEED:-}
+
+# ---------------------------------------------------------------------------
+# Services
+# ---------------------------------------------------------------------------
+
+services:
+  # Unified container: backend (loopback :4141) + Vite (:3000, behind
+  # Traefik). The wrapper exits when either pnpm dies so docker restarts
+  # the container as a unit; the trap forwards `compose down` to both.
+  rome:
+    <<: *rome-build
+    # Come back up after the daemon restarts (macOS sleep/wake, OrbStack
+    # update) or after the wrapper exits when either pnpm dies — without this
+    # the container stays dead and the next `docker exec` hits "is not
+    # running". `unless-stopped` (not `always`) so an explicit `compose stop`
+    # from the banner stays stopped.
+    restart: unless-stopped
+    command:
+      - bash
+      - -c
+      - |
+        pnpm --filter @rome/core dev &
+        backend_pid=$!
+        pnpm --filter rome-web dev --host 0.0.0.0 &
+        vite_pid=$!
+        trap 'kill "$$backend_pid" "$$vite_pid" 2>/dev/null' TERM INT
+        wait -n
+        status=$?
+        kill "$$backend_pid" "$$vite_pid" 2>/dev/null
+        wait
+        exit "$$status"
+    working_dir: /workspace
+    volumes: *rome-volumes
+    # A GitHub/Slack OAuth connect writes the Rome Cloud-brokered token to
+    # /run/rome/<provider>-oauth-token (sync*ShellIntegrationForProvider).
+    # The container runs as uid 501 (x-rome-build `user:`) but /run is
+    # root-owned, so the daemon can't write there — the token write fails with
+    # EACCES and the connect dies at "Finishing sign-in". A tmpfs makes
+    # /run/rome exist, but Docker defaults it to mode 0755 root-owned, which
+    # uid 501 still can't write; mode=1777 (sticky world-writable, like /tmp)
+    # lets the daemon create the 0640 token file there, off disk, matching
+    # prod's runtime location.
+    tmpfs:
+      - /run/rome:mode=1777
+    environment:
+      <<: *rome-env
+    env_file:
+      - path: .env
+        required: false
+    # Forward `*.rome.localhost` (and any non-service name) to the rome-edge DNS
+    # singleton, which points them at Traefik. This sets the UPSTREAM for the
+    # embedded 127.0.0.11 resolver; it does NOT replace it, so compose service
+    # names (rome-obs and the `rome` peer alias) still resolve normally. The
+    # dev-up script exports the IP; the
+    # 127.0.0.11 fallback only keeps `compose ps`/teardown parseable.
+    dns:
+      - "${ROME_DNSMASQ_IP:-127.0.0.11}"
+    networks:
+      default:
+      # rome-edge gives this container access to the rome-obs singleton
+      # (OTLP + ClickHouse queries) and reachable identity for peers. Each
+      # worktree's rome service auto-aliases as `rome` on rome-edge, so a
+      # bare `rome` lookup round-robins across every running worktree's
+      # backend (used for inter-worktree peer discovery).
+      rome-edge:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=rome-edge"
+      - "traefik.http.routers.${ROME_WORKTREE_SLUG:-unset}-rome.rule=Host(`${ROME_WORKTREE_SLUG:-unset}.rome.localhost`)"
+      - "traefik.http.routers.${ROME_WORKTREE_SLUG:-unset}-rome.entrypoints=web"
+      - "traefik.http.services.${ROME_WORKTREE_SLUG:-unset}-rome.loadbalancer.server.port=3000"
+    # Don't start the backend until the source-sync sidecar has flushed its
+    # initial sync — otherwise /workspace is empty and tsx/pnpm find no source.
+    depends_on:
+      rome-sync:
+        condition: service_healthy
+
+  # Source-sync sidecar: the ONLY bridge from host source into the
+  # container-owned /workspace volume. Bind-mounts the worktree READ-ONLY at
+  # /src and runs a LOCAL mutagen one-way-replica session (/src -> /workspace)
+  # that honors .gitignore — node_modules/dist/.next never sync in. Both
+  # endpoints are local paths in this one container, so there is no ssh/docker
+  # transport. The rome container mounts the same volume but never sees /src;
+  # the read-only bind + one-way sync make container->host writes impossible, so
+  # host `pnpm install` / `pnpm db:generate` stay authoritative. mutagen is
+  # baked into this image, so dev:all needs no host-side mutagen. Healthcheck
+  # passes once the initial flush is done (entrypoint touches the marker).
+  rome-sync:
+    build:
+      context: infra/rome-sync
+    image: rome-dev-sync:${ROME_WORKTREE_SLUG:-dev}
+    restart: unless-stopped
+    # Same uid:gid as the rome service so files mutagen writes into the volume
+    # are owned by the uid the backend runs as.
+    user: "${ROME_HOST_UID:-501}:${ROME_HOST_GID:-20}"
+    volumes:
+      - type: bind
+        source: .
+        target: /src
+        read_only: true
+      - type: volume
+        source: rome-workspace
+        target: /workspace
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/.rome-sync-ready"]
+      interval: 2s
+      timeout: 3s
+      retries: 90
+      start_period: 5s
+
+  # Dev-only server browser sidecar: Chromium with CDP on :9222 (via the
+  # shared supervisor's socat forward) + Xvfb/x11vnc/noVNC desktop on :6080.
+  # It JOINS the rome container's network namespace (network_mode below) so
+  # the topology matches the production single container: the backend reaches
+  # CDP/noVNC on 127.0.0.1 with zero config, and codex login's loopback OAuth
+  # callback (http://localhost:1455/auth/callback, fixed redirect_uri) lands
+  # directly on the codex process in the rome container. Filesystem/process
+  # isolation is unchanged — only the network is shared.
+  # The launcher scripts are bind-mounted so edits to scripts/docker/ take
+  # effect on container restart without an image rebuild.
+  chrome:
+    build:
+      context: infra/chrome
+      args:
+        APT_MIRROR: ${ROME_APT_MIRROR:-}
+    image: rome-dev-chrome:${ROME_WORKTREE_SLUG:-dev}
+    restart: unless-stopped
+    # Shares rome's network namespace; if the rome container is recreated this
+    # one must be too (dev-up.sh always `up --force-recreate`s them together).
+    network_mode: "service:rome"
+    depends_on:
+      - rome
+    # Reap zombies from the X/VNC background processes (the entrypoint execs
+    # the Chrome supervisor, which never wait()s on them).
+    init: true
+    environment:
+      # Loopback is shared with the rome container, so CDP needs to listen no
+      # further — same shape as production.
+      ROME_CHROME_BIND_ADDRESS: 127.0.0.1
+      # Debian chromium in a default-seccomp container can't always set up its
+      # user-namespace sandbox; this sidecar is dev-only, so trade it away.
+      ROME_CHROME_DISABLE_SANDBOX: "1"
+    volumes:
+      - type: bind
+        source: ./scripts/docker
+        target: /opt/rome/scripts/docker
+        read_only: true
+      - type: volume
+        # Persistent browser profile — keeps ChatGPT/site logins across
+        # recreates. Project-scoped: `compose -p <slug> down -v` wipes it.
+        source: chrome-profile
+        target: /home/chrome/.rome
+
+# ---------------------------------------------------------------------------
+# Networks & volumes
+# ---------------------------------------------------------------------------
+
+networks:
+  default:
+    # Project-private bridge. Per-worktree isolation.
+  rome-edge:
+    name: rome-edge
+    external: true
+
+volumes:
+  rome-workspace:
+    # Container-owned /workspace: source (synced in read-only by the rome-sync
+    # sidecar via mutagen) + every node_modules + dist, all on the Docker fs.
+    # Replaces the old source bind-mounts AND the rome-node-modules volume.
+    # `down -v` wipes it; the next dev:all re-syncs + re-installs from scratch.
+  rome-home:
+    # Persists shell state (pnpm config, corepack runtime files) outside the
+    # rome-workspace volume. The pnpm content-addressable store lives at
+    # /pnpm-store via a host bind mount, not here. Container's HOME points
+    # here; mounted at /rome-home.
+
+  chrome-profile:
+    # Chrome sidecar's persistent profile (~/.rome/chrome-profile inside the
+    # chrome container) — holds browser logins, e.g. the ChatGPT session.
+    # Chrome's regenerable HTTP/media/code/GPU caches are deliberately kept OFF
+    # this volume (rome-start-chrome-cdp.sh points --disk-cache-dir at the
+    # container's ephemeral writable layer and caps --disk-cache-size); otherwise
+    # the cache grows to tens of GB and fills the host disk.

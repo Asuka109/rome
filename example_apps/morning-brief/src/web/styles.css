@@ -1,0 +1,10 @@
+/* Tailwind + the host's semantic-token vocabulary come from the published SDK
+   sheet — the canonical source of truth. Importing it keeps this app in lockstep
+   with the SDK as tokens evolve, and roots Tailwind's source scanning at this
+   file's directory so `App.tsx`'s utilities compile. Paint only with those tokens
+   (see the SDK README); raw color scales are a regression. */
+@import "@rome-os/app-web-sdk/styles";
+
+:host {
+  color-scheme: light dark;
+}

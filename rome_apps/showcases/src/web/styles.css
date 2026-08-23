@@ -1,0 +1,26 @@
+/* Rome's design-token layer: Tailwind v4 + the host theme vocabulary. Tokens are
+   inherited from the live host theme across the Shadow DOM boundary, so the app
+   (and the vendored rome-core trace components) track Rome's design language —
+   including dark mode — automatically. The full token reference lives in
+   @rome-os/app-web-sdk → src/runtime/styles.css. */
+@import "@rome-os/app-web-sdk/styles";
+
+/* Typography plugin powers the `prose` classes the vendored Markdown uses, so
+   rendered assistant text matches the chat page. */
+@plugin "@tailwindcss/typography";
+
+:host {
+  font-family: var(--font-sans, system-ui, -apple-system, "Segoe UI", sans-serif);
+  color: var(--foreground);
+  font-size: 14px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}

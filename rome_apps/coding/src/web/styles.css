@@ -1,0 +1,416 @@
+/* Palette comes from the Rome host's theme tokens, inherited as custom properties
+   that pierce the shadow boundary and flip with the dashboard's `.dark` class. The
+   gallery's local aliases (--bg/--ink/--acc/…) are remapped onto those tokens here,
+   so every downstream rule tracks the shell theme in both light and dark with no
+   second palette.
+
+   Exception: the scrim, badge, and "open" label that float OVER the mock
+   thumbnails (`.mock-hover`, `.mock-badge`, `.mock-open`) keep a fixed dark
+   treatment with light text. Those pixels sit on arbitrary full-color design
+   mocks rendered in the iframes — not on Rome's themed surface — so they need
+   contrast that holds regardless of the host theme or the mock's own colors,
+   the same reason a video caption bar is always dark. The iframe canvases stay
+   white for the same reason: they render external mock documents authored on a
+   white page. */
+
+.coding-app {
+  --bg: var(--background);
+  --bg-2: var(--surface);
+  --bg-3: var(--surface-muted);
+  --line: var(--border-subtle);
+  --line-2: var(--border);
+  --ink: var(--foreground);
+  --ink-2: var(--muted-foreground);
+  --ink-3: var(--subtle-foreground);
+  --acc: var(--brand);
+  --acc-ink: var(--brand-fg);
+
+  box-sizing: border-box;
+  min-height: 100%;
+  padding: clamp(1rem, 2vw, 1.75rem);
+  border-radius: var(--rome-radius-16);
+  background: radial-gradient(120% 80% at 100% 0%, var(--surface) 0%, var(--bg) 60%);
+  color: var(--ink);
+  font-family:
+    "Inter", "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+}
+
+.coding-app *,
+.coding-app *::before,
+.coding-app *::after {
+  box-sizing: border-box;
+}
+
+/* ---------- Gallery header ---------- */
+
+.gallery-head {
+  display: grid;
+  gap: 1.1rem;
+  margin-bottom: 1.5rem;
+}
+
+.gallery-head-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.eyebrow {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--acc);
+}
+
+.gallery-head h1 {
+  margin: 0;
+  font-size: clamp(1.7rem, 3.4vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.lede {
+  margin: 0.6rem 0 0;
+  max-width: 40rem;
+  color: var(--ink-2);
+}
+
+.gallery-search {
+  flex: 0 1 18rem;
+  min-width: 12rem;
+  padding: 0.7rem 1rem;
+  border-radius: var(--rome-radius-full);
+  border: 1px solid var(--line-2);
+  background: var(--bg-2);
+  color: var(--ink);
+  font-size: 0.92rem;
+  outline: none;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.gallery-search::placeholder {
+  color: var(--ink-3);
+}
+
+.gallery-search:focus {
+  border-color: var(--acc);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 35%, transparent);
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chip {
+  appearance: none;
+  cursor: pointer;
+  padding: 0.45rem 0.95rem;
+  border-radius: var(--rome-radius-full);
+  border: 1px solid var(--line-2);
+  background: var(--bg-2);
+  color: var(--ink-2);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 120ms ease, background 120ms ease, border-color 120ms ease;
+}
+
+.chip:hover {
+  color: var(--ink);
+  border-color: var(--line-2);
+  background: var(--bg-3);
+}
+
+.chip.active {
+  color: var(--acc-ink);
+  background: var(--acc);
+  border-color: var(--acc);
+}
+
+/* ---------- Waterfall grid ---------- */
+
+.gallery-grid {
+  columns: 300px;
+  column-gap: 1.1rem;
+}
+
+.mock-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  margin: 0 0 1.1rem;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--rome-radius-12);
+  overflow: hidden;
+  break-inside: avoid;
+  color: inherit;
+  font: inherit;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.mock-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--line-2);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+}
+
+.mock-card:focus-visible {
+  outline: 2px solid var(--acc);
+  outline-offset: 2px;
+}
+
+.mock-preview {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: var(--bg-3);
+}
+
+/* External mock document — authored on a white page, not Rome chrome. */
+.mock-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 0;
+  transform-origin: top left;
+  pointer-events: none;
+  background: #fff;
+}
+
+.mock-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, var(--bg-3) 30%, var(--surface-hover) 50%, var(--bg-3) 70%);
+  background-size: 200% 100%;
+  animation: shimmer 1.3s linear infinite;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Scrim over an arbitrary mock thumbnail — fixed dark for legibility. */
+.mock-hover {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: 0.9rem;
+  background: linear-gradient(to top, rgba(8, 9, 11, 0.78), rgba(8, 9, 11, 0) 55%);
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.mock-card:hover .mock-hover {
+  opacity: 1;
+}
+
+.mock-open {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.mock-meta {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.75rem 0.9rem 0.85rem;
+}
+
+.mock-style {
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.mock-name {
+  font-size: 0.8rem;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Badge over an arbitrary mock thumbnail — fixed dark for legibility. */
+.mock-badge {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--rome-radius-full);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(8, 9, 11, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(6px);
+}
+
+.skeleton {
+  height: 16rem;
+  background: var(--bg-3);
+}
+
+.skeleton .mock-shimmer {
+  position: static;
+  display: block;
+  height: 100%;
+}
+
+.gallery-error,
+.gallery-empty {
+  margin: 2rem 0;
+  color: var(--ink-2);
+}
+
+.gallery-error {
+  color: var(--destructive);
+}
+
+/* ---------- Full interactive view ---------- */
+
+.full-view {
+  display: flex;
+  flex-direction: column;
+  /* Height is pinned at runtime to the viewport (see MockFullView); this is a
+     fallback for the first paint before measurement lands. */
+  height: 82vh;
+  min-height: 520px;
+  padding: 0;
+  border-radius: var(--rome-radius-16);
+  overflow: hidden;
+}
+
+.full-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-2);
+}
+
+.back {
+  flex: 0 0 auto;
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--rome-radius-full);
+  border: 1px solid var(--line-2);
+  background: var(--bg-3);
+  color: var(--ink);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 120ms ease;
+}
+
+.back:hover {
+  background: var(--surface-hover);
+}
+
+.full-title {
+  display: grid;
+  gap: 0.1rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.full-title strong {
+  font-size: 0.98rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.full-title span {
+  font-size: 0.78rem;
+  color: var(--ink-3);
+}
+
+.full-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.full-stage {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
+  background: var(--bg);
+}
+
+/* Holds the iframe; the mock renders at its authored width and is scaled to
+   fit, so any unused space (wide screens, phone mocks) is letterboxed in the
+   app's canvas rather than stretching the design. */
+.frame-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* External mock document — authored on a white page, not Rome chrome. */
+.full-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 0;
+  transform-origin: top left;
+  background: #fff;
+}
+
+.prompt-panel {
+  flex: 0 0 24rem;
+  max-width: 80vw;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.prompt-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.prompt-panel pre {
+  margin: 0;
+  padding: 1rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: "IBM Plex Mono", "SFMono-Regular", ui-monospace, monospace;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+@media (max-width: 720px) {
+  .prompt-panel {
+    position: absolute;
+    inset: 0 0 0 auto;
+    flex-basis: 100%;
+    width: 100%;
+  }
+}

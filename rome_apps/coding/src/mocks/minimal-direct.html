@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Northbound — Fractional Product Strategy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Color — monochromatic + single accent (from CSV) */
+    --color-text: #1a1a1a;
+    --color-text-soft: #525252;
+    --color-text-faint: #8a8a8a;
+    --color-bg: #ffffff;
+    --color-surface: #ffffff;
+    --color-muted: #f5f5f4;
+    --color-border: #e5e5e5;
+    --color-border-strong: #1a1a1a;
+    --color-accent: #a16207;       /* reserved for critical CTA only */
+    --color-accent-ink: #ffffff;
+    --color-accent-hover: #854d0e;
+
+    /* Typography scale */
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-size-body: 18px;
+    --line-height: 1.6;
+    --fs-eyebrow: 0.8125rem;
+    --fs-small: 0.9375rem;
+    --fs-h3: 1.0625rem;
+    --fs-h2: clamp(1.5rem, 3.5vw, 2rem);
+    --fs-h1: clamp(2.25rem, 6vw, 3.75rem);
+    --tracking-eyebrow: 0.14em;
+
+    /* Layout / spacing */
+    --content-max-width: 680px;
+    --wide-max-width: 1080px;
+    --spacing-large: 4rem;
+    --space-1: 0.5rem;
+    --space-2: 1rem;
+    --space-3: 1.5rem;
+    --space-4: 2rem;
+    --space-6: 3rem;
+
+    /* Radius / borders — clean borders only, no shadow */
+    --radius-sm: 6px;
+    --radius: 10px;
+    --shadow: none;
+
+    /* Motion — subtle, fast */
+    --ease: cubic-bezier(0.2, 0.6, 0.2, 1);
+    --dur: 160ms;
+    --dur-slow: 320ms;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: var(--font-size-body);
+    line-height: var(--line-height);
+    color: var(--color-text);
+    background: var(--color-bg);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection { background: var(--color-text); color: var(--color-bg); }
+
+  a { color: inherit; text-decoration: none; }
+
+  :focus-visible {
+    outline: 2px solid var(--color-text);
+    outline-offset: 3px;
+    border-radius: 3px;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: var(--content-max-width);
+    margin-inline: auto;
+    padding-inline: var(--space-4);
+  }
+  .wrap--wide { max-width: var(--wide-max-width); }
+
+  .eyebrow {
+    font-size: var(--fs-eyebrow);
+    font-weight: 600;
+    letter-spacing: var(--tracking-eyebrow);
+    text-transform: uppercase;
+    color: var(--color-text-faint);
+    margin: 0;
+  }
+
+  /* ---------- Header ---------- */
+  header.site {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: color-mix(in srgb, var(--color-bg) 88%, transparent);
+    backdrop-filter: saturate(180%) blur(8px);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    height: 64px;
+    max-width: var(--wide-max-width);
+    margin-inline: auto;
+    padding-inline: var(--space-4);
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-weight: 600;
+    font-size: 1.0625rem;
+    letter-spacing: -0.01em;
+  }
+  .brand svg { display: block; }
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .nav-links a {
+    font-size: var(--fs-small);
+    font-weight: 500;
+    color: var(--color-text-soft);
+    transition: color var(--dur) var(--ease);
+  }
+  .nav-links a:hover { color: var(--color-text); }
+  .nav-cta {
+    font-size: var(--fs-small);
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-sm);
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .nav-cta:hover { background: var(--color-text); color: var(--color-bg); }
+  .nav-cta:active { transform: translateY(1px); }
+  .nav .nav-links li.opt { display: none; }
+  @media (min-width: 720px) {
+    .nav .nav-links li.opt { display: list-item; }
+  }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    padding-top: var(--spacing-large);
+    padding-bottom: var(--spacing-large);
+  }
+  .hero .eyebrow { margin-bottom: var(--space-3); }
+  h1 {
+    font-size: var(--fs-h1);
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin: 0 0 var(--space-3);
+  }
+  h1 .accent-word { position: relative; white-space: nowrap; }
+  h1 .accent-word::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    bottom: 0.08em;
+    height: 0.12em;
+    background: var(--color-accent);
+    opacity: 0.9;
+  }
+  .lede {
+    font-size: clamp(1.0625rem, 2.4vw, 1.25rem);
+    color: var(--color-text-soft);
+    max-width: 36ch;
+    margin: 0 0 var(--space-4);
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: inherit;
+    font-size: var(--fs-small);
+    font-weight: 600;
+    line-height: 1;
+    padding: 0.875rem 1.375rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease),
+                border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  .btn svg { transition: transform var(--dur) var(--ease); }
+  /* Primary CTA — the ONLY accent-colored element */
+  .btn--primary {
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+  }
+  .btn--primary:hover { background: var(--color-accent-hover); }
+  .btn--primary:hover svg { transform: translateX(3px); }
+  .btn--primary:active { transform: translateY(1px); }
+  .btn--ghost {
+    background: transparent;
+    color: var(--color-text);
+    border-color: var(--color-border);
+  }
+  .btn--ghost:hover { border-color: var(--color-border-strong); }
+  .btn--ghost:active { transform: translateY(1px); }
+
+  .hero-meta {
+    margin-top: var(--space-4);
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: var(--fs-small);
+    color: var(--color-text-faint);
+  }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--color-accent);
+  }
+
+  /* ---------- Divider rule ---------- */
+  .rule {
+    border: 0;
+    border-top: 1px solid var(--color-border);
+    margin: 0;
+  }
+
+  /* ---------- Numbers / proof ---------- */
+  .proof {
+    padding-block: var(--space-6);
+  }
+  .proof-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+  @media (min-width: 560px) {
+    .proof-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  .stat .num {
+    font-size: clamp(1.75rem, 5vw, 2.25rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .stat .label {
+    margin-top: 0.4rem;
+    font-size: var(--fs-small);
+    color: var(--color-text-soft);
+  }
+
+  /* ---------- Services list ---------- */
+  .services { padding-block: var(--spacing-large); }
+  .section-head { margin-bottom: var(--space-4); }
+  .section-head h2 {
+    font-size: var(--fs-h2);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0.75rem 0 0;
+  }
+  .svc-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--color-border);
+  }
+  .svc {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: start;
+    gap: var(--space-3);
+    padding-block: var(--space-3);
+    border-bottom: 1px solid var(--color-border);
+    transition: padding-left var(--dur) var(--ease);
+  }
+  .svc:hover { padding-left: 0.5rem; }
+  .svc-icon {
+    width: 28px; height: 28px;
+    color: var(--color-text);
+    flex: none;
+    margin-top: 2px;
+  }
+  .svc h3 {
+    font-size: var(--fs-h3);
+    font-weight: 600;
+    margin: 0 0 0.25rem;
+    letter-spacing: -0.01em;
+  }
+  .svc p {
+    margin: 0;
+    font-size: var(--fs-small);
+    color: var(--color-text-soft);
+    max-width: 46ch;
+  }
+  .svc .tag {
+    font-size: var(--fs-eyebrow);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--color-text-faint);
+    white-space: nowrap;
+    padding-top: 3px;
+  }
+
+  /* ---------- Pricing / CTA panel ---------- */
+  .offer { padding-block: var(--spacing-large); }
+  .panel {
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius);
+    padding: clamp(1.75rem, 5vw, 3rem);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+  @media (min-width: 720px) {
+    .panel { grid-template-columns: 1.2fr 1fr; align-items: center; }
+  }
+  .panel h2 {
+    font-size: var(--fs-h2);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0.75rem 0 0.5rem;
+  }
+  .panel p { margin: 0; color: var(--color-text-soft); font-size: var(--fs-small); }
+  .price-box {
+    border-left: 1px solid var(--color-border);
+    padding-left: var(--space-4);
+  }
+  @media (max-width: 719px) {
+    .price-box { border-left: 0; border-top: 1px solid var(--color-border); padding-left: 0; padding-top: var(--space-4); }
+  }
+  .price {
+    font-size: clamp(2rem, 7vw, 2.75rem);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .price span { font-size: 1rem; font-weight: 500; color: var(--color-text-faint); letter-spacing: 0; }
+  .price-note { font-size: var(--fs-small); color: var(--color-text-soft); margin: 0.5rem 0 var(--space-3); }
+  .checklist { list-style: none; margin: 0 0 var(--space-4); padding: 0; }
+  .checklist li {
+    display: flex; gap: 0.625rem; align-items: flex-start;
+    font-size: var(--fs-small);
+    color: var(--color-text-soft);
+    padding-block: 0.35rem;
+  }
+  .checklist svg { color: var(--color-accent); flex: none; margin-top: 3px; }
+  .price-box .btn--primary { width: 100%; justify-content: center; }
+
+  /* ---------- Footer ---------- */
+  footer.site {
+    border-top: 1px solid var(--color-border);
+    padding-block: var(--space-6);
+  }
+  .foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+  .foot .brand { font-size: 1rem; }
+  .foot-links { display: flex; gap: var(--space-3); list-style: none; margin: 0; padding: 0; }
+  .foot-links a { font-size: var(--fs-small); color: var(--color-text-soft); transition: color var(--dur) var(--ease); }
+  .foot-links a:hover { color: var(--color-text); }
+  .foot-copy { font-size: var(--fs-small); color: var(--color-text-faint); width: 100%; margin-top: var(--space-2); }
+
+  /* Entrance animation — non-essential */
+  .reveal { opacity: 0; transform: translateY(8px); animation: fade-up var(--dur-slow) var(--ease) forwards; }
+  .reveal:nth-child(2) { animation-delay: 60ms; }
+  .reveal:nth-child(3) { animation-delay: 120ms; }
+  @keyframes fade-up { to { opacity: 1; transform: none; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+    .reveal { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+  <header class="site">
+    <nav class="nav" aria-label="Primary">
+      <a class="brand" href="#top" aria-label="Northbound home">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <path d="M11 1.5 19.5 19 11 14.5 2.5 19 11 1.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+        </svg>
+        Northbound
+      </a>
+      <ul class="nav-links">
+        <li class="opt"><a href="#services">Services</a></li>
+        <li class="opt"><a href="#pricing">Engagement</a></li>
+        <li><a class="nav-cta" href="#pricing">Book a call</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap">
+        <p class="eyebrow reveal">Fractional product strategy</p>
+        <h1 id="hero-title" class="reveal">Ship the <span class="accent-word">right thing</span> — not just more things.</h1>
+        <p class="lede reveal">I help early-stage founders find the shortest line between a vague roadmap and a product people pay for.</p>
+        <div class="actions reveal">
+          <a class="btn btn--primary" href="#pricing">
+            Book an intro call
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+          <a class="btn btn--ghost" href="#services">See how it works</a>
+        </div>
+        <p class="hero-meta"><span class="dot" aria-hidden="true"></span> Two engagement slots open for Q3</p>
+      </div>
+    </section>
+
+    <hr class="rule" />
+
+    <section class="proof" aria-label="Track record">
+      <div class="wrap">
+        <ul class="proof-grid" style="list-style:none;margin:0;padding:0;">
+          <li class="stat">
+            <div class="num">40+</div>
+            <div class="label">Products taken from idea to launch</div>
+          </li>
+          <li class="stat">
+            <div class="num">9 yrs</div>
+            <div class="label">Leading product at venture-backed startups</div>
+          </li>
+          <li class="stat">
+            <div class="num">2&times;</div>
+            <div class="label">Average activation lift in the first 90 days</div>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <hr class="rule" />
+
+    <section class="services" id="services" aria-labelledby="svc-title">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">What I do</p>
+          <h2 id="svc-title">A small, focused practice</h2>
+        </div>
+        <ul class="svc-list">
+          <li class="svc">
+            <svg class="svc-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div>
+              <h3>Strategy sprints</h3>
+              <p>A two-week diagnostic that turns a noisy backlog into one clear bet worth shipping.</p>
+            </div>
+            <span class="tag">2 WEEKS</span>
+          </li>
+          <li class="svc">
+            <svg class="svc-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="3.5" y="4.5" width="17" height="15" rx="2" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M3.5 9.5h17M8 4.5v15" stroke="currentColor" stroke-width="1.6"/>
+            </svg>
+            <div>
+              <h3>Fractional product lead</h3>
+              <p>I run discovery, prioritisation and delivery rhythm alongside your team, part-time.</p>
+            </div>
+            <span class="tag">ONGOING</span>
+          </li>
+          <li class="svc">
+            <svg class="svc-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 19V9m5 10V5m5 14v-6m5 6V8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+            <div>
+              <h3>Launch &amp; growth reviews</h3>
+              <p>A clear read on what your metrics are telling you, and the three moves that matter next.</p>
+            </div>
+            <span class="tag">1 WEEK</span>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <hr class="rule" />
+
+    <section class="offer" id="pricing" aria-labelledby="offer-title">
+      <div class="wrap">
+        <div class="panel">
+          <div>
+            <p class="eyebrow">The engagement</p>
+            <h2 id="offer-title">Start with a strategy sprint</h2>
+            <p>One flat price, one decision-maker, one outcome. If it is not the right fit after our intro call, we both walk away — no pitch deck, no follow-up.</p>
+          </div>
+          <div class="price-box">
+            <div class="price">$6,500<span> / sprint</span></div>
+            <p class="price-note">Fixed scope · two weeks · async + two calls</p>
+            <ul class="checklist">
+              <li>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5 6.5 12 13 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                A single prioritised bet, documented
+              </li>
+              <li>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5 6.5 12 13 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Lightweight roadmap your team can run
+              </li>
+              <li>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5 6.5 12 13 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Recorded walkthrough you keep
+              </li>
+            </ul>
+            <a class="btn btn--primary" href="#top">Book an intro call</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site">
+    <div class="wrap">
+      <div class="foot">
+        <a class="brand" href="#top" aria-label="Northbound home">
+          <svg width="20" height="20" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <path d="M11 1.5 19.5 19 11 14.5 2.5 19 11 1.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          </svg>
+          Northbound
+        </a>
+        <ul class="foot-links">
+          <li><a href="#services">Services</a></li>
+          <li><a href="#pricing">Engagement</a></li>
+          <li><a href="mailto:hello@northbound.studio">Email</a></li>
+        </ul>
+        <p class="foot-copy">© 2026 Northbound Studio · Working remotely, mostly in GMT.</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

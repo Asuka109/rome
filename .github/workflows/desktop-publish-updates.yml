@@ -1,0 +1,281 @@
+name: Desktop Publish Updates
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_run_id:
+        description: GitHub Actions run ID from Desktop Build that passed QA
+        required: true
+        type: string
+      qa_approved:
+        description: Confirm the referenced build artifacts passed QA
+        required: true
+        default: false
+        type: boolean
+      update_channel:
+        description: Desktop update channel to publish
+        required: true
+        default: stable
+        type: string
+      remote_updates_dir:
+        description: Absolute directory served as /desktop on the update host
+        required: true
+        default: /etc/caddy/static/desktop
+        type: string
+      ssh_port:
+        description: SSH port on the update/Rome Cloud server
+        required: true
+        default: "22"
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: desktop-publish-updates-${{ inputs.update_channel }}
+  cancel-in-progress: false
+
+jobs:
+  publish-update-feed:
+    name: Publish desktop update feed
+    runs-on: ubuntu-latest
+    # The PANTHEON_SSH_* below resolve per environment. Without this the job
+    # sees only the repository-level copies, which predate the romeos.cc server
+    # and point at the stack this one replaced.
+    environment: romeos.cc
+    timeout-minutes: 15
+    env:
+      BUILD_RUN_ID: ${{ inputs.build_run_id }}
+      QA_APPROVED: ${{ inputs.qa_approved }}
+      PANTHEON_SSH_HOST: ${{ secrets.PANTHEON_SSH_HOST }}
+      PANTHEON_SSH_USERNAME: ${{ secrets.PANTHEON_SSH_USERNAME }}
+      PANTHEON_SSH_PASSWORD: ${{ secrets.PANTHEON_SSH_PASSWORD }}
+      PANTHEON_SSH_KNOWN_HOSTS: ${{ secrets.PANTHEON_SSH_KNOWN_HOSTS }}
+      UPDATE_CHANNEL: ${{ inputs.update_channel }}
+      REMOTE_UPDATES_DIR: ${{ inputs.remote_updates_dir }}
+      DEPLOY_SSH_PORT: ${{ inputs.ssh_port }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Validate publish configuration
+        run: |
+          set -euo pipefail
+
+          for name in BUILD_RUN_ID QA_APPROVED PANTHEON_SSH_HOST PANTHEON_SSH_USERNAME PANTHEON_SSH_PASSWORD PANTHEON_SSH_KNOWN_HOSTS UPDATE_CHANNEL REMOTE_UPDATES_DIR DEPLOY_SSH_PORT GH_REPO; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Missing required configuration: $name"
+              exit 1
+            fi
+          done
+
+          if [ "$QA_APPROVED" != "true" ]; then
+            echo "::error::qa_approved must be checked after QA passes for this build"
+            exit 1
+          fi
+
+          if ! [[ "$BUILD_RUN_ID" =~ ^[0-9]+$ ]]; then
+            echo "::error::build_run_id must be numeric"
+            exit 1
+          fi
+
+          case "$UPDATE_CHANNEL" in
+            *[!A-Za-z0-9._-]* | "" | "." | "..")
+              echo "::error::update_channel must contain only letters, numbers, '.', '_', or '-'"
+              exit 1
+              ;;
+          esac
+
+          case "$REMOTE_UPDATES_DIR" in
+            /*) ;;
+            *)
+              echo "::error::remote_updates_dir must be an absolute path"
+              exit 1
+              ;;
+          esac
+
+          case "$REMOTE_UPDATES_DIR" in
+            *[!A-Za-z0-9._/-]* | *"//"* | */.. | */../* | *"'"*)
+              echo "::error::remote_updates_dir contains unsupported path characters"
+              exit 1
+              ;;
+          esac
+
+          if ! [[ "$DEPLOY_SSH_PORT" =~ ^[0-9]+$ ]]; then
+            echo "::error::ssh_port must be numeric"
+            exit 1
+          fi
+
+      - name: Verify source build run passed
+        run: |
+          set -euo pipefail
+
+          workflow_name="$(gh run view "$BUILD_RUN_ID" --repo "$GH_REPO" --json workflowName --jq '.workflowName')"
+          conclusion="$(gh run view "$BUILD_RUN_ID" --repo "$GH_REPO" --json conclusion --jq '.conclusion')"
+
+          if [ "$workflow_name" != "Desktop Build" ]; then
+            echo "::error::build_run_id must reference a Desktop Build run, got: ${workflow_name}"
+            exit 1
+          fi
+
+          if [ "$conclusion" != "success" ]; then
+            echo "::error::Desktop Build run ${BUILD_RUN_ID} has conclusion: ${conclusion}"
+            exit 1
+          fi
+
+      - name: Download approved build artifacts
+        run: |
+          set -euo pipefail
+
+          mkdir -p artifacts
+          gh run download "$BUILD_RUN_ID" --repo "$GH_REPO" \
+            --name rome-desktop-mac-arm64-signed \
+            --dir artifacts/rome-desktop-mac-arm64-signed
+
+      # Two holes the build-side gates cannot close, because this workflow is
+      # manual and takes an arbitrary run id.
+      - name: Verify the artifacts are publishable
+        run: |
+          set -euo pipefail
+
+          # A tagged build cannot be unsigned, so "came from a tag" implies "signed";
+          # a workflow_dispatch run can be unsigned and still succeed. Two calls, not
+          # one: $( ) trips set -e on failure, process substitution does not.
+          event="$(gh run view "$BUILD_RUN_ID" --repo "$GH_REPO" --json event --jq '.event')"
+          tag="$(gh run view "$BUILD_RUN_ID" --repo "$GH_REPO" --json headBranch --jq '.headBranch')"
+          if [ "$event" != "push" ]; then
+            echo "::error::Run ${BUILD_RUN_ID} was a ${event} build, not a tagged release"
+            exit 1
+          fi
+          case "$tag" in
+            desktop-v*) version="${tag#desktop-v}" ;;
+            *) echo "::error::Run ${BUILD_RUN_ID} was built from ${tag}, not a desktop-v* tag"; exit 1 ;;
+          esac
+
+          # Clients compare against the manifest, so it has to agree with the tag.
+          yml_version="$(grep -m1 '^version:' artifacts/rome-desktop-mac-arm64-signed/latest-mac.yml | awk '{print $2}')"
+          if [ "$version" != "$yml_version" ]; then
+            echo "::error::Tag version ${version} does not match manifest ${yml_version}"
+            exit 1
+          fi
+          echo "Publishing ${version} from ${tag}."
+
+      - name: Stage update feed
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          mac_arm64_dir="artifacts/rome-desktop-mac-arm64-signed"
+          stage_root="stage/desktop"
+          mac_arm64_stage="${stage_root}/${UPDATE_CHANNEL}/darwin/arm64"
+
+          require_artifacts() {
+            local label="$1"
+            shift
+            local files=("$@")
+            if [ "${#files[@]}" -eq 0 ]; then
+              echo "::error::Missing required ${label} artifact"
+              exit 1
+            fi
+          }
+
+          require_artifacts "macOS arm64 DMG" "${mac_arm64_dir}"/*.dmg
+          require_artifacts "macOS arm64 ZIP" "${mac_arm64_dir}"/*.zip
+          require_artifacts "macOS arm64 blockmap" "${mac_arm64_dir}"/*.blockmap
+          require_artifacts "macOS arm64 latest-mac.yml" "${mac_arm64_dir}"/latest-mac.yml
+
+          mkdir -p "$mac_arm64_stage"
+          cp "${mac_arm64_dir}"/*.dmg "${mac_arm64_dir}"/*.zip "${mac_arm64_dir}"/*.blockmap "$mac_arm64_stage/"
+          cp "${mac_arm64_dir}"/latest-mac.yml "$mac_arm64_stage/"
+
+      - name: Install SSH helpers
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y sshpass
+
+      - name: Configure SSH known_hosts
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$PANTHEON_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Publish update feed
+        env:
+          SSHPASS: ${{ secrets.PANTHEON_SSH_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          remote_channel_dir="${REMOTE_UPDATES_DIR}/${UPDATE_CHANNEL}"
+          remote_stage_dir="/tmp/rome-desktop-update-feed-${GITHUB_RUN_ID}-${UPDATE_CHANNEL}"
+          ssh_target="${PANTHEON_SSH_USERNAME}@${PANTHEON_SSH_HOST}"
+          ssh_cmd=(ssh -o StrictHostKeyChecking=yes -p "$DEPLOY_SSH_PORT")
+
+          # The build's newest-tag check is stale by now — any successful run id can
+          # be picked later — so the deployed feed has the last word. A version is
+          # published once; repair by releasing the next number.
+          version="$(awk '/^version:/ {print $2; exit}' "stage/desktop/${UPDATE_CHANNEL}/darwin/arm64/latest-mac.yml")"
+          # Privileged where the deploy below is, using its own sudo test, so an
+          # unreadable feed cannot pass for a missing one. Exit 9 can only come from
+          # the inner shell having run, so sudo being refused stops the publish
+          # instead of reading as an empty channel.
+          remote_yml="${remote_channel_dir}/darwin/arm64/latest-mac.yml"
+          rc=0
+          deployed_yml="$(sshpass -e "${ssh_cmd[@]}" "$ssh_target" \
+            "if command -v sudo >/dev/null 2>&1 && [ \$(id -u) -ne 0 ]; then S='sudo -n'; else S=; fi; \$S sh -c \"[ -e '$remote_yml' ] || exit 9; cat '$remote_yml'\"")" || rc=$?
+          case "$rc" in
+            0) deployed="$(printf '%s\n' "$deployed_yml" | awk '/^version:/ {print $2; exit}')"
+               if [ -z "$deployed" ]; then
+                 echo "::error::The deployed manifest carries no version — refusing to publish over it"
+                 exit 1
+               fi ;;
+            9) deployed="" ;;
+            *) echo "::error::Could not read the deployed manifest (ssh exit ${rc})"; exit 1 ;;
+          esac
+          if [ -n "$deployed" ] && { [ "$deployed" = "$version" ] ||
+             [ "$(printf '%s\n%s\n' "$version" "$deployed" | sort -t. -k1,1n -k2,2n -k3,3n | tail -1)" != "$version" ]; }; then
+            echo "::error::${version} is not above the published ${deployed} — refusing to roll the feed back"
+            exit 1
+          fi
+
+          sshpass -e "${ssh_cmd[@]}" "$ssh_target" "rm -rf '$remote_stage_dir' && mkdir -p '$remote_stage_dir'"
+
+          tar -C "stage/desktop/${UPDATE_CHANNEL}" -cf - . \
+            | sshpass -e "${ssh_cmd[@]}" "$ssh_target" "tar -C '$remote_stage_dir' -xf -"
+
+          {
+            printf 'set -euo pipefail\n'
+            printf 'REMOTE_CHANNEL_DIR=%q\n' "$remote_channel_dir"
+            printf 'REMOTE_STAGE_DIR=%q\n' "$remote_stage_dir"
+            printf 'export REMOTE_CHANNEL_DIR REMOTE_STAGE_DIR\n'
+            cat <<'EOF'
+          if command -v sudo >/dev/null 2>&1 && [ "$(id -u)" -ne 0 ]; then
+            SUDO="sudo"
+          else
+            SUDO=""
+          fi
+
+          $SUDO mkdir -p "$REMOTE_CHANNEL_DIR/darwin/arm64"
+
+          # Publish binaries before mutable metadata so clients never see yml for absent files.
+          find "$REMOTE_STAGE_DIR" -type f ! -name 'latest*.yml' -print0 \
+            | while IFS= read -r -d '' file; do
+                rel="${file#"$REMOTE_STAGE_DIR"/}"
+                $SUDO mkdir -p "$REMOTE_CHANNEL_DIR/$(dirname "$rel")"
+                $SUDO cp "$file" "$REMOTE_CHANNEL_DIR/$rel"
+              done
+
+          find "$REMOTE_STAGE_DIR" -type f -name 'latest*.yml' -print0 \
+            | while IFS= read -r -d '' file; do
+                rel="${file#"$REMOTE_STAGE_DIR"/}"
+                $SUDO mkdir -p "$REMOTE_CHANNEL_DIR/$(dirname "$rel")"
+                $SUDO cp "$file" "$REMOTE_CHANNEL_DIR/$rel"
+              done
+
+          $SUDO find "$REMOTE_CHANNEL_DIR" -type f -exec chmod 0644 {} +
+          $SUDO find "$REMOTE_CHANNEL_DIR" -type d -exec chmod 0755 {} +
+          rm -rf "$REMOTE_STAGE_DIR"
+          EOF
+          } | sshpass -e "${ssh_cmd[@]}" "$ssh_target" "bash -se"

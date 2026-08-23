@@ -1,0 +1,5 @@
+# Per-audit outputs — rewritten by every audit run, seeded from the committed
+# *.example.tsx by build.mjs / typecheck.mjs when missing. Only the examples
+# are source; audit content never lands in git.
+findings.tsx
+repros.tsx

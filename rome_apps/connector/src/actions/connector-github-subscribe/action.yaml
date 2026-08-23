@@ -1,0 +1,19 @@
+name: connector_github_subscribe
+type: custom
+description: |
+  Subscribe to GitHub repository or organization events so they flow onto Rome's
+  event bus — Rome's own GitHub webhook, no Composio. Registers a webhook on the
+  repo (`owner/name`) or org using the guardian's GitHub connection, pointing at
+  the relay deposit URL, and returns the `topics` a routine's event-bus
+  trigger binds to (one `provider:event:github.<event>` per requested event).
+  Pass exactly one of `repo` or `org`, plus the `events` to deliver (e.g.
+  ['push', 'pull_request', 'issues'], or ['*'] for all). This is the GitHub
+  equivalent of connector_event_subscribe — use it instead of connector_event_subscribe
+  for GitHub. Requires GitHub connected in Settings → Connections and a relay
+  mailbox. Fails closed: not connected, missing relay mailbox, or a GitHub API
+  refusal all come back as an action error.
+entry: ./index.ts
+complexity: simple
+speed: moderate
+reliability: medium
+sideEffects: write

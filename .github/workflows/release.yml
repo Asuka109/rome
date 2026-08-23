@@ -1,0 +1,90 @@
+name: Release
+
+# Drives releases for Rome's public npm packages via release-please.
+#
+# Flow:
+#   1. PRs land on main with Conventional Commits messages (feat:, fix:, etc.).
+#   2. The release-please job opens (or updates) a release PR that bumps
+#      version + appends to CHANGELOG.md based on the unreleased commits.
+#   3. Merging that release PR makes release-please cut a GitHub release and
+#      tag for each package whose version moved. The publish job then builds
+#      and pushes the matching tarball(s) to npm.
+#
+# Bump rules: configured in release-please-config.json. Pre-1.0 we keep
+# breaking → minor and feat/fix → patch (bump-minor-pre-major +
+# bump-patch-for-minor-pre-major). Once a package cuts 1.0.0, drop those flags
+# for that entry to get standard semver.
+#
+# Auth: publish runs against npm via OIDC (Trusted Publisher mapping for
+# this repo + release.yml). No NPM_TOKEN required. Keep release.yml as the
+# single publish entrypoint; sdk-publish.yml is only a reusable implementation.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Which package to publish
+        required: true
+        type: choice
+        default: all
+        # Newly bootstrapped packages stay individually selectable for dry-run
+        # validation, but are not part of `all` until their npm Trusted
+        # Publishers exist. See docs/releases.md.
+        options:
+          - all
+          - packages/app-runtime-sdk
+          - packages/app-web-sdk
+          - packages/ui
+          - packages/lib
+          - packages/web-content
+      dry_run:
+        description: Dry run (validate + pack, no actual upload).
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  release-please:
+    name: Release-please
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
+      paths_released: ${{ steps.release.outputs.paths_released }}
+    steps:
+      - name: Run release-please
+        id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  publish-release:
+    name: Publish release
+    needs: release-please
+    if: github.event_name == 'push' && needs.release-please.outputs.releases_created == 'true'
+    uses: ./.github/workflows/sdk-publish.yml
+    with:
+      paths: ${{ needs.release-please.outputs.paths_released }}
+      dry_run: false
+
+  publish-manual:
+    name: Publish manual package
+    if: github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/sdk-publish.yml
+    with:
+      package: ${{ inputs.package }}
+      dry_run: ${{ inputs.dry_run }}

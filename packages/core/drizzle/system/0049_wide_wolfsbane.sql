@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `connections_service_unique` ON `connections` (`service`);

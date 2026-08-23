@@ -1,0 +1,5 @@
+/* Deprecated bridge — the Markdown stylesheet lives in the component kit now.
+   Import `@rome-os/ui/markdown.css` directly; this forward exists so consumers
+   still importing `@rome-os/rome-web-components/styles.css` keep their prose
+   styled across the version boundary. */
+@import "@rome-os/ui/markdown.css";

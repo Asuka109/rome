@@ -1,0 +1,65 @@
+{
+  "name": "@rome-os/rome-web-components",
+  "version": "0.1.7",
+  "description": "Shared Markdown and Rome News components for Rome web surfaces",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": [
+    "./styles.css",
+    "./src/**/*.css"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./markdown": {
+      "types": "./dist/markdown/index.d.ts",
+      "default": "./dist/markdown/index.js"
+    },
+    "./news-item": {
+      "types": "./dist/news-item/index.d.ts",
+      "default": "./dist/news-item/index.js"
+    },
+    "./news-item/schema": {
+      "types": "./dist/news-item/schema.d.ts",
+      "default": "./dist/news-item/schema.js"
+    },
+    "./news-item/styles.css": "./src/news-item/styles.css",
+    "./styles": "./styles.css",
+    "./styles.css": "./styles.css"
+  },
+  "files": [
+    "dist",
+    "styles.css",
+    "src/**/*.css"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepare": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@rome-os/ui": "workspace:^",
+    "@streamdown/code": "^1.1.1",
+    "@streamdown/math": "^1.0.2",
+    "@streamdown/mermaid": "^1.0.2",
+    "katex": "^0.16.27",
+    "streamdown": "^2.5.0",
+    "zod": "^4.3.6"
+  },
+  "peerDependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "typescript": "^5.9.3"
+  }
+}

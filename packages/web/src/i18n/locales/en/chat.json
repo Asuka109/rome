@@ -1,0 +1,336 @@
+{
+  "title": "Rome",
+  "documentTitle": "{{guardian}} & {{agent}} | Rome",
+  "sidebar": {
+    "newChat": "New Chat",
+    "noSessions": "No sessions yet",
+    "openSidebar": "Open sidebar"
+  },
+  "navbar": {
+    "add": "Add widget",
+    "addShort": "Add widget",
+    "more": "More actions",
+    "pin": "Pin chat",
+    "unpin": "Unpin chat",
+    "archive": "Archive",
+    "unarchive": "Unarchive chat",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this chat permanently? This can't be undone."
+  },
+  "archived": {
+    "readOnly": "This chat is archived and read-only.",
+    "unarchive": "Unarchive"
+  },
+  "share": {
+    "title": "Share chat",
+    "loading": "Loading…",
+    "createError": "Couldn't create the link.",
+    "selectedCount_one": "{{count}} message selected",
+    "selectedCount_other": "{{count}} messages selected",
+    "createTitle": "Create a share link",
+    "includeLabel": "Include in link",
+    "appDesc": "Interactive for visitors. The app must be public.",
+    "projectsTitle": "Project workspace",
+    "projectsDesc": "All files and settings in the linked project.",
+    "projectsDangerLead": "Exposes every file in this project",
+    "projectsDangerBody": "to anyone with the link.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "open": "Open in new tab",
+    "existingHeading": "Active links",
+    "revoke": "Revoke",
+    "cancel": "Cancel",
+    "create": "Create link",
+    "creating": "Creating…",
+    "unavailableTitle": "This shared chat is unavailable",
+    "unavailableBody": "The link may have been revoked or is no longer valid."
+  },
+  "roles": {
+    "agent": "Assistant"
+  },
+  "message": {
+    "copy": "Copy message",
+    "copied": "Copied",
+    "feedback": {
+      "thumbsUp": "Mark this turn helpful",
+      "thumbsDown": "Mark this turn unhelpful",
+      "commentPlaceholder": "Optional: what went wrong, or what was great?",
+      "submit": "Submit",
+      "submitting": "Submitting…",
+      "submitFailed": "Couldn't submit feedback",
+      "recorded": "Feedback recorded"
+    },
+    "branch": {
+      "open": "Start a side chat from this turn",
+      "title": "Branch into a side chat",
+      "description": "Ask a follow-up without changing this conversation.",
+      "suggestionsLabel": "Suggested prompts",
+      "suggestions": {
+        "mermaid": "Visualize this in a Mermaid chart",
+        "simplify": "Explain this more simply",
+        "example": "Give me a concrete example"
+      },
+      "promptPlaceholder": "Ask a question about this response…",
+      "submit": "Start side chat",
+      "submitting": "Starting…",
+      "submitFailed": "Couldn't start the side chat"
+    }
+  },
+  "blocks": {
+    "thinking": "Thinking...",
+    "usingTool": "Using {{tool}}",
+    "resultFromTool": "Result from {{tool}}",
+    "resultFromAction": "Result: {{action}}",
+    "agentSession": "{{agent}} session",
+    "sessionFallback": "Session",
+    "session": "Session",
+    "romeSession": "Rome session",
+    "systemPrompt": "System prompt",
+    "userPrompt": "User prompt",
+    "emptyPrompt": "(empty)",
+    "emptyList": "(empty list)",
+    "emptyObject": "(empty object)",
+    "agentRunFailed": "Agent run failed",
+    "unknownTool": "unknown",
+    "showMore": "Show more",
+    "showLess": "Show less",
+    "input": "Input",
+    "output": "Output",
+    "itemCount_one": "{{count}} item",
+    "itemCount_other": "{{count}} items",
+    "keyCount_one": "{{count}} key",
+    "keyCount_other": "{{count}} keys"
+  },
+  "errors": {
+    "providerAuthRevoked": {
+      "title": "Reconnect {{provider}}",
+      "description": "Your {{provider}} login has expired or was revoked. Reconnect it in AI Tools, then try your message again.",
+      "action": "Reconnect"
+    },
+    "providerNotLoggedIn": {
+      "title": "{{provider}} is not signed in",
+      "description": "Sign in to {{provider}} in AI Tools, then try your message again.",
+      "action": "Go to sign in"
+    },
+    "providerQuotaExhausted": {
+      "title": "{{provider}} usage limit reached",
+      "description": "Review its usage or choose another available model."
+    },
+    "allProvidersQuotaExhausted": {
+      "title": "All connected AI providers have reached their usage limits",
+      "description": "Sign in with another account, or wait for a usage limit to reset."
+    },
+    "modelUnavailable": {
+      "title": "This model is unavailable",
+      "description": "Review model access in AI Tools or choose another model."
+    },
+    "noProvider": {
+      "title": "No AI provider is available",
+      "description": "Connect an AI tool or review its current status."
+    },
+    "openAiTools": "Open AI Tools"
+  },
+  "usage": {
+    "title": "Usage",
+    "includeSubagents": "Include subagents",
+    "includedSubagents": "{{count}} subagent runs included",
+    "totalTokens": "Total tokens",
+    "modelCount": "{{count}} models",
+    "modelUsage": "By model",
+    "model": "Model",
+    "mainModel": "Main model",
+    "subagentModel": "Subagent model",
+    "runCount": "{{count}} runs",
+    "tokens": "Tokens",
+    "cost": "Cost",
+    "contextUsage": "Context window usage",
+    "cacheRead": "cache_read: {{value}}",
+    "cacheWrite": "cache_write: {{value}}",
+    "input": "input: {{value}}",
+    "output": "output: {{value}}",
+    "context": "context: {{used}}",
+    "contextWithWindow": "context: {{used}} / {{window}}",
+    "apiCost": "API cost: {{cost}}",
+    "apiCostLabel": "API cost",
+    "costUnknown": "unknown",
+    "labels": {
+      "cacheRead": "Cache read",
+      "cacheWrite": "Cache write",
+      "input": "Input",
+      "output": "Output",
+      "context": "Context",
+      "mainContext": "Main context"
+    }
+  },
+  "approvals": {
+    "headerPending": "Guardian approval needed",
+    "headerResolved": "Guardian approval",
+    "fallbackActionName": "action",
+    "status": {
+      "pending": "Pending approval",
+      "approved": "Approved",
+      "executing": "Executing…",
+      "executed": "Approved & done",
+      "rejected": "Rejected",
+      "failed": "Execution failed"
+    },
+    "actions": {
+      "approve": "Approve",
+      "approving": "Approving…",
+      "reject": "Reject",
+      "rejecting": "Rejecting…"
+    },
+    "footer": {
+      "approvedRunning": "Approved — running action…",
+      "executedSuccess": "✓ Action approved and executed successfully.",
+      "rejectedNotice": "Action rejected by guardian."
+    },
+    "preview": {
+      "sensitiveTo": "To",
+      "sensitiveOn": "on"
+    },
+    "errors": {
+      "approveFallback": "Failed to approve",
+      "rejectFallback": "Failed to reject",
+      "approveStatus": "Failed to approve ({{status}})",
+      "rejectStatus": "Failed to reject ({{status}})"
+    }
+  },
+  "composer": {
+    "placeholderDefault": "How can I help you today?",
+    "placeholderWithUploads": "Add a message or send the uploaded files...",
+    "uploadFiles": "Upload files",
+    "dropFiles": "Drop files to upload",
+    "removeFile": "Remove {{name}}",
+    "filePill": "#File {{index}}",
+    "send": "Send",
+    "sendTitle": "Send",
+    "queueTurnTitle": "Queue a new turn",
+    "stop": "Stop",
+    "stopGenerating": "Stop generating"
+  },
+  "modelSelector": {
+    "label": "Model",
+    "saveFailed": "Failed to save model selection.",
+    "options": {
+      "auto": "Auto",
+      "claudeOpus": "Opus",
+      "opus5": "Opus 5",
+      "opus46": "Opus 4.6",
+      "sonnet": "Sonnet",
+      "haiku": "Haiku",
+      "fable": "Fable",
+      "gpt56Sol": "GPT-5.6 Sol",
+      "gpt56Terra": "GPT-5.6 Terra",
+      "gpt56Luna": "GPT-5.6 Luna"
+    }
+  },
+  "reasoningEffort": {
+    "label": "Reasoning effort",
+    "saveFailed": "Failed to save reasoning effort.",
+    "options": {
+      "fast": "Fast",
+      "think": "Think",
+      "ultrathink": "Ultrathink"
+    }
+  },
+  "agentMention": {
+    "menuTitle": "Pick an agent to chat with",
+    "placeholder": "Filter agents…",
+    "loading": "Loading agents…",
+    "loadFailed": "Failed to load agents.",
+    "empty": "No agents available.",
+    "noMatch": "No matching agents.",
+    "pickApp": "Pick an app on the left.",
+    "agentCount_one": "{{count}} agent",
+    "agentCount_other": "{{count}} agents",
+    "remove": "Remove agent",
+    "pinnedTitle": "You're talking to {{agent}}",
+    "draftTitle": "Your next message goes to {{agent}}"
+  },
+  "slashSkill": {
+    "menuTitle": "Pick a skill to run",
+    "loading": "Loading skills…",
+    "loadFailed": "Failed to load skills.",
+    "empty": "No skills available.",
+    "noMatch": "No matching skills.",
+    "chipTitle": "Will invoke the skill {{name}} for this turn.",
+    "remove": "Remove skill",
+    "pickApp": "Pick an app on the left.",
+    "skillCount_one": "{{count}} skill",
+    "skillCount_other": "{{count}} skills"
+  },
+  "impersonation": {
+    "buttonLabel": "Impersonation",
+    "menuTitle": "Impersonation",
+    "currentlySpeakingAs": "Currently speaking as {{name}}.",
+    "guardianFallback": "Guardian",
+    "guardianWithName": "{{name}} (guardian)",
+    "personLabel": "{{name}} ({{bondLevel}})",
+    "default": "Default",
+    "noOtherUsers": "No other users available."
+  },
+  "project": {
+    "buttonLabel": "Project",
+    "changeProject": "Change project",
+    "menuTitle": "Project",
+    "defaultPath": "Default path: {{path}}",
+    "loading": "Loading projects...",
+    "selected": "Selected",
+    "createTitle": "Create project",
+    "createPlaceholder": "New project name",
+    "createButton": "Create",
+    "createAction": "Create project",
+    "searchPlaceholder": "Search projects…",
+    "listLabel": "Projects",
+    "clearSearch": "Clear search",
+    "noProjectsFound": "No projects found in {{path}}.",
+    "noMatches": "No matching projects.",
+    "noMatchesQuery": "No projects match “{{query}}”.",
+    "noProjectSelected": "no project selected",
+    "errors": {
+      "nameRequired": "Project name is required.",
+      "loadFailed": "Failed to load projects.",
+      "updateFailed": "Failed to update project.",
+      "createFailed": "Failed to create project."
+    }
+  },
+  "stream": {
+    "errors": {
+      "createChatFallback": "Failed to create chat.",
+      "createChatStatus": "Failed to create chat ({{status}}).",
+      "emptyStream": "Failed to connect to stream: empty response stream.",
+      "reconnectStatus": "Failed to reconnect stream ({{status}}).",
+      "sendStatus": "Failed to send message ({{status}}).",
+      "sendInvalidResponse": "Failed to send message: invalid response.",
+      "sendFallback": "Failed to send message.",
+      "attachStreamStatus": "Failed to attach stream for turn {{turnId}} ({{status}}).",
+      "stopFallback": "Failed to stop generation.",
+      "stopStatus": "Stop failed ({{status}})."
+    }
+  },
+  "empty": {
+    "greeting": "Hi {{name}},",
+    "greetingFallback": "Welcome,",
+    "headline": "What should we create?",
+    "pinnedChats": "Pinned chats",
+    "unpin": "Unpin",
+    "unpinChat": "Unpin {{name}}",
+    "romeNews": "Rome News",
+    "startWithPrompt": "Start with a prompt"
+  },
+  "starters": {
+    "buildGame": {
+      "label": "Build a game",
+      "prompt": "Build a simple two-player strategy game app that is easy to learn, with each match finishing in just a few minutes."
+    },
+    "designWorkflow": {
+      "label": "Design a workflow",
+      "prompt": "Find early-stage founders building in the AI infrastructure space. Pull from GitHub (repos with recent activity and star velocity), X (founders posting about their builds), and LinkedIn. Monitor for new signals weekly. Create a professional dashboard app I can review at a glance. For any founder that looks promising, draft a warm outreach email from me."
+    },
+    "morningBrief": {
+      "label": "Morning brief",
+      "prompt": "Build a morning brief app with frontend design to read my Gmail from the last 24 hours and my upcoming Google Calendar events. Update the dashboard every day at 8:00 AM with the latest priorities, urgent emails, key meetings, deadlines, and recommended next actions. Identify what needs my attention most and send me a short summary on Telegram after each daily update."
+    }
+  }
+}

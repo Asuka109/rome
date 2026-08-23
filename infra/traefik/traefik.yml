@@ -1,0 +1,28 @@
+# Traefik static config.
+#
+# Singleton across all Rome worktrees on the host. Discovers services via the
+# Docker socket, matches on the `rome-edge` network so per-worktree private
+# bridges stay invisible. Hostname routing only — no port math anywhere.
+
+entryPoints:
+  web:
+    address: ":3000"
+  # Used only by the landing index at http://rome.localhost/ — short URL is
+  # the whole point. Per-worktree instance routers stay on `web` (:3000).
+  landing:
+    address: ":80"
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: "rome-edge"
+
+api:
+  dashboard: true
+  insecure: true
+
+log:
+  level: INFO
+
+accessLog: {}

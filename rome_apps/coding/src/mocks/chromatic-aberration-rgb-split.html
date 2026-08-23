@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VOIDWAVE — Sound System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Righteous&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* RGB channels — source of truth */
+    --red-channel: #ff0033;
+    --green-channel: #00ff99;
+    --blue-channel: #2b6bff;
+    --cyan: #00e5ff;
+    --magenta: #ff00aa;
+
+    /* Surfaces (dark preferred) */
+    --bg: #0f0f23;
+    --bg-deep: #08080f;
+    --card: #1b1b30;
+    --card-2: #16162a;
+    --muted: #27273b;
+    --border: #312e81;
+    --border-glow: #4338ca;
+
+    /* Text */
+    --fg: #f8fafc;
+    --fg-dim: #94a3b8;
+    --accent: #22c55e;
+
+    /* Motion */
+    --rgb-offset: 2px;
+    --glitch-duration: 0.3s;
+    --scanline-opacity: 0.07;
+    --t-fast: 0.16s cubic-bezier(.2,.8,.2,1);
+    --t-med: 0.32s cubic-bezier(.2,.8,.2,1);
+
+    /* Radius / spacing / shadow */
+    --r-sm: 6px;
+    --r-md: 12px;
+    --r-lg: 20px;
+    --sp-1: 6px;
+    --sp-2: 12px;
+    --sp-3: 20px;
+    --sp-4: 32px;
+    --sp-5: 52px;
+    --shadow: 0 18px 50px -16px rgba(0,0,0,.7);
+    --shadow-glow: 0 0 0 1px var(--border), 0 0 32px -6px rgba(67,56,202,.6);
+
+    /* Type scale */
+    --fs-display: clamp(2.6rem, 7vw, 5.5rem);
+    --fs-h2: clamp(1.4rem, 3vw, 2.1rem);
+    --fs-lg: 1.15rem;
+    --fs-base: 0.98rem;
+    --fs-sm: 0.82rem;
+    --fs-xs: 0.7rem;
+
+    --font-display: 'Righteous', system-ui, sans-serif;
+    --font-body: 'Poppins', system-ui, -apple-system, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { max-width: 100%; overflow-x: hidden; }
+
+  body {
+    background:
+      radial-gradient(900px 600px at 85% -10%, rgba(43,107,255,.18), transparent 60%),
+      radial-gradient(700px 500px at -5% 20%, rgba(255,0,170,.14), transparent 60%),
+      var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: var(--fs-base);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    position: relative;
+  }
+
+  /* Global scanline + noise overlay */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,var(--scanline-opacity)) 0px,
+      rgba(255,255,255,var(--scanline-opacity)) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    mix-blend-mode: overlay;
+    animation: scanmove 8s linear infinite;
+  }
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9998;
+    opacity: .04;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation: noiseflicker .4s steps(3) infinite;
+  }
+
+  @keyframes scanmove { from { background-position-y: 0; } to { background-position-y: 6px; } }
+  @keyframes noiseflicker { 0%{transform:translate(0,0)} 33%{transform:translate(-2px,1px)} 66%{transform:translate(1px,-1px)} }
+
+  /* ---- RGB split text utility ---- */
+  .rgb-split {
+    position: relative;
+    text-shadow:
+      calc(-1 * var(--rgb-offset)) 0 var(--red-channel),
+      var(--rgb-offset) 0 var(--cyan);
+  }
+  .glitch {
+    position: relative;
+    display: inline-block;
+  }
+  .glitch::before, .glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .glitch::before {
+    color: var(--red-channel);
+    transform: translate(calc(-1 * var(--rgb-offset)), 0);
+    mix-blend-mode: screen;
+    animation: glitch-r 2.6s steps(2) infinite;
+  }
+  .glitch::after {
+    color: var(--cyan);
+    transform: translate(var(--rgb-offset), 0);
+    mix-blend-mode: screen;
+    animation: glitch-b 3.1s steps(2) infinite;
+  }
+  @keyframes glitch-r {
+    0%,92%,100% { transform: translate(calc(-1 * var(--rgb-offset)),0); clip-path: none; }
+    93% { transform: translate(-6px,-2px); clip-path: inset(20% 0 50% 0); }
+    96% { transform: translate(4px,2px); clip-path: inset(60% 0 10% 0); }
+  }
+  @keyframes glitch-b {
+    0%,90%,100% { transform: translate(var(--rgb-offset),0); clip-path: none; }
+    91% { transform: translate(7px,2px); clip-path: inset(10% 0 60% 0); }
+    95% { transform: translate(-4px,-2px); clip-path: inset(50% 0 20% 0); }
+  }
+
+  /* ---- Layout ---- */
+  .wrap { width: 100%; max-width: 1240px; margin: 0 auto; padding: 0 var(--sp-3); }
+
+  /* Header */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(14px);
+    background: linear-gradient(180deg, rgba(8,8,15,.92), rgba(8,8,15,.6));
+    border-bottom: 1px solid var(--border);
+  }
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    height: 68px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    letter-spacing: .04em;
+    text-decoration: none;
+    color: var(--fg);
+  }
+  .brand svg { width: 30px; height: 30px; flex: none; }
+  .navlinks {
+    display: flex;
+    gap: var(--sp-3);
+    list-style: none;
+    margin-left: var(--sp-3);
+  }
+  .navlinks a {
+    color: var(--fg-dim);
+    text-decoration: none;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    padding: 6px 2px;
+    position: relative;
+    transition: color var(--t-fast);
+  }
+  .navlinks a::after {
+    content: "";
+    position: absolute;
+    left: 0; bottom: 0;
+    width: 0; height: 2px;
+    background: linear-gradient(90deg, var(--magenta), var(--cyan));
+    transition: width var(--t-fast);
+  }
+  .navlinks a:hover, .navlinks a:focus-visible { color: var(--fg); }
+  .navlinks a:hover::after, .navlinks a:focus-visible::after { width: 100%; }
+
+  .nav-right { margin-left: auto; display: flex; align-items: center; gap: var(--sp-2); }
+
+  .icon-btn {
+    width: 40px; height: 40px;
+    display: grid; place-items: center;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    color: var(--fg-dim);
+    cursor: pointer;
+    transition: all var(--t-fast);
+  }
+  .icon-btn svg { width: 18px; height: 18px; }
+  .icon-btn:hover, .icon-btn:focus-visible { color: var(--fg); border-color: var(--border-glow); box-shadow: 0 0 14px -3px var(--border-glow); }
+  .icon-btn:active { transform: translateY(1px); }
+
+  .btn {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: var(--fs-sm);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    border: none;
+    border-radius: var(--r-sm);
+    padding: 11px 20px;
+    cursor: pointer;
+    color: #08080f;
+    background: linear-gradient(120deg, var(--cyan), var(--green-channel));
+    position: relative;
+    transition: transform var(--t-fast), box-shadow var(--t-fast), filter var(--t-fast);
+  }
+  .btn:hover, .btn:focus-visible {
+    filter: drop-shadow(-2px 0 var(--magenta)) drop-shadow(2px 0 var(--cyan));
+    transform: translateY(-1px);
+  }
+  .btn:active { transform: translateY(1px) scale(.99); }
+
+  :focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+  /* Hero */
+  .hero {
+    padding: var(--sp-5) 0 var(--sp-4);
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: var(--sp-4);
+    align-items: center;
+  }
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--fs-xs);
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    border: 1px solid var(--border);
+    background: var(--card-2);
+    padding: 6px 12px;
+    border-radius: 100px;
+    margin-bottom: var(--sp-3);
+  }
+  .eyebrow .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green-channel);
+    box-shadow: 0 0 10px var(--green-channel);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse { 50% { opacity: .35; } }
+
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: var(--fs-display);
+    line-height: .96;
+    letter-spacing: -.01em;
+    text-transform: uppercase;
+    margin-bottom: var(--sp-3);
+  }
+  .hero p.lead {
+    color: var(--fg-dim);
+    font-size: var(--fs-lg);
+    max-width: 46ch;
+    margin-bottom: var(--sp-4);
+    font-weight: 300;
+  }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
+  .btn.ghost {
+    background: transparent;
+    color: var(--fg);
+    border: 1px solid var(--border-glow);
+  }
+  .btn.ghost:hover, .btn.ghost:focus-visible {
+    background: var(--card);
+    filter: none;
+    box-shadow: var(--shadow-glow);
+  }
+  .hero-meta {
+    display: flex;
+    gap: var(--sp-4);
+    margin-top: var(--sp-4);
+    padding-top: var(--sp-3);
+    border-top: 1px solid var(--border);
+  }
+  .hero-meta .stat .num {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    line-height: 1;
+  }
+  .hero-meta .stat .lbl { font-size: var(--fs-xs); color: var(--fg-dim); letter-spacing: .1em; text-transform: uppercase; }
+
+  /* Album visual / player */
+  .visual {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    max-width: 440px;
+    margin-left: auto;
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    background: var(--bg-deep);
+  }
+  .visual .art {
+    position: absolute;
+    inset: 0;
+    background:
+      conic-gradient(from 200deg at 50% 50%, var(--magenta), var(--blue-channel), var(--cyan), var(--green-channel), var(--magenta));
+    filter: saturate(1.2);
+    animation: spin 22s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .visual .art-mask {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 50% 50%, transparent 0 18%, var(--bg-deep) 18.5% 28%, transparent 28.5% 100%),
+      radial-gradient(circle at 50% 50%, transparent 0 47%, rgba(8,8,15,.55) 47% 100%);
+  }
+  .visual .rgb-rings {
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
+    mix-blend-mode: screen;
+    animation: ringglitch 2.4s steps(2) infinite;
+  }
+  .visual .rgb-rings svg { width: 78%; height: 78%; }
+  @keyframes ringglitch {
+    0%,90%,100% { transform: translate(0,0); }
+    92% { transform: translate(4px,-3px); }
+    95% { transform: translate(-5px,2px); }
+  }
+  .now-playing {
+    position: absolute;
+    left: var(--sp-3); right: var(--sp-3); bottom: var(--sp-3);
+    background: rgba(8,8,15,.78);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: var(--sp-2) var(--sp-3);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+  .now-playing .eq { display: flex; gap: 3px; align-items: flex-end; height: 22px; flex: none; }
+  .now-playing .eq span {
+    width: 3px; background: var(--green-channel); border-radius: 2px;
+    animation: eq 1s ease-in-out infinite;
+  }
+  .now-playing .eq span:nth-child(2){ animation-delay:.2s; background: var(--cyan);}
+  .now-playing .eq span:nth-child(3){ animation-delay:.4s; background: var(--magenta);}
+  .now-playing .eq span:nth-child(4){ animation-delay:.1s; }
+  @keyframes eq { 0%,100%{height:30%} 50%{height:100%} }
+  .now-playing .np-text { min-width: 0; flex: 1; }
+  .now-playing .np-text .t { font-weight: 600; font-size: var(--fs-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .now-playing .np-text .a { font-size: var(--fs-xs); color: var(--fg-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .play-circle {
+    width: 38px; height: 38px; flex: none;
+    border-radius: 50%;
+    border: none;
+    display: grid; place-items: center;
+    background: linear-gradient(120deg, var(--cyan), var(--green-channel));
+    color: #08080f; cursor: pointer;
+    transition: transform var(--t-fast), filter var(--t-fast);
+  }
+  .play-circle svg { width: 16px; height: 16px; }
+  .play-circle:hover, .play-circle:focus-visible { filter: drop-shadow(-2px 0 var(--magenta)) drop-shadow(2px 0 var(--cyan)); }
+  .play-circle:active { transform: scale(.92); }
+
+  /* Section header */
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    margin: var(--sp-5) 0 var(--sp-3);
+  }
+  .sec-head h2 {
+    font-family: var(--font-display);
+    font-size: var(--fs-h2);
+    text-transform: uppercase;
+    letter-spacing: .01em;
+  }
+  .sec-head a {
+    color: var(--cyan);
+    text-decoration: none;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .sec-head a:hover, .sec-head a:focus-visible { text-decoration: underline; }
+
+  /* Track grid */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: var(--sp-3);
+  }
+  .card {
+    background: linear-gradient(180deg, var(--card), var(--card-2));
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: var(--sp-2);
+    transition: transform var(--t-fast), border-color var(--t-fast), box-shadow var(--t-fast);
+    cursor: pointer;
+  }
+  .card:hover, .card:focus-within {
+    transform: translateY(-4px);
+    border-color: var(--border-glow);
+    box-shadow: var(--shadow-glow);
+  }
+  .card .cover {
+    aspect-ratio: 1;
+    border-radius: var(--r-sm);
+    margin-bottom: var(--sp-2);
+    position: relative;
+    overflow: hidden;
+  }
+  .card:hover .cover::after, .card:focus-within .cover::after {
+    content: "";
+    position: absolute; inset: 0;
+    box-shadow: inset 3px 0 0 var(--red-channel), inset -3px 0 0 var(--cyan);
+    mix-blend-mode: screen;
+    pointer-events: none;
+  }
+  .c1 { background: linear-gradient(135deg, var(--magenta), var(--blue-channel)); }
+  .c2 { background: linear-gradient(135deg, var(--blue-channel), var(--cyan)); }
+  .c3 { background: linear-gradient(135deg, var(--green-channel), var(--blue-channel)); }
+  .c4 { background: linear-gradient(135deg, #6d28d9, var(--magenta)); }
+  .c5 { background: linear-gradient(135deg, var(--cyan), var(--green-channel)); }
+  .card .cover svg { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .85; }
+  .card .ttl { font-weight: 600; font-size: var(--fs-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .sub { font-size: var(--fs-xs); color: var(--fg-dim); display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+  .badge {
+    font-size: var(--fs-xs);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 4px;
+    color: var(--green-channel);
+    background: rgba(34,197,94,.12);
+    border: 1px solid rgba(34,197,94,.3);
+  }
+
+  /* Panels row */
+  .panels {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-5);
+  }
+  .panel {
+    background: linear-gradient(180deg, var(--card), var(--card-2));
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: var(--sp-3);
+  }
+  .panel h3 {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 1rem;
+    letter-spacing: .04em;
+    margin-bottom: var(--sp-2);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel h3 svg { width: 18px; height: 18px; color: var(--cyan); }
+  .queue { list-style: none; }
+  .queue li {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: 10px var(--sp-1);
+    border-radius: var(--r-sm);
+    transition: background var(--t-fast);
+  }
+  .queue li:hover { background: var(--muted); }
+  .queue .qn { font-family: var(--font-display); font-size: .8rem; color: var(--fg-dim); width: 20px; flex: none; }
+  .queue .qcover { width: 36px; height: 36px; border-radius: 6px; flex: none; }
+  .queue .qmeta { min-width: 0; flex: 1; }
+  .queue .qmeta .qt { font-size: var(--fs-sm); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .queue .qmeta .qa { font-size: var(--fs-xs); color: var(--fg-dim); }
+  .queue .qdur { font-size: var(--fs-xs); color: var(--fg-dim); font-variant-numeric: tabular-nums; }
+
+  .genres { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
+  .chip {
+    font-size: var(--fs-sm);
+    padding: 8px 14px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    background: var(--card-2);
+    color: var(--fg-dim);
+    cursor: pointer;
+    transition: all var(--t-fast);
+  }
+  .chip:hover, .chip:focus-visible {
+    color: var(--fg);
+    border-color: var(--magenta);
+    text-shadow: -1px 0 var(--red-channel), 1px 0 var(--cyan);
+  }
+  .chip.active {
+    color: #08080f;
+    background: linear-gradient(120deg, var(--cyan), var(--green-channel));
+    border-color: transparent;
+  }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border);
+    background: var(--bg-deep);
+    padding: var(--sp-4) 0 var(--sp-5);
+  }
+  .foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+    justify-content: space-between;
+    align-items: center;
+    color: var(--fg-dim);
+    font-size: var(--fs-sm);
+  }
+  .foot .brand { font-size: 1.05rem; color: var(--fg); }
+  .socials { display: flex; gap: var(--sp-2); }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr; gap: var(--sp-3); }
+    .visual { margin: 0 auto; }
+    .panels { grid-template-columns: 1fr; }
+    .navlinks { display: none; }
+  }
+  @media (max-width: 520px) {
+    .hero-meta { gap: var(--sp-3); flex-wrap: wrap; }
+    .nav { gap: var(--sp-2); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition-duration: .01ms !important;
+    }
+    .glitch::before, .glitch::after { display: none; }
+    body::before, body::after { display: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <nav class="nav" aria-label="Primary">
+      <a class="brand" href="#" aria-label="Voidwave home">
+        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <rect x="2" y="2" width="28" height="28" rx="6" stroke="#00e5ff" stroke-width="2"/>
+          <path d="M9 20V12M14 24V8M19 18V14M24 22V10" stroke="#ff00aa" stroke-width="2.4" stroke-linecap="round"/>
+        </svg>
+        <span class="rgb-split">VOIDWAVE</span>
+      </a>
+      <ul class="navlinks">
+        <li><a href="#discover">Discover</a></li>
+        <li><a href="#releases">Releases</a></li>
+        <li><a href="#radio">Radio</a></li>
+        <li><a href="#live">Live</a></li>
+      </ul>
+      <div class="nav-right">
+        <button class="icon-btn" aria-label="Search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3" stroke-linecap="round"/></svg>
+        </button>
+        <button class="icon-btn" aria-label="Your library">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5a1 1 0 011-1h4v16H5a1 1 0 01-1-1zM11 4h3v16h-3zM16.5 4.3l3 .8a1 1 0 01.7 1.2L17 20l-3-.8L16.5 4.3z" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="btn">Sign In</button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <section class="hero" id="discover" aria-labelledby="hero-title">
+      <div>
+        <span class="eyebrow"><span class="dot" aria-hidden="true"></span> Now broadcasting · Vol. 09</span>
+        <h1 id="hero-title">
+          <span class="glitch rgb-split" data-text="SIGNAL">SIGNAL</span><br>
+          <span class="glitch rgb-split" data-text="LOST &amp; FOUND">LOST &amp; FOUND</span>
+        </h1>
+        <p class="lead">Synthwave, breakcore and tape-warped dreampop from the edge of the spectrum. Mastered loud, decoded loud.</p>
+        <div class="hero-cta">
+          <button class="btn">
+            Start Listening
+          </button>
+          <button class="btn ghost">Browse Catalog</button>
+        </div>
+        <div class="hero-meta">
+          <div class="stat"><div class="num rgb-split">2.4M</div><div class="lbl">Monthly</div></div>
+          <div class="stat"><div class="num rgb-split">847</div><div class="lbl">Tracks</div></div>
+          <div class="stat"><div class="num rgb-split">12</div><div class="lbl">Live now</div></div>
+        </div>
+      </div>
+
+      <div class="visual" aria-label="Featured track artwork: Static Bloom by Null Vector">
+        <div class="art" aria-hidden="true"></div>
+        <div class="art-mask" aria-hidden="true"></div>
+        <div class="rgb-rings" aria-hidden="true">
+          <svg viewBox="0 0 200 200" fill="none">
+            <circle cx="100" cy="100" r="70" stroke="#ff0033" stroke-width="2" opacity="0.9" transform="translate(-3,0)"/>
+            <circle cx="100" cy="100" r="70" stroke="#00ff99" stroke-width="2" opacity="0.9"/>
+            <circle cx="100" cy="100" r="70" stroke="#00e5ff" stroke-width="2" opacity="0.9" transform="translate(3,0)"/>
+            <circle cx="100" cy="100" r="40" stroke="#ff00aa" stroke-width="2" opacity="0.8" transform="translate(-2,0)"/>
+            <circle cx="100" cy="100" r="40" stroke="#00e5ff" stroke-width="2" opacity="0.8" transform="translate(2,0)"/>
+          </svg>
+        </div>
+        <div class="now-playing">
+          <div class="eq" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+          <div class="np-text">
+            <div class="t">Static Bloom</div>
+            <div class="a">Null Vector — Decay EP</div>
+          </div>
+          <button class="play-circle" aria-label="Play Static Bloom by Null Vector">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section id="releases" aria-labelledby="rel-title">
+      <div class="sec-head">
+        <h2 id="rel-title" class="rgb-split">Fresh Distortion</h2>
+        <a href="#">See all releases</a>
+      </div>
+      <div class="grid">
+        <article class="card" tabindex="0">
+          <div class="cover c1"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M0 70 Q25 40 50 60 T100 50 V100 H0Z" fill="rgba(0,0,0,.25)"/></svg></div>
+          <div class="ttl">Phantom Carrier</div>
+          <div class="sub"><span class="badge">New</span> Tape Ghosts</div>
+        </article>
+        <article class="card" tabindex="0">
+          <div class="cover c2"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="34" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="3"/></svg></div>
+          <div class="ttl">Aurora Decay</div>
+          <div class="sub">Mira Sol</div>
+        </article>
+        <article class="card" tabindex="0">
+          <div class="cover c3"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M20 80 L50 20 L80 80Z" fill="none" stroke="rgba(0,0,0,.3)" stroke-width="4"/></svg></div>
+          <div class="ttl">Glass Frequencies</div>
+          <div class="sub"><span class="badge">New</span> The Hex</div>
+        </article>
+        <article class="card" tabindex="0">
+          <div class="cover c4"><svg viewBox="0 0 100 100" aria-hidden="true"><rect x="25" y="25" width="50" height="50" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="3" transform="rotate(45 50 50)"/></svg></div>
+          <div class="ttl">Null Horizon</div>
+          <div class="sub">Voidkid</div>
+        </article>
+        <article class="card" tabindex="0">
+          <div class="cover c5"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M0 50 H100 M50 0 V100" stroke="rgba(0,0,0,.25)" stroke-width="3"/></svg></div>
+          <div class="ttl">Analog Heart</div>
+          <div class="sub"><span class="badge">New</span> Sera</div>
+        </article>
+      </div>
+    </section>
+
+    <section id="radio" class="panels" aria-label="Queue and genres">
+      <div class="panel">
+        <h3>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18V5l12-2v13" stroke-linecap="round"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          Up Next in Queue
+        </h3>
+        <ol class="queue">
+          <li><span class="qn">01</span><div class="qcover c2" aria-hidden="true"></div><div class="qmeta"><div class="qt">Drift Protocol</div><div class="qa">Mira Sol</div></div><span class="qdur">3:42</span></li>
+          <li><span class="qn">02</span><div class="qcover c4" aria-hidden="true"></div><div class="qmeta"><div class="qt">Crushed Velvet</div><div class="qa">Voidkid · feat. Sera</div></div><span class="qdur">4:18</span></li>
+          <li><span class="qn">03</span><div class="qcover c1" aria-hidden="true"></div><div class="qmeta"><div class="qt">Cathode Sunrise</div><div class="qa">Tape Ghosts</div></div><span class="qdur">5:03</span></li>
+          <li><span class="qn">04</span><div class="qcover c3" aria-hidden="true"></div><div class="qmeta"><div class="qt">Faraday</div><div class="qa">The Hex</div></div><span class="qdur">2:57</span></li>
+        </ol>
+      </div>
+      <div class="panel">
+        <h3>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" stroke-linecap="round"/></svg>
+          Tune the Spectrum
+        </h3>
+        <div class="genres" role="group" aria-label="Filter by genre">
+          <button class="chip active">Synthwave</button>
+          <button class="chip">Breakcore</button>
+          <button class="chip">Dreampop</button>
+          <button class="chip">Vaporwave</button>
+          <button class="chip">Glitch-hop</button>
+          <button class="chip">Darksynth</button>
+          <button class="chip">Ambient</button>
+          <button class="chip">Industrial</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer id="live">
+  <div class="wrap">
+    <div class="foot">
+      <a class="brand" href="#" aria-label="Voidwave home">
+        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <rect x="2" y="2" width="28" height="28" rx="6" stroke="#00e5ff" stroke-width="2"/>
+          <path d="M9 20V12M14 24V8M19 18V14M24 22V10" stroke="#ff00aa" stroke-width="2.4" stroke-linecap="round"/>
+        </svg>
+        <span class="rgb-split">VOIDWAVE</span>
+      </a>
+      <span>Decoding sound since 2021 · Mastered for headphones</span>
+      <div class="socials">
+        <a class="icon-btn" href="#" aria-label="Voidwave on X">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 2h3l-7 8 8 12h-6l-5-7-5 7H3l7-9L2 2h6l4 6 6-6z"/></svg>
+        </a>
+        <a class="icon-btn" href="#" aria-label="Voidwave on Discord">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 5a16 16 0 00-4-1l-.3.5A12 12 0 0118 6a12 12 0 00-12 0 12 12 0 013.3-1.5L9 4a16 16 0 00-4 1C2.5 9 2 13 2 17a13 13 0 004 2l1-2-2-1 .5-.4a9 9 0 009 0l.5.4-2 1 1 2a13 13 0 004-2c0-4-.5-8-3-12zM9 14a1.5 1.5 0 010-3 1.5 1.5 0 010 3zm6 0a1.5 1.5 0 010-3 1.5 1.5 0 010 3z"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Genre chip toggle — small enhancement, not required for the demo
+  document.querySelectorAll('.genres .chip').forEach(function (c) {
+    c.addEventListener('click', function () {
+      document.querySelectorAll('.genres .chip').forEach(function (x) { x.classList.remove('active'); });
+      c.classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>

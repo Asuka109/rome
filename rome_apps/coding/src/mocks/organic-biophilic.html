@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Verdure — Mindful Living</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Raleway:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Palette — derived from styles.csv Design System Variables */
+    --forest-green: #228B22;
+    --forest-deep: #1c5e22;
+    --leaf: #4f9d5d;
+    --moss: #7aa86b;
+    --earth-brown: #8B4513;
+    --clay: #b06a3f;
+    --sky-blue: #87CEEB;
+    --sky-soft: #c7e7f2;
+    --cream-bg: #F5F5DC;
+    --sand: #efe7d2;
+    --bark: #3b2f24;
+    --ink: #2a3326;
+    --muted: #6a7363;
+    --paper: #fdfcf6;
+
+    /* Radius — organic, varied */
+    --organic-radius: 24px;
+    --r-sm: 16px;
+    --r-md: 24px;
+    --r-lg: 36px;
+    --r-pill: 999px;
+    --r-blob: 62% 38% 55% 45% / 55% 48% 52% 45%;
+
+    /* Shadow — natural soft */
+    --shadow-soft: 0 8px 32px rgba(43, 51, 38, 0.10);
+    --shadow-raise: 0 14px 40px rgba(43, 51, 38, 0.16);
+    --shadow-inset: inset 0 1px 0 rgba(255,255,255,0.55);
+
+    /* Spacing scale */
+    --s-1: 6px;
+    --s-2: 12px;
+    --s-3: 20px;
+    --s-4: 32px;
+    --s-5: 52px;
+    --s-6: 80px;
+
+    /* Type scale */
+    --font-head: 'Lora', Georgia, 'Times New Roman', serif;
+    --font-body: 'Raleway', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --t-xs: 0.78rem;
+    --t-sm: 0.92rem;
+    --t-base: 1.02rem;
+    --t-lg: 1.35rem;
+    --t-xl: 2rem;
+    --t-2xl: clamp(2.4rem, 5.2vw, 4rem);
+
+    /* Motion */
+    --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --t-fast: 160ms;
+    --t-med: 320ms;
+    --t-slow: 700ms;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { margin: 0; }
+
+  body {
+    font-family: var(--font-body);
+    color: var(--ink);
+    background:
+      radial-gradient(120% 80% at 12% -10%, var(--sky-soft) 0%, transparent 45%),
+      radial-gradient(100% 70% at 100% 0%, #e7f1dc 0%, transparent 50%),
+      linear-gradient(180deg, var(--cream-bg) 0%, var(--sand) 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    line-height: 1.6;
+    font-weight: 400;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Subtle natural texture overlay */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.5;
+    background-image:
+      radial-gradient(rgba(34, 139, 34, 0.05) 1px, transparent 1.4px);
+    background-size: 22px 22px;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding: 0 var(--s-3); }
+
+  a { color: inherit; text-decoration: none; }
+
+  h1, h2, h3 { font-family: var(--font-head); font-weight: 600; color: var(--bark); line-height: 1.15; margin: 0; }
+
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: var(--t-xs); letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--forest-deep); font-weight: 600;
+  }
+  .eyebrow svg { width: 16px; height: 16px; }
+
+  /* ---------- Header / Nav ---------- */
+  header {
+    position: sticky; top: 0; z-index: 20;
+    backdrop-filter: blur(10px);
+    background: rgba(253, 252, 246, 0.72);
+    border-bottom: 1px solid rgba(122, 168, 107, 0.28);
+  }
+  .nav { display: flex; align-items: center; gap: var(--s-3); padding: 14px 0; }
+  .brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-head); font-weight: 700; font-size: 1.25rem; color: var(--forest-deep); }
+  .brand .mark {
+    width: 38px; height: 38px; display: grid; place-items: center;
+    background: linear-gradient(150deg, var(--leaf), var(--forest-green));
+    border-radius: var(--r-blob);
+    box-shadow: var(--shadow-soft);
+  }
+  .brand .mark svg { width: 22px; height: 22px; color: var(--paper); }
+
+  .nav-links { display: flex; gap: 4px; margin-left: var(--s-3); }
+  .nav-links a {
+    font-size: var(--t-sm); font-weight: 500; color: var(--muted);
+    padding: 8px 14px; border-radius: var(--r-pill);
+    transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+  }
+  .nav-links a:hover { background: rgba(122, 168, 107, 0.18); color: var(--forest-deep); }
+  .nav-links a:focus-visible { outline: 2px solid var(--forest-green); outline-offset: 2px; }
+  .nav-spacer { flex: 1; }
+
+  .btn {
+    font-family: var(--font-body); font-weight: 600; font-size: var(--t-sm);
+    border: none; cursor: pointer; border-radius: var(--r-pill);
+    padding: 11px 22px; display: inline-flex; align-items: center; gap: 8px;
+    transition: transform var(--t-fast) var(--ease), box-shadow var(--t-med) var(--ease), background var(--t-fast) var(--ease);
+  }
+  .btn svg { width: 17px; height: 17px; }
+  .btn-primary { background: linear-gradient(150deg, var(--leaf), var(--forest-deep)); color: var(--paper); box-shadow: var(--shadow-soft); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: var(--shadow-raise); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:focus-visible { outline: 2px solid var(--bark); outline-offset: 3px; }
+  .btn-ghost { background: rgba(255,255,255,0.6); color: var(--forest-deep); border: 1px solid rgba(122,168,107,0.45); }
+  .btn-ghost:hover { background: #fff; transform: translateY(-2px); }
+  .btn-ghost:focus-visible { outline: 2px solid var(--forest-green); outline-offset: 3px; }
+
+  .nav-cta { display: inline-flex; }
+
+  /* hamburger hidden on desktop */
+  .menu-toggle { display: none; }
+
+  /* ---------- Hero ---------- */
+  .hero { position: relative; padding: var(--s-6) 0 var(--s-5); }
+  .hero-grid {
+    display: grid; grid-template-columns: 1.05fr 0.95fr; gap: var(--s-5); align-items: center;
+  }
+  .hero h1 { font-size: var(--t-2xl); margin: var(--s-3) 0; }
+  .hero h1 em { font-style: italic; color: var(--forest-green); }
+  .hero p.lead { font-size: var(--t-lg); color: var(--muted); max-width: 30ch; margin: 0 0 var(--s-4); font-weight: 400; }
+  .hero-actions { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+
+  .hero-stats { display: flex; gap: var(--s-4); margin-top: var(--s-5); flex-wrap: wrap; }
+  .stat .n { font-family: var(--font-head); font-size: var(--t-xl); font-weight: 700; color: var(--earth-brown); }
+  .stat .l { font-size: var(--t-xs); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+  /* Hero visual — organic blob composition */
+  .hero-art { position: relative; aspect-ratio: 1 / 1.05; }
+  .blob {
+    position: absolute; inset: 0;
+    background: linear-gradient(155deg, #d8ecc6, var(--moss));
+    border-radius: 58% 42% 47% 53% / 56% 50% 50% 44%;
+    box-shadow: var(--shadow-raise);
+    overflow: hidden;
+    animation: morph 16s ease-in-out infinite;
+  }
+  .blob svg.scene { position: absolute; inset: 0; width: 100%; height: 100%; }
+  @keyframes morph {
+    0%, 100% { border-radius: 58% 42% 47% 53% / 56% 50% 50% 44%; }
+    33% { border-radius: 45% 55% 60% 40% / 48% 60% 40% 52%; }
+    66% { border-radius: 50% 50% 42% 58% / 60% 42% 58% 40%; }
+  }
+
+  .leaf-chip {
+    position: absolute; background: var(--paper); border-radius: var(--r-md);
+    box-shadow: var(--shadow-soft); padding: 12px 16px; display: flex; gap: 10px; align-items: center;
+    animation: float 7s ease-in-out infinite;
+  }
+  .leaf-chip .ic { width: 34px; height: 34px; border-radius: var(--r-blob); display: grid; place-items: center; flex: none; }
+  .leaf-chip .ic svg { width: 18px; height: 18px; color: #fff; }
+  .leaf-chip .tt { font-weight: 600; font-size: var(--t-sm); color: var(--bark); }
+  .leaf-chip .st { font-size: var(--t-xs); color: var(--muted); }
+  .chip-top { top: 8%; right: -6%; }
+  .chip-top .ic { background: var(--forest-green); }
+  .chip-bot { bottom: 10%; left: -8%; animation-delay: 2s; }
+  .chip-bot .ic { background: var(--clay); }
+  @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+  /* ---------- Section: Practices ---------- */
+  section { padding: var(--s-6) 0; }
+  .sec-head { max-width: 46ch; margin-bottom: var(--s-5); }
+  .sec-head h2 { font-size: clamp(1.7rem, 3.4vw, 2.4rem); margin: var(--s-2) 0; }
+  .sec-head p { color: var(--muted); font-size: var(--t-base); margin: 0; }
+
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-3); }
+  .card {
+    position: relative; background: var(--paper); border-radius: var(--r-lg);
+    padding: var(--s-4); box-shadow: var(--shadow-soft); overflow: hidden;
+    border: 1px solid rgba(122,168,107,0.18);
+    transition: transform var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease);
+  }
+  .card:hover { transform: translateY(-6px); box-shadow: var(--shadow-raise); }
+  .card .corner { position: absolute; top: -40px; right: -40px; width: 120px; height: 120px; border-radius: var(--r-blob); opacity: 0.22; }
+  .card .badge {
+    width: 52px; height: 52px; border-radius: 60% 40% 55% 45% / 50% 55% 45% 50%;
+    display: grid; place-items: center; margin-bottom: var(--s-3);
+    box-shadow: var(--shadow-soft);
+  }
+  .card .badge svg { width: 26px; height: 26px; color: #fff; }
+  .card h3 { font-size: var(--t-lg); margin-bottom: var(--s-1); }
+  .card p { color: var(--muted); font-size: var(--t-sm); margin: 0 0 var(--s-3); }
+  .card .meta { display: flex; align-items: center; gap: 10px; font-size: var(--t-xs); color: var(--forest-deep); font-weight: 600; }
+  .card .meta svg { width: 15px; height: 15px; }
+
+  .c1 .badge, .c1 .corner { background: linear-gradient(150deg, var(--leaf), var(--forest-deep)); }
+  .c2 .badge, .c2 .corner { background: linear-gradient(150deg, var(--sky-blue), #4f8fb0); }
+  .c3 .badge, .c3 .corner { background: linear-gradient(150deg, var(--clay), var(--earth-brown)); }
+
+  /* ---------- Section: Today panel ---------- */
+  .panel {
+    display: grid; grid-template-columns: 1.1fr 0.9fr; gap: var(--s-5);
+    background: linear-gradient(150deg, var(--forest-deep), #2f7a38);
+    border-radius: var(--r-lg); padding: var(--s-5);
+    box-shadow: var(--shadow-raise); color: var(--paper);
+    position: relative; overflow: hidden;
+  }
+  .panel::after {
+    content:""; position: absolute; bottom: -90px; right: -60px;
+    width: 280px; height: 280px; border-radius: var(--r-blob);
+    background: rgba(135, 206, 235, 0.22);
+  }
+  .panel h2 { color: var(--paper); font-size: clamp(1.6rem, 3vw, 2.1rem); }
+  .panel .eyebrow { color: var(--sky-soft); }
+  .panel .eyebrow svg { color: var(--sky-soft); }
+  .panel p { color: rgba(255,255,255,0.86); font-size: var(--t-base); max-width: 38ch; }
+
+  .progress-card {
+    position: relative; z-index: 1; background: rgba(255,255,255,0.10);
+    backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.22);
+    border-radius: var(--r-md); padding: var(--s-4);
+  }
+  .ring-row { display: flex; align-items: center; gap: var(--s-3); }
+  .ring { width: 108px; height: 108px; flex: none; }
+  .ring-row .info .big { font-family: var(--font-head); font-size: 1.9rem; font-weight: 700; }
+  .ring-row .info .sub { font-size: var(--t-sm); color: rgba(255,255,255,0.8); }
+
+  .day-list { list-style: none; padding: 0; margin: var(--s-3) 0 0; display: grid; gap: 10px; }
+  .day-list li { display: flex; align-items: center; gap: 10px; font-size: var(--t-sm); }
+  .day-list .dot { width: 26px; height: 26px; border-radius: var(--r-blob); display: grid; place-items: center; background: rgba(255,255,255,0.18); flex: none; }
+  .day-list .dot svg { width: 14px; height: 14px; color: var(--sky-soft); }
+  .day-list .done .dot { background: var(--sky-soft); }
+  .day-list .done .dot svg { color: var(--forest-deep); }
+  .day-list .when { margin-left: auto; font-size: var(--t-xs); color: rgba(255,255,255,0.7); }
+
+  /* ---------- CTA band ---------- */
+  .cta-band { text-align: center; }
+  .cta-inner {
+    background: var(--paper); border-radius: var(--r-lg); padding: var(--s-6) var(--s-4);
+    box-shadow: var(--shadow-soft); border: 1px solid rgba(122,168,107,0.2);
+    position: relative; overflow: hidden;
+  }
+  .cta-inner h2 { font-size: clamp(1.8rem, 4vw, 2.6rem); margin-bottom: var(--s-2); }
+  .cta-inner p { color: var(--muted); max-width: 44ch; margin: 0 auto var(--s-4); }
+  .cta-inner .hero-actions { justify-content: center; }
+  .cta-leaf { position: absolute; opacity: 0.16; color: var(--forest-green); }
+  .cta-leaf.l1 { top: -20px; left: -10px; width: 130px; height: 130px; transform: rotate(-20deg); }
+  .cta-leaf.l2 { bottom: -30px; right: -10px; width: 160px; height: 160px; transform: rotate(150deg); }
+
+  /* ---------- Footer ---------- */
+  footer { padding: var(--s-5) 0 var(--s-6); color: var(--muted); }
+  .foot-grid { display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); flex-wrap: wrap; border-top: 1px solid rgba(122,168,107,0.3); padding-top: var(--s-4); }
+  .foot-links { display: flex; gap: var(--s-3); font-size: var(--t-sm); }
+  .foot-links a:hover { color: var(--forest-deep); }
+  .foot-links a:focus-visible { outline: 2px solid var(--forest-green); outline-offset: 2px; border-radius: 4px; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 900px) {
+    .hero-grid, .panel { grid-template-columns: 1fr; }
+    .hero-art { max-width: 420px; margin: var(--s-3) auto 0; }
+    .cards { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+    .menu-toggle {
+      display: inline-grid; place-items: center; width: 44px; height: 44px;
+      border-radius: var(--r-sm); border: 1px solid rgba(122,168,107,0.4);
+      background: rgba(255,255,255,0.6); cursor: pointer; color: var(--forest-deep);
+    }
+    .menu-toggle svg { width: 22px; height: 22px; }
+    .nav-cta { display: none; }
+  }
+  @media (max-width: 560px) {
+    .hero { padding: var(--s-5) 0 var(--s-4); }
+    .chip-top { right: 2%; }
+    .chip-bot { left: 2%; }
+    .hero-stats { gap: var(--s-3); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .blob, .leaf-chip { animation: none !important; }
+    * { transition-duration: 1ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <nav class="nav" aria-label="Primary">
+      <a class="brand" href="#" aria-label="Verdure home">
+        <span class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg>
+        </span>
+        Verdure
+      </a>
+      <div class="nav-links">
+        <a href="#practices">Practices</a>
+        <a href="#today">Today</a>
+        <a href="#journal">Journal</a>
+        <a href="#community">Community</a>
+      </div>
+      <span class="nav-spacer"></span>
+      <a href="#start" class="btn btn-primary nav-cta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        Start free
+      </a>
+      <button class="menu-toggle" aria-label="Open menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- HERO -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/></svg>
+          Rooted in nature
+        </span>
+        <h1 id="hero-title">Grow a calmer mind, one <em>breath</em> at a time.</h1>
+        <p class="lead">Guided meditations, breathwork and nature sounds designed to help you slow down and feel grounded.</p>
+        <div class="hero-actions">
+          <a href="#start" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+            Begin a session
+          </a>
+          <a href="#practices" class="btn btn-ghost">Explore practices</a>
+        </div>
+        <div class="hero-stats">
+          <div class="stat"><div class="n">1.2M</div><div class="l">Minutes calmed</div></div>
+          <div class="stat"><div class="n">240+</div><div class="l">Guided sessions</div></div>
+          <div class="stat"><div class="n">4.9★</div><div class="l">App store rating</div></div>
+        </div>
+      </div>
+
+      <div class="hero-art" role="img" aria-label="Illustration of rolling hills with a sun, hills and trees in soft greens and sky blue">
+        <div class="blob">
+          <svg class="scene" viewBox="0 0 400 420" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <defs>
+              <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#bfe6f2"/><stop offset="1" stop-color="#e3f1d6"/>
+              </linearGradient>
+              <linearGradient id="hillA" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#7aa86b"/><stop offset="1" stop-color="#4f9d5d"/>
+              </linearGradient>
+              <linearGradient id="hillB" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#3f8a46"/><stop offset="1" stop-color="#1c5e22"/>
+              </linearGradient>
+            </defs>
+            <rect width="400" height="420" fill="url(#sky)"/>
+            <circle cx="290" cy="110" r="46" fill="#f7efcf"/>
+            <circle cx="290" cy="110" r="64" fill="#f7efcf" opacity="0.35"/>
+            <path d="M0 300 Q120 230 230 290 T400 280 L400 420 L0 420 Z" fill="url(#hillA)"/>
+            <path d="M0 350 Q140 300 250 350 T400 340 L400 420 L0 420 Z" fill="url(#hillB)"/>
+            <g stroke="#274d22" stroke-width="5" stroke-linecap="round">
+              <line x1="120" y1="330" x2="120" y2="300"/>
+              <line x1="270" y1="345" x2="270" y2="312"/>
+            </g>
+            <circle cx="120" cy="292" r="20" fill="#356b32"/>
+            <circle cx="270" cy="304" r="24" fill="#2c5d2c"/>
+          </svg>
+        </div>
+
+        <div class="leaf-chip chip-top">
+          <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22c1.25-1.5 2.5-3 7-3 4 0 5 2 9 2"/><path d="M5 19c0-7 3-12 14-13-1 8-4 12-11 13"/></svg></span>
+          <span><span class="tt">7 day streak</span><br><span class="st">Keep it growing</span></span>
+        </div>
+        <div class="leaf-chip chip-bot">
+          <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg></span>
+          <span><span class="tt">Forest breeze</span><br><span class="st">Now playing</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRACTICES -->
+  <section id="practices" aria-labelledby="practices-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg>
+          Daily rituals
+        </span>
+        <h2 id="practices-title">Practices that feel like a walk outdoors</h2>
+        <p>Choose a path that fits your day. Each one is grounded in nature and built to settle a busy mind.</p>
+      </div>
+      <div class="cards">
+        <article class="card c1">
+          <span class="corner" aria-hidden="true"></span>
+          <span class="badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg></span>
+          <h3>Breathwork</h3>
+          <p>Box breathing and ocean rhythms to steady your nervous system in minutes.</p>
+          <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 5–12 min · 38 sessions</div>
+        </article>
+        <article class="card c2">
+          <span class="corner" aria-hidden="true"></span>
+          <span class="badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22c1.25-1.5 2.5-3 7-3 4 0 5 2 9 2"/><path d="M5 19c0-7 3-12 14-13-1 8-4 12-11 13"/></svg></span>
+          <h3>Nature soundscapes</h3>
+          <p>Rain on leaves, river streams and dawn birdsong recorded in real forests.</p>
+          <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 20–90 min · 64 tracks</div>
+        </article>
+        <article class="card c3">
+          <span class="corner" aria-hidden="true"></span>
+          <span class="badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20" opacity="0"/><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/></svg></span>
+          <h3>Morning grounding</h3>
+          <p>Gentle guided meditations to root yourself before the day takes hold.</p>
+          <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 8–15 min · 42 sessions</div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- TODAY PANEL -->
+  <section id="today" aria-labelledby="today-title">
+    <div class="wrap">
+      <div class="panel">
+        <div class="panel-copy">
+          <span class="eyebrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            Your day, in bloom
+          </span>
+          <h2 id="today-title">A little calm, planted into every hour</h2>
+          <p>Your plan adapts to how you feel. Tend to it daily and watch your inner garden flourish.</p>
+          <ul class="day-list" aria-label="Today's plan">
+            <li class="done"><span class="dot" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Morning grounding <span class="when">7:00</span></li>
+            <li class="done"><span class="dot" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Midday breathwork <span class="when">13:30</span></li>
+            <li><span class="dot" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/></svg></span> Evening forest walk <span class="when">19:00</span></li>
+            <li><span class="dot" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/></svg></span> Wind-down soundscape <span class="when">22:15</span></li>
+          </ul>
+        </div>
+        <div class="progress-card">
+          <div class="ring-row">
+            <svg class="ring" viewBox="0 0 120 120" role="img" aria-label="Weekly goal 72 percent complete">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="12"/>
+              <circle cx="60" cy="60" r="50" fill="none" stroke="#c7e7f2" stroke-width="12" stroke-linecap="round"
+                stroke-dasharray="314" stroke-dashoffset="88" transform="rotate(-90 60 60)"/>
+            </svg>
+            <div class="info">
+              <div class="big">72%</div>
+              <div class="sub">of your weekly calm goal</div>
+            </div>
+          </div>
+          <ul class="day-list" aria-label="This week stats">
+            <li><span class="dot" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span> Resting heart rate <span class="when">−6 bpm</span></li>
+            <li><span class="dot" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></span> Sleep quality <span class="when">+18%</span></li>
+            <li><span class="dot" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/></svg></span> Mindful days <span class="when">21 / 30</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section id="start" class="cta-band" aria-labelledby="cta-title">
+    <div class="wrap">
+      <div class="cta-inner">
+        <svg class="cta-leaf l1" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/></svg>
+        <svg class="cta-leaf l2" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/></svg>
+        <span class="eyebrow" style="color:var(--earth-brown)">Start today</span>
+        <h2 id="cta-title">Your calmer self is one breath away</h2>
+        <p>Join free for 14 days. No card needed. Cancel whenever you like — your garden stays yours.</p>
+        <div class="hero-actions">
+          <a href="#" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            Start free trial
+          </a>
+          <a href="#" class="btn btn-ghost">See plans</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <a class="brand" href="#" aria-label="Verdure home">
+        <span class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg>
+        </span>
+        Verdure
+      </a>
+      <nav class="foot-links" aria-label="Footer">
+        <a href="#">About</a>
+        <a href="#">Sustainability</a>
+        <a href="#">Privacy</a>
+        <a href="#">Support</a>
+      </nav>
+      <span style="font-size:var(--t-xs)">© 2026 Verdure Wellbeing</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

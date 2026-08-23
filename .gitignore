@@ -1,0 +1,51 @@
+node_modules/
+.pnpm-store/
+.obs/
+.rome/
+dist/
+# rome-web mock-mode build output (dev tool; see packages/web/mock/)
+dist-mock/
+# UX audit report build output (see .claude/skills/ux-semantics-audit/report/)
+dist-report/
+.env
+.env.*
+!.env.example
+!.env.*.example
+# rome-web .env carries the committed PANTHEON_HOST default the build reads;
+# .env.local is still gitignored for per-developer overrides.
+!packages/web/.env
+# Local registry-mirror config (e.g. npmmirror) — machine-specific, never committed.
+.npmrc
+csc_link.txt
+data/
+scratch/sessions/
+*.tsbuildinfo
+.next/
+**/next-env.d.ts
+.turbo/
+coverage/
+logs/
+*.log
+.direnv/
+.omx
+.docker/
+.DS_Store
+.worktrees/
+# Ignore local Claude state (worktrees, settings) but track checked-in project
+# skills so they're shared with the team.
+.claude/*
+!.claude/skills/
+
+# Husky-generated hook shims; keep real hooks in .husky/*.
+.husky/_/
+
+# Local-only Docker Compose overrides (per-developer; not committed)
+docker-compose.override.yml
+docker-compose.override.yaml
+.playwright-mcp/
+
+# Worktree-local agent working notes (orchestrator's per-turn log).
+# Kept locally across orchestrator turns; never committed to the PR.
+AGENT_LOG.md
+
+.impeccable

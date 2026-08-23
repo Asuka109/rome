@@ -1,0 +1,80 @@
+name: rome
+
+services:
+  rome:
+    image: yunfanye/rome
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ROME_DOCKER_APP_CODE_MODE: ${ROME_DOCKER_APP_CODE_MODE:-source}
+    ports:
+      - "80:8080"
+    volumes:
+      - app:/app
+      - user-home:/home/user
+      - rome-home:/home/rome
+      - ~/docker/ssh-host-keys:/etc/ssh/ssh_host_keys
+      - ~/docker/tailscale:/var/lib/tailscale
+    env_file: .env
+    environment:
+      - NODE_ENV=production
+      - WEB_HOST=0.0.0.0
+      - TS_HOSTNAME=rome
+      - ROME_ENABLE_CHROME=1
+      - ROME_CHROME_CDP_PORT=9222
+      - ROME_CHROME_FULLSCREEN=0
+      - ROME_CHROME_CLIPBOARD_DEFAULT_SETTING=allow
+      - ROME_NOVNC_PORT=6080
+      - ROME_DOCKER_APP_CODE_MODE=${ROME_DOCKER_APP_CODE_MODE:-source}
+      - ROME_DOCKER_USER_MODE=${ROME_DOCKER_USER_MODE:-multi}
+      # Backend → in-stack OTEL collector (otlp/http). The collector forwards
+      # to the central ClickStack target using credentials from `.env`.
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      # - SSH_USER_PASSWORD=changeme
+    cap_add:
+      - SYS_ADMIN
+    devices:
+      - /dev/fuse:/dev/fuse
+    security_opt:
+      - apparmor:unconfined
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:9368/health').then(r=>{if(!r.ok)throw 1}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  otel-collector:
+    # contrib distribution — we need the `clickhouse` exporter, which is not
+    # in the upstream `otel/opentelemetry-collector` image.
+    image: otel/opentelemetry-collector-contrib:0.117.0
+    container_name: rome-otel-collector
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./infra/observability/otel-collector-config.yaml:/etc/otelcol/config.yaml:ro
+    # Collector-only secrets file: keeps CLICKHOUSE_* out of the rome
+    # container's env (rome uses the shared `.env` above). Operators add
+    # CLICKHOUSE_ENDPOINT / USERNAME / PASSWORD / DATABASE here; the
+    # collector substitutes them into its config at startup via ${env:VAR}.
+    env_file: .env.collector
+    expose:
+      - "4317" # OTLP gRPC (reserved; backend uses HTTP)
+      - "4318" # OTLP HTTP
+    # No `healthcheck:` here — the contrib image is distroless (no shell,
+    # no curl/wget), so there's no in-container way to probe the collector's
+    # /health endpoint (port 13133, exposed by the `health_check` extension
+    # in otel-collector-config.yaml). Operator signal: the clickhouse
+    # exporter validates its target at boot, so a broken pipeline crash-loops
+    # the container and shows as `Restarting` in `docker compose ps`. Internal
+    # collector logs intentionally start at WARN; tail the container for
+    # configuration failures or exhausted exports. Rome does NOT depend_on the
+    # collector — it must boot even if the obs stack is down (see
+    # docs/architecture/observability.md).
+
+volumes:
+  app:
+  user-home:
+  rome-home:

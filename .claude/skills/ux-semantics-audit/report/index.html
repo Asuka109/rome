@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en" data-theme="ember">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UX audit</title>
+    <script>
+      // Same no-flash bootstrap as the app shell, minus the stored-preference
+      // read: a report is a document that gets passed around, so it follows the
+      // reader's OS setting rather than whatever the author last picked.
+      (function () {
+        try {
+          var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          if (prefersDark) document.documentElement.classList.add("dark");
+          document.documentElement.style.colorScheme = prefersDark ? "dark" : "light";
+        } catch (_) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

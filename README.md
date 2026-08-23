@@ -1,0 +1,257 @@
+<p align="center">
+  <img
+    src="docs/assets/rome-3d.png"
+    alt="Rome, a personal AI agent"
+    width="240"
+  />
+</p>
+
+<h1 align="center">Rome</h1>
+
+<p align="center">
+  <strong>The agentic OS for humans and agents.</strong>
+</p>
+
+<p align="center">
+  <a href="https://romeos.cc/">Website</a>
+  ·
+  <a href="https://romeos.cc/login">Try Rome Cloud</a>
+  ·
+  <a href="https://romeos.cc/docs/rome">Documentation</a>
+  ·
+  <a href="https://romeos.cc/store">App Store</a>
+</p>
+
+
+## What is Rome?
+
+Most progress in AI comes from scaling models. Rome scales the other axis, the environment: the tools, workflows, memory, and interfaces an agent works within ([why this matters](VISION.md)).
+
+Rome is a guardrailed environment where human and agent collaborate, and the collaboration compounds. Agents build their own harnesses, design their own SOPs, and orchestrate workflows under your guidance. Proven capabilities stick. Every interaction raises the ceiling for the next.
+
+## Rome Apps
+
+**Rome App is the new way to interact with your agent.**
+
+Chat is a good place to ask for something once. Repeated work deserves a place of
+its own: an inbox that remembers what was triaged, a code review loop you can
+inspect, a price tracker that keeps watching, or a morning brief that arrives on
+schedule.
+
+A Rome App combines a purpose-built interface, agent reasoning, reusable
+workflows, and persistent data into one installable product. It is not a thin
+wrapper around a prompt. The app remains useful after the conversation ends,
+after the browser closes, and when the user comes back tomorrow.
+
+| Purpose-built UI & UX | AI-native | Persistent by default | Community-powered |
+| --- | --- | --- | --- |
+| An interface designed for the job | Agents are part of how the product works | Data and workflows carry forward | Install, share, and learn from other builders |
+
+A useful rule of thumb: **a workflow is a verb; an app is a noun**. Use a
+workflow to perform a task and return a result. Build an app when the work needs
+a home of its own—with user-editable data, multiple actions, or a persistent
+agent.
+
+### Rome can build the missing app
+
+When there is not an app for what you need, describe it to Rome in plain
+language. Rome can turn that request into a short specification, scaffold the
+app or workflow, build it into your instance, and keep iterating with you in the
+same conversation.
+
+The result is ordinary, git-tracked source code rather than hidden model state.
+Keep it private, adapt it as your needs change, or publish it for others to
+install from the App Store. This creates Rome's self-evolution loop:
+
+```text
+Describe a need → Rome builds the capability → the app keeps working
+       ↑                                              ↓
+       └──────────── refine, reuse, and share ────────┘
+```
+
+### Under the hood
+
+A Rome App starts with an `app.yaml` manifest and can ship any mix of:
+
+| Artifact | Purpose |
+| --- | --- |
+| **Actions** | Typed operations that agents, routines, and app code can invoke |
+| **Agents** | App-owned collaborators with their own instructions and tools |
+| **Skills** | Plain-language procedures loaded when an agent needs them |
+| **Hooks** | Extensions to message, event, and agent-turn lifecycles |
+| **Web UI & APIs** | Purpose-built interfaces and app-owned HTTP surfaces |
+| **Database & files** | Persistent, app-private state that survives across runs |
+
+Together these form a **capability**: the unit Rome discovers and reuses in
+later work. The app is that capability's human interface: apps organize human
+interaction; capabilities organize agent action.
+
+Apps build on two public SDKs:
+
+- `@rome-os/app-runtime` for backend capabilities.
+- `@rome-os/app-web-sdk` for embedded web interfaces and the Rome build CLI.
+
+Browse the [Rome App Store](https://romeos.cc/store), read the
+[building guide](https://romeos.cc/docs/building-apps), or start with the
+[app quickstart](https://romeos.cc/docs/building-apps/quickstart).
+
+## What people do with Rome
+
+These are the kinds of requests Rome is designed to follow through on:
+
+| | |
+| --- | --- |
+| **Run the code review loop**<br><br>“Fix all P1 and P2 review comments until there are no merge blockers left. Let me know when you finish.” | **Organize your email**<br><br>“Sort my inbox. Archive the noise, flag anything urgent, and draft replies for messages that need me.” |
+| **Track a game's price**<br><br>“Track the price of this game and let me know when it drops below $30.” | **Interview your customers**<br><br>“Interview five customers about onboarding. Ask follow-up questions and summarize what we should improve.” |
+
+Rome can handle one-off tasks, scheduled work, long-running follow-through, and
+purpose-built app experiences without forcing everything into one chat window.
+
+## How Rome works
+
+Rome gives each guardian a dedicated runtime with explicit boundaries between
+identity, reasoning, execution, and durable state.
+
+```text
++----------------------------- Applications -----------------------------+
+| System Apps  | Chat / Projects / Browser / ...                         |
+| Custom Apps  | Developer / Finance / Email / Game                      |
++------------------------------------------------------------------------+
+                                    |
++------------------------------ Rome Core -------------------------------+
+| Agent Runtime / Action Engine / Channels                               |
+| App SDK / Web UI SDK / ...                                             |
++------------------------------------------------------------------------+
+                                    |
++---------------------------- Infrastructure ----------------------------+
+| Codex / Claude / Models / Storage / Tools / ...                        |
++------------------------------------------------------------------------+
+```
+
+### Core design decisions
+
+- **Every environment has a guardian.** The guardian controls configuration,
+  memory, policies, and sensitive actions for their Rome instance.
+- **Channels share one identity system.** Platform-specific messages are normalized
+  into a common format, then mapped to people and evaluated by the same policy engine.
+- **Reasoning and execution are separate.** Agents decide what to do; typed actions
+  define what code, routines, apps, and agents can execute.
+- **Memory is local and inspectable.** Important context survives sessions in a
+  git-tracked memory directory rather than living only inside a model conversation.
+- **Trust is structural.** Sender identity, bond levels, policy routing, sentinel
+  review, and approvals are runtime mechanisms—not reminders hidden in a prompt.
+- **Apps are runtime extensions.** Apps add agents, actions, skills, hooks, APIs,
+  databases, and web UIs without changing Rome Core.
+- **Durable work does not depend on an open tab.** Events, routines, app state, and
+  action execution live in the runtime and continue independently of the browser.
+
+The detailed contracts live in [`docs/concepts/`](docs/concepts/index.md) and
+[`docs/architecture/`](docs/architecture/index.md).
+
+### The compounding loop
+
+1. A request arrives through a channel, an event, or a Rome App.
+2. Rome resolves identity and policy before an agent handles the request.
+3. Rome discovers which capabilities from earlier work apply, reusing,
+   adapting, or combining them before building anything new.
+4. The agent reasons, invokes actions, and asks for approval when required.
+5. Useful behavior can become a saved workflow, a reusable skill, or a Rome App.
+6. Memory and app data persist, so the next task starts from a higher baseline.
+
+Start with one workflow. Rome keeps what works and compounds from there.
+
+## Get started
+
+### Rome Cloud
+
+Rome Cloud provisions a private Rome environment for each guardian. It is currently
+available as a preview.
+
+[Join the preview →](https://romeos.cc/login)
+
+### Run with Docker
+
+One script checks for Docker, pulls the published image, and starts Rome:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rome-os/rome/main/scripts/quickstart-docker.sh | bash
+```
+
+Or clone the repository and run the script from it:
+
+```bash
+git clone https://github.com/rome-os/rome.git
+cd rome
+./scripts/quickstart-docker.sh
+```
+
+The dashboard comes up at `http://localhost:7663`, bound to loopback only —
+first-run onboarding is open to whoever reaches it first, so exposing it
+beyond the machine takes an explicit `--bind`. State lives in named Docker
+volumes, so re-running the script upgrades the container without losing data.
+Telemetry export stays off unless you set `OTEL_EXPORTER_OTLP_ENDPOINT`. Run
+the script with `--help` for ports, profiles, and the other settings it
+forwards.
+
+### Run the development environment
+
+To run this repository from source, you need:
+
+- Node.js 24 or newer
+- Corepack and pnpm 11.6
+- Docker with Docker Compose
+
+From a checkout of this repository:
+
+```bash
+corepack enable
+pnpm install
+pnpm dev:all
+```
+
+`pnpm dev:all` starts the production-shaped local stack: Rome, observability,
+routing, and the web development server. It connects to `https://romeos.cc` by
+default; set `ROME_DEV_PANTHEON_ORIGIN` to use another Rome Cloud deployment.
+The script prints the local URLs and development credentials when startup completes.
+
+This is the contributor development path, not the final production self-hosting
+distribution. See [`CLAUDE.md`](CLAUDE.md) for the complete development loop,
+container commands, and validation requirements.
+
+## Repository map
+
+Rome is a pnpm monorepo.
+
+| Path | What lives there |
+| --- | --- |
+| [`packages/core/`](packages/core/) | Agent runtime, sessions, actions, events, channels, policies, memory, and persistence |
+| [`packages/web/`](packages/web/) | Guardian-only web dashboard |
+| [`packages/desktop/`](packages/desktop/) | Electron shell and local Rome runtime |
+| [`rome_apps/`](rome_apps/) | First-party Rome Apps loaded through the same app model |
+| [`packages/app-runtime-sdk/`](packages/app-runtime-sdk/) | Public backend SDK for Rome Apps |
+| [`packages/app-web-sdk/`](packages/app-web-sdk/) | Public web SDK and app build tooling |
+| [`docs/`](docs/) | Product concepts, architecture, decision records, and operations |
+
+Common checks:
+
+```bash
+pnpm typecheck
+pnpm test:unit
+pnpm lint
+pnpm build
+```
+
+## Documentation
+
+- [`VISION.md`](VISION.md) — why Rome exists and the product principles it protects.
+- [`docs/concepts/`](docs/concepts/index.md) — canonical domain vocabulary.
+- [`docs/architecture/`](docs/architecture/index.md) — component boundaries and
+  system invariants.
+- [Using Rome](https://romeos.cc/docs/rome) — public guardian documentation.
+- [Building Rome Apps](https://romeos.cc/docs/building-apps) — public app-author
+  documentation and SDK guides.
+
+<p align="center">
+  <strong>Give your agents a place to grow.</strong><br />
+  Start with one workflow. Rome keeps what works and compounds from there.
+</p>

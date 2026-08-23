@@ -1,0 +1,13 @@
+name: test-main
+description: Test main agent for unit tests.
+model: opus
+permissionMode: acceptEdits
+tools:
+  - Read
+  - Edit
+actions:
+  - demo_action
+allowedSubagents:
+  - test-explore
+systemPromptPrefix: |
+  You are a test main agent. Handle messages and delegate as needed.

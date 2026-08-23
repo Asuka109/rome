@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Stackbase — Project Board</title>
+<style>
+  :root {
+    /* Neubrutalism color tokens — high saturation, flat, no gradients */
+    --c-bg: #f4f0e6;
+    --c-surface: #ffffff;
+    --c-ink: #000000;
+    --c-yellow: #ffdb58;
+    --c-red: #ff6b6b;
+    --c-blue: #4d8bff;
+    --c-teal: #4ecdc4;
+    --c-purple: #c4a8ff;
+    --c-green: #7be389;
+
+    /* Borders + hard offset shadows */
+    --border-width: 3px;
+    --border: var(--border-width) solid var(--c-ink);
+    --shadow-offset: 4px;
+    --shadow: 4px 4px 0 var(--c-ink);
+    --shadow-lg: 7px 7px 0 var(--c-ink);
+    --shadow-sm: 2px 2px 0 var(--c-ink);
+
+    /* Sharp corners — slight rounding only */
+    --radius: 4px;
+    --radius-pill: 999px;
+
+    /* Spacing scale */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 24px;
+    --sp-6: 32px;
+    --sp-7: 48px;
+
+    /* Typography scale — bold sans */
+    --font: "Helvetica Neue", "Arial Black", Arial, system-ui, -apple-system, sans-serif;
+    --fs-xs: 0.75rem;
+    --fs-sm: 0.875rem;
+    --fs-base: 1rem;
+    --fs-lg: 1.25rem;
+    --fs-xl: 1.75rem;
+    --fs-2xl: 2.5rem;
+    --fw-bold: 700;
+    --fw-black: 900;
+
+    /* Motion */
+    --t-fast: 90ms;
+    --t-base: 160ms;
+    --ease: cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font);
+    background: var(--c-bg);
+    background-image:
+      linear-gradient(var(--c-ink) 1px, transparent 1px),
+      linear-gradient(90deg, var(--c-ink) 1px, transparent 1px);
+    background-size: 28px 28px;
+    background-position: -1px -1px;
+    color: var(--c-ink);
+    line-height: 1.4;
+    min-height: 100vh;
+    /* faint grid via low opacity overlay */
+  }
+  /* lighten the grid lines */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: var(--c-bg);
+    opacity: 0.92;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  ul { list-style: none; }
+  button { font-family: inherit; cursor: pointer; }
+
+  /* ---------- Focus ---------- */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 3px dashed var(--c-blue);
+    outline-offset: 3px;
+  }
+
+  /* ---------- Layout shell ---------- */
+  .shell {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: var(--sp-4);
+  }
+
+  /* ---------- Top bar ---------- */
+  header.topbar {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+    background: var(--c-surface);
+    border: var(--border);
+    box-shadow: var(--shadow);
+    border-radius: var(--radius);
+    padding: var(--sp-3) var(--sp-4);
+    flex-wrap: wrap;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    font-weight: var(--fw-black);
+    font-size: var(--fs-lg);
+    letter-spacing: -0.5px;
+  }
+  .brand .logo {
+    width: 40px;
+    height: 40px;
+    background: var(--c-yellow);
+    border: var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+  }
+
+  nav.mainnav {
+    display: flex;
+    gap: var(--sp-2);
+    flex-wrap: wrap;
+  }
+  nav.mainnav a {
+    font-weight: var(--fw-bold);
+    font-size: var(--fs-sm);
+    padding: var(--sp-2) var(--sp-3);
+    border: var(--border-width) solid transparent;
+    border-radius: var(--radius);
+    transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+  }
+  nav.mainnav a:hover {
+    background: var(--c-teal);
+    border-color: var(--c-ink);
+  }
+  nav.mainnav a[aria-current="page"] {
+    background: var(--c-purple);
+    border-color: var(--c-ink);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .topbar-spacer { flex: 1 1 auto; }
+
+  .search {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    background: var(--c-surface);
+    border: var(--border);
+    border-radius: var(--radius);
+    padding: var(--sp-2) var(--sp-3);
+    min-width: 0;
+  }
+  .search input {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: inherit;
+    font-weight: var(--fw-bold);
+    font-size: var(--fs-sm);
+    width: 9rem;
+    max-width: 38vw;
+    color: var(--c-ink);
+  }
+  .search input::placeholder { color: #555; font-weight: var(--fw-bold); }
+
+  .avatar {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 auto;
+    background: var(--c-red);
+    border: var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    display: grid;
+    place-items: center;
+    font-weight: var(--fw-black);
+    color: var(--c-ink);
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-weight: var(--fw-black);
+    font-size: var(--fs-sm);
+    padding: var(--sp-2) var(--sp-4);
+    background: var(--c-surface);
+    border: var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    transition: transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+  }
+  .btn:hover { transform: translate(-2px, -2px); box-shadow: var(--shadow-lg); }
+  .btn:active { transform: translate(2px, 2px); box-shadow: var(--shadow-sm); }
+  .btn--primary { background: var(--c-yellow); }
+  .btn--accent { background: var(--c-blue); color: var(--c-ink); }
+  .btn--ghost { box-shadow: var(--shadow-sm); }
+
+  /* ---------- Main grid ---------- */
+  main { margin-top: var(--sp-4); }
+
+  .page-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-4);
+    flex-wrap: wrap;
+    margin-bottom: var(--sp-5);
+  }
+  .page-head h1 {
+    font-size: var(--fs-2xl);
+    font-weight: var(--fw-black);
+    letter-spacing: -1.5px;
+    line-height: 1;
+  }
+  .page-head .eyebrow {
+    display: inline-block;
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-black);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: var(--c-green);
+    border: var(--border);
+    box-shadow: var(--shadow-sm);
+    border-radius: var(--radius);
+    padding: 2px var(--sp-2);
+    margin-bottom: var(--sp-3);
+  }
+  .head-actions { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
+
+  /* ---------- Stats row ---------- */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--sp-4);
+    margin-bottom: var(--sp-5);
+  }
+  .stat {
+    background: var(--c-surface);
+    border: var(--border);
+    box-shadow: var(--shadow);
+    border-radius: var(--radius);
+    padding: var(--sp-4);
+    position: relative;
+    overflow: hidden;
+  }
+  .stat .tag {
+    width: 34px; height: 34px;
+    border: var(--border);
+    border-radius: var(--radius);
+    display: grid; place-items: center;
+    margin-bottom: var(--sp-3);
+  }
+  .stat--y .tag { background: var(--c-yellow); }
+  .stat--b .tag { background: var(--c-blue); }
+  .stat--t .tag { background: var(--c-teal); }
+  .stat--p .tag { background: var(--c-purple); }
+  .stat .num { font-size: var(--fs-xl); font-weight: var(--fw-black); letter-spacing: -1px; }
+  .stat .label { font-size: var(--fs-sm); font-weight: var(--fw-bold); color: #333; }
+  .stat .delta {
+    display: inline-block;
+    margin-top: var(--sp-2);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-black);
+    border: var(--border-width) solid var(--c-ink);
+    border-radius: var(--radius-pill);
+    padding: 1px var(--sp-2);
+    background: var(--c-green);
+  }
+  .stat .delta.down { background: var(--c-red); }
+
+  /* ---------- Board ---------- */
+  .board-wrap {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--sp-5);
+  }
+  @media (min-width: 980px) {
+    .board-wrap { grid-template-columns: 1fr 320px; }
+  }
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--sp-4);
+    align-content: start;
+  }
+
+  .column {
+    background: var(--c-surface);
+    border: var(--border);
+    box-shadow: var(--shadow);
+    border-radius: var(--radius);
+    padding: var(--sp-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    min-width: 0;
+  }
+  .column > h2 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-black);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: var(--sp-2) var(--sp-3);
+    border: var(--border);
+    border-radius: var(--radius);
+  }
+  .column.col-todo > h2 { background: var(--c-yellow); }
+  .column.col-doing > h2 { background: var(--c-blue); }
+  .column.col-done > h2 { background: var(--c-teal); }
+  .count {
+    font-size: var(--fs-xs);
+    background: var(--c-surface);
+    border: var(--border-width) solid var(--c-ink);
+    border-radius: var(--radius-pill);
+    padding: 0 var(--sp-2);
+    min-width: 22px;
+    text-align: center;
+  }
+
+  .card {
+    background: var(--c-surface);
+    border: var(--border);
+    box-shadow: var(--shadow-sm);
+    border-radius: var(--radius);
+    padding: var(--sp-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    transition: transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+  }
+  .card:hover { transform: translate(-2px, -2px); box-shadow: var(--shadow); }
+  .card:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--c-ink); }
+  .card:focus-visible { outline: 3px dashed var(--c-blue); outline-offset: 2px; }
+
+  .card .chips { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+  .chip {
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-black);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: var(--border-width) solid var(--c-ink);
+    border-radius: var(--radius);
+    padding: 1px var(--sp-2);
+  }
+  .chip--bug { background: var(--c-red); }
+  .chip--feat { background: var(--c-green); }
+  .chip--ui { background: var(--c-purple); }
+  .chip--api { background: var(--c-yellow); }
+
+  .card h3 { font-size: var(--fs-base); font-weight: var(--fw-black); letter-spacing: -0.3px; }
+  .card p { font-size: var(--fs-sm); font-weight: 600; color: #333; }
+
+  .card .meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    margin-top: var(--sp-1);
+  }
+  .assignees { display: flex; }
+  .assignees .a {
+    width: 26px; height: 26px;
+    border: var(--border-width) solid var(--c-ink);
+    border-radius: var(--radius);
+    display: grid; place-items: center;
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-black);
+    margin-left: -6px;
+  }
+  .assignees .a:first-child { margin-left: 0; }
+  .a.c1 { background: var(--c-yellow); }
+  .a.c2 { background: var(--c-teal); }
+  .a.c3 { background: var(--c-purple); }
+
+  .due {
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-black);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .progress {
+    height: 14px;
+    border: var(--border-width) solid var(--c-ink);
+    border-radius: var(--radius-pill);
+    background: var(--c-bg);
+    overflow: hidden;
+  }
+  .progress > span {
+    display: block;
+    height: 100%;
+    background: var(--c-blue);
+    border-right: var(--border-width) solid var(--c-ink);
+  }
+
+  /* ---------- Side panel ---------- */
+  aside.side {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-5);
+    min-width: 0;
+  }
+  .panel {
+    background: var(--c-surface);
+    border: var(--border);
+    box-shadow: var(--shadow);
+    border-radius: var(--radius);
+    padding: var(--sp-4);
+  }
+  .panel > h2 {
+    font-size: var(--fs-lg);
+    font-weight: var(--fw-black);
+    letter-spacing: -0.5px;
+    margin-bottom: var(--sp-4);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+
+  /* mini bar chart (CSS only) */
+  .chart {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--sp-2);
+    height: 140px;
+    padding-top: var(--sp-2);
+  }
+  .chart .bar {
+    flex: 1;
+    border: var(--border);
+    border-bottom: none;
+    border-top-left-radius: var(--radius);
+    border-top-right-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    transition: transform var(--t-fast) var(--ease);
+  }
+  .chart .bar:hover { transform: translateY(-3px); }
+  .chart .bar span {
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-black);
+  }
+  .chart .bar.b1 { background: var(--c-yellow); }
+  .chart .bar.b2 { background: var(--c-red); }
+  .chart .bar.b3 { background: var(--c-blue); }
+  .chart .bar.b4 { background: var(--c-teal); }
+  .chart .bar.b5 { background: var(--c-purple); }
+  .chart .bar.b6 { background: var(--c-green); }
+  .chart-axis {
+    display: flex;
+    gap: var(--sp-2);
+    margin-top: var(--sp-2);
+  }
+  .chart-axis span {
+    flex: 1;
+    text-align: center;
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-bold);
+    color: #333;
+  }
+
+  .activity { display: flex; flex-direction: column; gap: var(--sp-3); }
+  .activity li {
+    display: flex;
+    gap: var(--sp-3);
+    align-items: flex-start;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+  }
+  .activity .dot {
+    width: 24px; height: 24px; flex: 0 0 auto;
+    border: var(--border-width) solid var(--c-ink);
+    border-radius: var(--radius);
+    display: grid; place-items: center;
+  }
+  .activity .dot.d1 { background: var(--c-green); }
+  .activity .dot.d2 { background: var(--c-blue); }
+  .activity .dot.d3 { background: var(--c-red); }
+  .activity strong { font-weight: var(--fw-black); }
+  .activity time { display: block; font-size: var(--fs-xs); color: #555; font-weight: var(--fw-bold); }
+
+  /* ---------- Footer ---------- */
+  footer.foot {
+    margin-top: var(--sp-6);
+    text-align: center;
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-bold);
+    color: #444;
+    padding: var(--sp-4);
+  }
+
+  svg { display: block; }
+
+  @media (max-width: 560px) {
+    nav.mainnav { width: 100%; order: 3; }
+    .search input { width: 100%; max-width: none; }
+    .search { flex: 1 1 100%; order: 2; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { scroll-behavior: auto !important; }
+    .btn, .card, .chart .bar, nav.mainnav a {
+      transition: none !important;
+    }
+    .btn:hover, .btn:active,
+    .card:hover, .card:active,
+    .chart .bar:hover { transform: none !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+            <rect x="3" y="3" width="18" height="7" />
+            <rect x="3" y="14" width="11" height="7" />
+          </svg>
+        </span>
+        <span>Stackbase</span>
+      </div>
+
+      <nav class="mainnav" aria-label="Primary">
+        <a href="#" aria-current="page">Board</a>
+        <a href="#">Backlog</a>
+        <a href="#">Timeline</a>
+        <a href="#">Reports</a>
+      </nav>
+
+      <span class="topbar-spacer"></span>
+
+      <div class="search" role="search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <line x1="16.5" y1="16.5" x2="21" y2="21" />
+        </svg>
+        <input type="search" aria-label="Search tasks" placeholder="Search tasks…" />
+      </div>
+
+      <button class="btn btn--primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        New Task
+      </button>
+
+      <span class="avatar" aria-label="Account: Mara Quinn">MQ</span>
+    </header>
+
+    <main>
+      <div class="page-head">
+        <div>
+          <span class="eyebrow">Sprint 14 · Active</span>
+          <h1>Project Board</h1>
+        </div>
+        <div class="head-actions">
+          <button class="btn btn--ghost">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polygon points="3 4 21 4 14 12 14 19 10 21 10 12 3 4" />
+            </svg>
+            Filter
+          </button>
+          <button class="btn btn--accent">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3v12" /><polyline points="7 10 12 15 17 10" /><line x1="4" y1="20" x2="20" y2="20" />
+            </svg>
+            Export
+          </button>
+        </div>
+      </div>
+
+      <section class="stats" aria-label="Sprint summary">
+        <div class="stat stat--y">
+          <span class="tag" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M21 12v7H4V5h11"/></svg>
+          </span>
+          <div class="num">42</div>
+          <div class="label">Tasks done</div>
+          <span class="delta">+8 this week</span>
+        </div>
+        <div class="stat stat--b">
+          <span class="tag" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg>
+          </span>
+          <div class="num">11</div>
+          <div class="label">In progress</div>
+          <span class="delta">on track</span>
+        </div>
+        <div class="stat stat--t">
+          <span class="tag" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><polyline points="14 7 21 7 21 14"/></svg>
+          </span>
+          <div class="num">94%</div>
+          <div class="label">Velocity</div>
+          <span class="delta">+12 pts</span>
+        </div>
+        <div class="stat stat--p">
+          <span class="tag" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.5 6.5L21 9l-5 4.5L17.5 21 12 17l-5.5 4L8 13.5 3 9l6.5-.5z"/></svg>
+          </span>
+          <div class="num">3</div>
+          <div class="label">Blockers</div>
+          <span class="delta down">needs review</span>
+        </div>
+      </section>
+
+      <div class="board-wrap">
+        <section class="board" aria-label="Task columns">
+          <div class="column col-todo">
+            <h2>To Do <span class="count">4</span></h2>
+
+            <article class="card" tabindex="0">
+              <div class="chips"><span class="chip chip--feat">Feature</span><span class="chip chip--ui">UI</span></div>
+              <h3>Onboarding wizard v2</h3>
+              <p>Multi-step flow with progress save and skip logic.</p>
+              <div class="meta">
+                <div class="assignees" aria-label="Assignees">
+                  <span class="a c1">JD</span><span class="a c2">RA</span>
+                </div>
+                <span class="due">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
+                  Jun 4
+                </span>
+              </div>
+            </article>
+
+            <article class="card" tabindex="0">
+              <div class="chips"><span class="chip chip--api">API</span></div>
+              <h3>Webhook retry queue</h3>
+              <p>Exponential backoff with dead-letter handling.</p>
+              <div class="meta">
+                <div class="assignees" aria-label="Assignees"><span class="a c3">MQ</span></div>
+                <span class="due">Jun 9</span>
+              </div>
+            </article>
+
+            <article class="card" tabindex="0">
+              <div class="chips"><span class="chip chip--bug">Bug</span></div>
+              <h3>Fix date picker timezone</h3>
+              <p>Offsets drift by a day near DST switch.</p>
+              <div class="meta">
+                <div class="assignees" aria-label="Assignees"><span class="a c1">JD</span></div>
+                <span class="due">Jun 2</span>
+              </div>
+            </article>
+          </div>
+
+          <div class="column col-doing">
+            <h2>In Progress <span class="count">3</span></h2>
+
+            <article class="card" tabindex="0">
+              <div class="chips"><span class="chip chip--feat">Feature</span></div>
+              <h3>Realtime board sync</h3>
+              <p>WebSocket layer for live card updates.</p>
+              <div class="progress" aria-label="65 percent complete"><span style="width:65%"></span></div>
+              <div class="meta">
+                <div class="assignees" aria-label="Assignees"><span class="a c2">RA</span><span class="a c3">MQ</span></div>
+                <span class="due">Jun 6</span>
+              </div>
+            </article>
+
+            <article class="card" tabindex="0">
+              <div class="chips"><span class="chip chip--ui">UI</span></div>
+              <h3>Dark mode tokens</h3>
+              <p>Map semantic colors across all surfaces.</p>
+              <div class="progress" aria-label="40 percent complete"><span style="width:40%"></span></div>
+              <div class="meta">
+                <div class="assignees" aria-label="Assignees"><span class="a c1">JD</span></div>
+                <span class="due">Jun 8</span>
+              </div>
+            </article>
+          </div>
+
+          <div class="column col-done">
+            <h2>Done <span class="count">5</span></h2>
+
+            <article class="card" tabindex="0">
+              <div class="chips"><span class="chip chip--api">API</span></div>
+              <h3>Rate limit headers</h3>
+              <p>Standardized across all v3 endpoints.</p>
+              <div class="meta">
+                <div class="assignees" aria-label="Assignees"><span class="a c3">MQ</span></div>
+                <span class="due">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 12 10 18 20 6"/></svg>
+                  Shipped
+                </span>
+              </div>
+            </article>
+
+            <article class="card" tabindex="0">
+              <div class="chips"><span class="chip chip--feat">Feature</span></div>
+              <h3>CSV bulk import</h3>
+              <p>Column mapping with validation preview.</p>
+              <div class="meta">
+                <div class="assignees" aria-label="Assignees"><span class="a c2">RA</span></div>
+                <span class="due">Shipped</span>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <aside class="side" aria-label="Insights">
+          <section class="panel">
+            <h2>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="20" x2="4" y2="10"/><line x1="10" y1="20" x2="10" y2="4"/><line x1="16" y1="20" x2="16" y2="14"/><line x1="22" y1="20" x2="22" y2="20"/></svg>
+              Throughput
+            </h2>
+            <div class="chart" role="img" aria-label="Tasks completed per day: Monday 6, Tuesday 9, Wednesday 5, Thursday 11, Friday 8, Saturday 4">
+              <div class="bar b1" style="height:55%"><span>6</span></div>
+              <div class="bar b2" style="height:80%"><span>9</span></div>
+              <div class="bar b3" style="height:46%"><span>5</span></div>
+              <div class="bar b4" style="height:100%"><span>11</span></div>
+              <div class="bar b5" style="height:72%"><span>8</span></div>
+              <div class="bar b6" style="height:38%"><span>4</span></div>
+            </div>
+            <div class="chart-axis" aria-hidden="true">
+              <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h2>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+              Recent Activity
+            </h2>
+            <ul class="activity">
+              <li>
+                <span class="dot d1" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg>
+                </span>
+                <span><strong>Reza A.</strong> moved “Rate limit headers” to Done<time>14 min ago</time></span>
+              </li>
+              <li>
+                <span class="dot d2" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </span>
+                <span><strong>Mara Q.</strong> created “Webhook retry queue”<time>1 hr ago</time></span>
+              </li>
+              <li>
+                <span class="dot d3" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="8" x2="12" y2="13"/><circle cx="12" cy="17" r="0.6" fill="#000" stroke="none"/><path d="M12 3l9 16H3z"/></svg>
+                </span>
+                <span><strong>Jude D.</strong> flagged a blocker on “Date picker”<time>3 hrs ago</time></span>
+              </li>
+            </ul>
+          </section>
+        </aside>
+      </div>
+    </main>
+
+    <footer class="foot">
+      Stackbase Workspace · Sprint 14 · 23 tasks tracked
+    </footer>
+  </div>
+</body>
+</html>

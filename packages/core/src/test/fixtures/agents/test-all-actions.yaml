@@ -1,0 +1,11 @@
+name: test-all-actions
+description: Test agent with wildcard action access.
+tier: medium
+reasoningEffort: low
+permissionMode: bypassPermissions
+tools:
+  - Read
+actions:
+  - "*"
+systemPromptPrefix: |
+  You are a test agent with access to all callable actions.

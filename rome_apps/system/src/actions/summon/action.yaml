@@ -1,0 +1,8 @@
+name: summon
+type: system
+description: Spawn a subagent in the current project
+complexity: complex
+speed: slow
+reliability: medium
+sideEffects: write
+requiresApproval: false

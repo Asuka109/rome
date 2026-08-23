@@ -1,0 +1,282 @@
+{
+  "header": {
+    "title": "Routines",
+    "subtitle": "Automations that fire actions when their trigger condition is met.",
+    "createButton": "Create Routine"
+  },
+  "loading": "Loading routines...",
+  "stats": {
+    "total": "Total",
+    "active": "Active",
+    "paused": "Paused",
+    "failingCount": "{{n}} failing",
+    "failingAria": "Show {{n}} failing routines",
+    "nextUp": "Next up",
+    "noUpcoming": "No upcoming runs",
+    "etaOverdue": "due now"
+  },
+  "trigger": {
+    "schedule": "Schedule",
+    "event-bus": "Event",
+    "manual": "Manual"
+  },
+  "filter": {
+    "all": "All routines",
+    "active": "Active",
+    "disabled": "Paused",
+    "failing": "Failing",
+    "schedule": "Schedule",
+    "eventBus": "Event",
+    "manual": "Manual"
+  },
+  "relativeDetailed": {
+    "starting": "starting",
+    "inMinutes": "in {{minutes}}m",
+    "inHours": "in {{hours}}h",
+    "inHoursMinutes": "in {{hours}}h {{minutes}}m",
+    "inDays": "in {{days}}d",
+    "inDaysHours": "in {{days}}d {{hours}}h"
+  },
+  "tabs": {
+    "timeline": "Timeline",
+    "calendar": "Calendar",
+    "list": "List",
+    "viewLabel": "Routines view"
+  },
+  "timeline": {
+    "scheduleOnly": "Timeline view only applies to scheduled routines."
+  },
+  "calendar": {
+    "scheduleOnly": "Calendar view only applies to scheduled routines.",
+    "noRoutinesThisDay": "No routines this day",
+    "selectedHeading": "{{month}} {{day}}, {{year}}",
+    "monthYear": "{{month}} {{year}}",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "months": {
+      "0": "January",
+      "1": "February",
+      "2": "March",
+      "3": "April",
+      "4": "May",
+      "5": "June",
+      "6": "July",
+      "7": "August",
+      "8": "September",
+      "9": "October",
+      "10": "November",
+      "11": "December"
+    },
+    "dayShort": {
+      "0": "Sun",
+      "1": "Mon",
+      "2": "Tue",
+      "3": "Wed",
+      "4": "Thu",
+      "5": "Fri",
+      "6": "Sat"
+    }
+  },
+  "now": "NOW",
+  "routine": {
+    "badgeDisabled": "paused",
+    "statusActive": "Active",
+    "statusDisabled": "Paused",
+    "noNextRun": "No next run",
+    "noRoutinesScheduled": "No routines",
+    "disable": "Disable",
+    "enable": "Enable",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  },
+  "schedule": {
+    "subtypeOneOff": "one-time",
+    "subtypeRecurring": "recurring"
+  },
+  "table": {
+    "filterPlaceholder": "Filter routines...",
+    "empty": "No routines",
+    "emptyFiltered": "No matching routines"
+  },
+  "datetime": {
+    "missing": "—"
+  },
+  "modal": {
+    "title": "Create Routine",
+    "submit": "Create Routine",
+    "submitting": "Creating...",
+    "cancel": "Cancel",
+    "triggerDescriptions": {
+      "schedule": "Fires on a clock — once at a date or on a recurring rule.",
+      "event-bus": "Fires when a matching event is emitted on the internal bus.",
+      "manual": "Never fires on its own — you run it by hand from here."
+    },
+    "fields": {
+      "triggerType": "Trigger type",
+      "name": "Name",
+      "scheduleSubtype": "Schedule",
+      "timezone": "Timezone",
+      "localTime": "Local Time",
+      "startDate": "Date",
+      "frequency": "Frequency",
+      "daysOfWeek": "Days of Week",
+      "dayOfMonth": "Day of Month",
+      "eventName": "Event name",
+      "sourcePattern": "Source pattern (optional)",
+      "actionName": "Action Name",
+      "argsJson": "Args (JSON object)"
+    },
+    "placeholders": {
+      "name": "Daily standup reminder",
+      "startDate": "Pick a date",
+      "eventName": "action:completed",
+      "sourcePattern": "deploy_*",
+      "actionName": "send_reminder",
+      "argsJson": "{\"message\": \"Time for standup!\"}"
+    },
+    "hints": {
+      "eventName": "Well-known events include action:completed, action:failed, message:received, approval:resolved, routine:fired.",
+      "sourcePattern": "Optional wildcard matched against the event's source (e.g. action name) — leave blank to match all.",
+      "manual": "This routine has no automatic trigger. It runs only when you use \"Run now\"."
+    },
+    "actionPicker": {
+      "placeholder": "Pick an action…",
+      "searchPlaceholder": "Search actions…",
+      "empty": "No actions match",
+      "loading": "Loading actions…",
+      "loadFailed": "Failed to load actions",
+      "listUnavailable": "Couldn't load the action list — type the action name manually.",
+      "needsApproval": "needs approval",
+      "required": "required",
+      "noArgs": "This action declares no arguments — {} is fine.",
+      "oneOf": "one of:",
+      "insertTemplate": "Insert example args",
+      "argsValid": "Args look valid for {{name}}"
+    },
+    "errors": {
+      "nameRequired": "Name and action are required",
+      "unknownAction": "\"{{name}}\" isn't a registered action — pick one from the list",
+      "argMissing": "Missing required arg \"{{name}}\"",
+      "argType": "Arg \"{{name}}\" should be {{expected}}",
+      "argUnknown": "This action doesn't accept an arg named \"{{name}}\"",
+      "argSchema": "Arg \"{{path}}\" {{message}}",
+      "invalidJson": "Invalid JSON in args",
+      "argsObject": "Args must be a JSON object, not an array or primitive",
+      "eventNameRequired": "Event name is required",
+      "startDateRequired": "Date is required for one-off schedules",
+      "weekdayRequired": "Pick at least one weekday",
+      "dayOfMonthRequired": "Day of month must be between 1 and 31",
+      "createFailed": "Failed to create routine",
+      "networkError": "Network error"
+    }
+  },
+  "run": {
+    "now": "Run now",
+    "ariaLabel": "Run {{name}} now",
+    "loadingLabel": "Running {{name}}"
+  },
+  "stop": {
+    "now": "Stop",
+    "ariaLabel": "Stop {{name}}",
+    "loadingLabel": "Stopping {{name}}"
+  },
+  "errors": {
+    "toggleFailed": "Failed to update routine",
+    "deleteFailed": "Failed to delete routine",
+    "runFailed": "Failed to run routine",
+    "stopFailed": "Failed to stop routine",
+    "networkError": "Network error",
+    "dismiss": "Dismiss",
+    "loadFailed": "Failed to load routines",
+    "retry": "Try again"
+  },
+  "frequencies": {
+    "DAILY": "Daily",
+    "WEEKLY": "Weekly",
+    "MONTHLY": "Monthly"
+  },
+  "weekdays": {
+    "MO": "Mon",
+    "TU": "Tue",
+    "WE": "Wed",
+    "TH": "Thu",
+    "FR": "Fri",
+    "SA": "Sat",
+    "SU": "Sun"
+  },
+  "sections": {
+    "schedule": {
+      "title": "On a schedule",
+      "subtitle": "these run at a set time"
+    },
+    "event": {
+      "title": "When something happens",
+      "subtitle": "no set time — these wait, then run"
+    },
+    "manual": {
+      "title": "On demand",
+      "subtitle": "no trigger — these run only when you press Run now"
+    },
+    "done": {
+      "title": "Done",
+      "subtitle": "one-time tasks that already ran"
+    }
+  },
+  "done": {
+    "badge": "Done",
+    "ranAt": "ran {{when}}"
+  },
+  "toggle": {
+    "on": "On",
+    "off": "Off",
+    "ariaLabel": "Turn {{name}} on or off"
+  },
+  "status": {
+    "active": "Active",
+    "running": "Running",
+    "paused": "Paused",
+    "failed": "Failed"
+  },
+  "failedLine": "Last run failed · {{when}}",
+  "footer": {
+    "next": "Next run {{when}}",
+    "ran": "Ran {{when}}",
+    "runningNow": "Running now",
+    "noUpcoming": "No upcoming runs"
+  },
+  "history": {
+    "toggle": "History",
+    "loading": "Loading history...",
+    "error": "Couldn't load history.",
+    "empty": "Hasn't run yet.",
+    "ran": "Ran {{when}}",
+    "running": "Running now",
+    "pending": "Ran {{when}}, awaiting approval",
+    "cancelled": "Cancelled {{when}}"
+  },
+  "menu": {
+    "ariaLabel": "Routine options"
+  },
+  "delete": {
+    "menuItem": "Delete",
+    "dialogTitle": "Delete this routine?",
+    "dialogBody": "This stops it from running and deletes it permanently. This can't be undone.",
+    "confirm": "Delete",
+    "cancel": "Keep it"
+  },
+  "managed": {
+    "badge": "Managed by {{app}}",
+    "deleteDisabled": "Managed by {{app}} — delete it from that app"
+  },
+  "detail": {
+    "view": "View details",
+    "back": "All routines",
+    "notFound": "Routine not found.",
+    "runHistory": "Run history",
+    "trace": "Execution trace",
+    "traceLoading": "Loading trace…",
+    "traceError": "Couldn't load the execution trace.",
+    "noTrace": "No execution was recorded for this run."
+  }
+}

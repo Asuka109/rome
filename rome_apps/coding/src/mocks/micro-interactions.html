@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tempo — Focus &amp; Tasks</title>
+<style>
+  :root {
+    /* Brand / surface */
+    --primary: #7C3AED;
+    --primary-strong: #6D28D9;
+    --on-primary: #FFFFFF;
+    --secondary: #A78BFA;
+    --accent: #0891B2;
+    --on-accent: #FFFFFF;
+
+    --bg: #FAF5FF;
+    --fg: #1E1B4B;
+    --card: #FFFFFF;
+    --card-fg: #1E1B4B;
+    --muted: #ECEEF9;
+    --muted-fg: #64748B;
+    --border: #DDD6FE;
+    --ring: #7C3AED;
+
+    /* Feedback (from CSV) */
+    --success: #22C55E;
+    --error: #EF4444;
+    --amber: #F59E0B;
+
+    /* Radius */
+    --r-sm: 10px;
+    --r-md: 16px;
+    --r-lg: 22px;
+    --r-pill: 999px;
+
+    /* Shadow */
+    --shadow-sm: 0 1px 2px rgba(30,27,75,.06), 0 1px 1px rgba(30,27,75,.04);
+    --shadow-md: 0 8px 24px -8px rgba(124,58,237,.28), 0 2px 8px rgba(30,27,75,.06);
+    --shadow-lg: 0 20px 48px -16px rgba(124,58,237,.34);
+    --shadow-press: 0 1px 2px rgba(30,27,75,.18) inset;
+
+    /* Spacing */
+    --s-1: 4px;
+    --s-2: 8px;
+    --s-3: 12px;
+    --s-4: 16px;
+    --s-5: 20px;
+    --s-6: 24px;
+    --s-8: 32px;
+
+    /* Type scale */
+    --t-xs: 11px;
+    --t-sm: 13px;
+    --t-base: 15px;
+    --t-lg: 18px;
+    --t-xl: 22px;
+    --t-2xl: 28px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, system-ui, sans-serif;
+
+    /* Motion (CSV: 50-100ms micro-animations) */
+    --micro: 80ms;
+    --fast: 140ms;
+    --base: 220ms;
+    --ease-out: cubic-bezier(.22,.61,.36,1);
+    --ease-spring: cubic-bezier(.34,1.56,.64,1);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: var(--font);
+    color: var(--fg);
+    background:
+      radial-gradient(1200px 600px at 100% -10%, rgba(167,139,250,.30), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(8,145,178,.18), transparent 55%),
+      var(--bg);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .app {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: clamp(var(--s-4), 4vw, var(--s-8));
+    display: grid;
+    gap: var(--s-6);
+    grid-template-columns: minmax(0, 1fr) 420px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .app { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  /* ---------- Header ---------- */
+  header.top {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4);
+    flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: var(--s-3); }
+  .brand-mark {
+    width: 44px; height: 44px;
+    border-radius: var(--r-md);
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: grid; place-items: center;
+    color: #fff;
+    box-shadow: var(--shadow-md);
+    transition: transform var(--micro) var(--ease-spring);
+  }
+  .brand-mark svg { width: 24px; height: 24px; }
+  .brand:hover .brand-mark { transform: rotate(-8deg) scale(1.06); }
+  .brand h1 { font-size: var(--t-xl); margin: 0; letter-spacing: -.02em; }
+  .brand .sub { display: block; font-size: var(--t-xs); color: var(--muted-fg); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+
+  nav.tabs { display: flex; gap: var(--s-1); background: var(--card); padding: var(--s-1); border-radius: var(--r-pill); box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
+  nav.tabs button {
+    border: 0; background: transparent; cursor: pointer;
+    font: inherit; font-size: var(--t-sm); font-weight: 600; color: var(--muted-fg);
+    padding: var(--s-2) var(--s-4);
+    border-radius: var(--r-pill);
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: color var(--micro) var(--ease-out), background var(--fast) var(--ease-out), transform var(--micro) var(--ease-out);
+  }
+  nav.tabs button svg { width: 16px; height: 16px; }
+  nav.tabs button[aria-current="true"] { color: var(--on-primary); background: var(--primary); box-shadow: var(--shadow-md); }
+  nav.tabs button:not([aria-current="true"]):hover { color: var(--fg); background: var(--muted); }
+  nav.tabs button:active { transform: scale(.95); }
+  nav.tabs button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+  .header-actions { display: flex; align-items: center; gap: var(--s-3); }
+
+  .icon-btn {
+    width: 42px; height: 42px; border-radius: var(--r-md);
+    border: 1px solid var(--border); background: var(--card);
+    display: grid; place-items: center; cursor: pointer; color: var(--fg);
+    box-shadow: var(--shadow-sm); position: relative;
+    transition: transform var(--micro) var(--ease-out), box-shadow var(--fast) var(--ease-out), border-color var(--fast) var(--ease-out);
+  }
+  .icon-btn svg { width: 20px; height: 20px; }
+  @media (hover: hover) {
+    .icon-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--secondary); }
+  }
+  .icon-btn:active { transform: translateY(0) scale(.94); box-shadow: var(--shadow-press); }
+  .icon-btn:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .icon-btn .dot {
+    position: absolute; top: 8px; right: 8px;
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--error); border: 2px solid var(--card);
+    animation: pulse 2.4s var(--ease-out) infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,.5); }
+    50% { box-shadow: 0 0 0 5px rgba(239,68,68,0); }
+  }
+
+  .avatar {
+    width: 42px; height: 42px; border-radius: var(--r-pill);
+    background: linear-gradient(135deg, var(--secondary), var(--accent));
+    color: #fff; display: grid; place-items: center; font-weight: 700; font-size: var(--t-sm);
+    border: 2px solid var(--card); box-shadow: var(--shadow-sm); cursor: pointer;
+    transition: transform var(--micro) var(--ease-spring);
+  }
+  .avatar:hover { transform: scale(1.08); }
+  .avatar:active { transform: scale(.96); }
+
+  /* ---------- Main column ---------- */
+  main { display: grid; gap: var(--s-6); min-width: 0; }
+
+  .hero {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: var(--s-6);
+    box-shadow: var(--shadow-md);
+    display: grid; gap: var(--s-5);
+  }
+  .hero-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-4); flex-wrap: wrap; }
+  .hero-head h2 { margin: 0; font-size: var(--t-2xl); letter-spacing: -.03em; line-height: 1.1; }
+  .hero-head p { margin: 6px 0 0; color: var(--muted-fg); font-size: var(--t-base); }
+
+  .btn {
+    border: 0; cursor: pointer; font: inherit; font-weight: 700; font-size: var(--t-sm);
+    padding: var(--s-3) var(--s-5); border-radius: var(--r-pill);
+    display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+    background: var(--primary); color: var(--on-primary);
+    box-shadow: var(--shadow-md);
+    transition: transform var(--micro) var(--ease-out), box-shadow var(--fast) var(--ease-out), background var(--fast) var(--ease-out);
+  }
+  .btn svg { width: 17px; height: 17px; }
+  @media (hover: hover) { .btn:hover { background: var(--primary-strong); transform: translateY(-2px); box-shadow: var(--shadow-lg); } }
+  .btn:active { transform: translateY(0) scale(.97); box-shadow: var(--shadow-press); }
+  .btn:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+
+  /* Progress ring */
+  .focus-stats { display: grid; grid-template-columns: auto 1fr; gap: var(--s-5); align-items: center; }
+  @media (max-width: 460px) { .focus-stats { grid-template-columns: 1fr; justify-items: center; text-align: center; } }
+  .ring-wrap { width: 116px; height: 116px; position: relative; }
+  .ring-wrap svg { transform: rotate(-90deg); display: block; }
+  .ring-bg { stroke: var(--muted); }
+  .ring-fg { stroke: url(#ringGrad); stroke-linecap: round; transition: stroke-dashoffset var(--base) var(--ease-out); }
+  .ring-label { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+  .ring-label b { font-size: var(--t-xl); display: block; letter-spacing: -.02em; }
+  .ring-label span { font-size: var(--t-xs); color: var(--muted-fg); font-weight: 600; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-3); }
+  .stat {
+    background: var(--muted); border-radius: var(--r-md); padding: var(--s-3);
+    transition: transform var(--micro) var(--ease-out), background var(--fast) var(--ease-out);
+  }
+  @media (hover: hover) { .stat:hover { transform: translateY(-3px); background: #E3E0FA; } }
+  .stat b { display: block; font-size: var(--t-lg); letter-spacing: -.02em; }
+  .stat small { color: var(--muted-fg); font-size: var(--t-xs); font-weight: 600; }
+  .stat .trend { color: var(--success); font-weight: 700; font-size: var(--t-xs); display: inline-flex; align-items: center; gap: 2px; }
+  .stat .trend svg { width: 12px; height: 12px; }
+
+  /* Task list */
+  .panel { background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-md); overflow: hidden; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); padding: var(--s-5) var(--s-5) var(--s-3); }
+  .panel-head h3 { margin: 0; font-size: var(--t-lg); letter-spacing: -.02em; }
+  .chip {
+    font-size: var(--t-xs); font-weight: 700; padding: 4px 10px; border-radius: var(--r-pill);
+    background: var(--muted); color: var(--muted-fg);
+  }
+
+  ul.tasks { list-style: none; margin: 0; padding: var(--s-2) var(--s-3) var(--s-4); display: grid; gap: var(--s-2); }
+  .task {
+    display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--s-3);
+    padding: var(--s-3); border-radius: var(--r-md);
+    background: var(--card); border: 1px solid transparent;
+    transition: background var(--fast) var(--ease-out), border-color var(--fast) var(--ease-out), transform var(--micro) var(--ease-out);
+  }
+  @media (hover: hover) { .task:hover { background: var(--muted); border-color: var(--border); } }
+  .task:active { transform: scale(.99); }
+
+  .check {
+    appearance: none; -webkit-appearance: none; margin: 0;
+    width: 24px; height: 24px; border-radius: 8px; border: 2px solid var(--border);
+    cursor: pointer; display: grid; place-items: center; background: var(--card);
+    transition: background var(--micro) var(--ease-out), border-color var(--micro) var(--ease-out), transform var(--micro) var(--ease-spring);
+    position: relative;
+  }
+  .check::after {
+    content: ""; width: 11px; height: 6px;
+    border-left: 2.5px solid #fff; border-bottom: 2.5px solid #fff;
+    transform: rotate(-45deg) scale(0); transform-origin: center;
+    margin-top: -2px;
+    transition: transform var(--fast) var(--ease-spring);
+  }
+  .check:hover { border-color: var(--success); }
+  .check:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .check:checked { background: var(--success); border-color: var(--success); transform: scale(1.08); }
+  .check:checked::after { transform: rotate(-45deg) scale(1); }
+
+  .task-body { min-width: 0; }
+  .task-body .title { font-weight: 600; font-size: var(--t-base); transition: color var(--fast) var(--ease-out); }
+  .task-body .meta { display: flex; align-items: center; gap: var(--s-3); margin-top: 3px; color: var(--muted-fg); font-size: var(--t-xs); font-weight: 600; }
+  .task-body .meta .tag { display: inline-flex; align-items: center; gap: 4px; }
+  .task-body .meta .tag svg { width: 12px; height: 12px; }
+  .check:checked ~ .task-body .title { color: var(--muted-fg); text-decoration: line-through; }
+
+  .task-grip { color: var(--muted-fg); display: grid; place-items: center; opacity: .55; transition: opacity var(--fast) var(--ease-out), transform var(--micro) var(--ease-out); }
+  .task:hover .task-grip { opacity: 1; }
+  .task-grip:active { transform: scale(1.15); cursor: grabbing; }
+  .task-grip svg { width: 18px; height: 18px; }
+
+  .prio { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+  .prio.high { background: var(--error); }
+  .prio.med { background: var(--amber); }
+  .prio.low { background: var(--accent); }
+
+  /* ---------- Side column ---------- */
+  aside { display: grid; gap: var(--s-6); min-width: 0; }
+
+  .quick {
+    background: linear-gradient(150deg, var(--primary), var(--primary-strong));
+    color: var(--on-primary);
+    border-radius: var(--r-lg); padding: var(--s-6);
+    box-shadow: var(--shadow-lg); position: relative; overflow: hidden;
+  }
+  .quick::before {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(360px 200px at 110% -20%, rgba(255,255,255,.22), transparent 60%);
+    pointer-events: none;
+  }
+  .quick h3 { margin: 0 0 6px; font-size: var(--t-lg); }
+  .quick p { margin: 0 0 var(--s-5); font-size: var(--t-sm); opacity: .85; }
+  .quick-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s-3); }
+  .qa {
+    border: 1px solid rgba(255,255,255,.22); background: rgba(255,255,255,.10);
+    color: #fff; border-radius: var(--r-md); padding: var(--s-4); cursor: pointer;
+    display: grid; gap: 8px; justify-items: start; font: inherit; text-align: left;
+    backdrop-filter: blur(4px);
+    transition: transform var(--micro) var(--ease-out), background var(--fast) var(--ease-out);
+  }
+  .qa svg { width: 22px; height: 22px; }
+  .qa b { font-size: var(--t-sm); font-weight: 700; }
+  @media (hover: hover) { .qa:hover { background: rgba(255,255,255,.22); transform: translateY(-3px); } }
+  .qa:active { transform: translateY(0) scale(.96); }
+  .qa:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+  /* Toggle row */
+  .settings { background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-md); overflow: hidden; }
+  .settings h3 { margin: 0; padding: var(--s-5) var(--s-5) var(--s-2); font-size: var(--t-lg); letter-spacing: -.02em; }
+  .setting-row {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--s-4);
+    padding: var(--s-4) var(--s-5); border-top: 1px solid var(--muted);
+  }
+  .setting-row .label { display: flex; align-items: center; gap: var(--s-3); font-size: var(--t-sm); font-weight: 600; }
+  .setting-row .label .ic { width: 32px; height: 32px; border-radius: var(--r-sm); background: var(--muted); display: grid; place-items: center; color: var(--primary); flex: none; }
+  .setting-row .label .ic svg { width: 17px; height: 17px; }
+  .setting-row small { display: block; color: var(--muted-fg); font-weight: 500; font-size: var(--t-xs); margin-top: 1px; }
+
+  .switch { position: relative; width: 48px; height: 28px; flex: none; }
+  .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+  .switch .track {
+    position: absolute; inset: 0; border-radius: var(--r-pill); background: var(--border);
+    transition: background var(--fast) var(--ease-out);
+  }
+  .switch .thumb {
+    position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%;
+    background: #fff; box-shadow: var(--shadow-sm);
+    transition: transform var(--base) var(--ease-spring);
+  }
+  .switch input:checked ~ .track { background: var(--success); }
+  .switch input:checked ~ .thumb { transform: translateX(20px); }
+  .switch input:active ~ .thumb { width: 26px; }
+  .switch input:focus-visible ~ .track { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+  /* Toast feedback */
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 140%);
+    background: var(--fg); color: #fff; font-size: var(--t-sm); font-weight: 600;
+    padding: var(--s-3) var(--s-5); border-radius: var(--r-pill);
+    box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 10px;
+    z-index: 50; pointer-events: none;
+    transition: transform var(--base) var(--ease-spring), opacity var(--fast) var(--ease-out);
+    opacity: 0;
+  }
+  .toast svg { width: 18px; height: 18px; color: var(--success); }
+  .toast.show { transform: translate(-50%, 0); opacity: 1; }
+
+  /* Loading spinner demo */
+  .loader { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid rgba(255,255,255,.4); border-top-color: #fff; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .btn.loading .loader { display: inline-block; }
+  .btn .loader { display: none; }
+  .btn.loading .btn-label, .btn.loading svg.plus { display: none; }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .001ms !important;
+    }
+    .icon-btn .dot { animation: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="top">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        </div>
+        <div>
+          <span class="sub">Tempo</span>
+          <h1>Today&rsquo;s Flow</h1>
+        </div>
+      </div>
+
+      <nav class="tabs" aria-label="Primary">
+        <button type="button" aria-current="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          Focus
+        </button>
+        <button type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+          Plan
+        </button>
+        <button type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M20 19H2"/></svg>
+          Stats
+        </button>
+      </nav>
+
+      <div class="header-actions">
+        <button class="icon-btn" type="button" aria-label="Notifications">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 1 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+          <span class="dot" aria-hidden="true"></span>
+        </button>
+        <div class="avatar" role="img" aria-label="Account: Mara Okafor" tabindex="0">MO</div>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-head">
+          <div>
+            <h2 id="hero-title">3 of 7 done</h2>
+            <p>You&rsquo;re on a 5-day streak. Keep the momentum going.</p>
+          </div>
+          <button class="btn" id="addBtn" type="button">
+            <svg class="plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            <span class="loader" aria-hidden="true"></span>
+            <span class="btn-label">New task</span>
+          </button>
+        </div>
+
+        <div class="focus-stats">
+          <div class="ring-wrap" role="img" aria-label="43 percent of today complete">
+            <svg width="116" height="116" viewBox="0 0 116 116" aria-hidden="true">
+              <defs>
+                <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#7C3AED"/>
+                  <stop offset="1" stop-color="#0891B2"/>
+                </linearGradient>
+              </defs>
+              <circle class="ring-bg" cx="58" cy="58" r="50" fill="none" stroke-width="12"/>
+              <circle class="ring-fg" cx="58" cy="58" r="50" fill="none" stroke-width="12"
+                      stroke-dasharray="314" stroke-dashoffset="179"/>
+            </svg>
+            <div class="ring-label"><span></span><b>43%</b><span>focus</span></div>
+          </div>
+
+          <div class="stat-grid">
+            <div class="stat">
+              <small>Focus time</small>
+              <b>2h 40m</b>
+              <span class="trend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18 18 6M9 6h9v9"/></svg>12%</span>
+            </div>
+            <div class="stat">
+              <small>Streak</small>
+              <b>5 days</b>
+              <span class="trend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18 18 6M9 6h9v9"/></svg>best</span>
+            </div>
+            <div class="stat">
+              <small>Pending</small>
+              <b>4 tasks</b>
+              <span class="trend" style="color:var(--muted-fg)">due today</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="tasks-title">
+        <div class="panel-head">
+          <h3 id="tasks-title">Up next</h3>
+          <span class="chip">Morning</span>
+        </div>
+        <ul class="tasks">
+          <li class="task">
+            <input class="check" type="checkbox" id="t1" />
+            <label class="task-body" for="t1">
+              <span class="title">Review design handoff for v3.2</span>
+              <span class="meta">
+                <span class="prio high" aria-hidden="true"></span>
+                <span class="tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>9:00 AM</span>
+                <span class="tag">Design</span>
+              </span>
+            </label>
+            <span class="task-grip" role="button" tabindex="0" aria-label="Reorder task"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg></span>
+          </li>
+
+          <li class="task">
+            <input class="check" type="checkbox" id="t2" checked />
+            <label class="task-body" for="t2">
+              <span class="title">Send sprint summary to the team</span>
+              <span class="meta">
+                <span class="prio med" aria-hidden="true"></span>
+                <span class="tag">Done 8:42 AM</span>
+              </span>
+            </label>
+            <span class="task-grip" role="button" tabindex="0" aria-label="Reorder task"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg></span>
+          </li>
+
+          <li class="task">
+            <input class="check" type="checkbox" id="t3" />
+            <label class="task-body" for="t3">
+              <span class="title">Prototype the swipe-to-archive gesture</span>
+              <span class="meta">
+                <span class="prio med" aria-hidden="true"></span>
+                <span class="tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>11:30 AM</span>
+                <span class="tag">Engineering</span>
+              </span>
+            </label>
+            <span class="task-grip" role="button" tabindex="0" aria-label="Reorder task"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg></span>
+          </li>
+
+          <li class="task">
+            <input class="check" type="checkbox" id="t4" />
+            <label class="task-body" for="t4">
+              <span class="title">Reply to onboarding feedback thread</span>
+              <span class="meta">
+                <span class="prio low" aria-hidden="true"></span>
+                <span class="tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>2:00 PM</span>
+                <span class="tag">Support</span>
+              </span>
+            </label>
+            <span class="task-grip" role="button" tabindex="0" aria-label="Reorder task"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg></span>
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <!-- Sidebar -->
+    <aside>
+      <section class="quick" aria-labelledby="quick-title">
+        <h3 id="quick-title">Quick start</h3>
+        <p>Drop into focus with a single tap.</p>
+        <div class="quick-actions">
+          <button class="qa" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+            <b>25-min focus</b>
+          </button>
+          <button class="qa" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v6M12 16v6M4.9 4.9l4.2 4.2M14.9 14.9l4.2 4.2M2 12h6M16 12h6M4.9 19.1l4.2-4.2M14.9 9.1l4.2-4.2"/></svg>
+            <b>Break timer</b>
+          </button>
+          <button class="qa" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            <b>Focus sounds</b>
+          </button>
+          <button class="qa" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
+            <b>Weekly review</b>
+          </button>
+        </div>
+      </section>
+
+      <section class="settings" aria-labelledby="settings-title">
+        <h3 id="settings-title">Feedback &amp; gestures</h3>
+
+        <div class="setting-row">
+          <span class="label">
+            <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="3"/><path d="M12 18h.01"/></svg></span>
+            <span>Haptic feedback<small>Vibrate on completion</small></span>
+          </span>
+          <label class="switch">
+            <input type="checkbox" checked aria-label="Haptic feedback" />
+            <span class="track" aria-hidden="true"></span>
+            <span class="thumb" aria-hidden="true"></span>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <span class="label">
+            <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h6l-3 8 12-12h-6l3-8z"/></svg></span>
+            <span>Swipe to archive<small>Slide tasks left to clear</small></span>
+          </span>
+          <label class="switch">
+            <input type="checkbox" checked aria-label="Swipe to archive" />
+            <span class="track" aria-hidden="true"></span>
+            <span class="thumb" aria-hidden="true"></span>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <span class="label">
+            <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg></span>
+            <span>Reduced motion<small>Minimize animations</small></span>
+          </span>
+          <label class="switch">
+            <input type="checkbox" aria-label="Reduced motion" />
+            <span class="track" aria-hidden="true"></span>
+            <span class="thumb" aria-hidden="true"></span>
+          </label>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast" role="status" aria-live="polite">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+    <span id="toastMsg">Task completed</span>
+  </div>
+
+  <script>
+    (function () {
+      var toast = document.getElementById('toast');
+      var toastMsg = document.getElementById('toastMsg');
+      var timer;
+      function showToast(msg) {
+        toastMsg.textContent = msg;
+        toast.classList.add('show');
+        clearTimeout(timer);
+        timer = setTimeout(function () { toast.classList.remove('show'); }, 1800);
+      }
+
+      // Checkbox completion feedback
+      document.querySelectorAll('.check').forEach(function (cb) {
+        cb.addEventListener('change', function () {
+          if (cb.checked) {
+            showToast('Nice — task completed');
+            if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} }
+          }
+        });
+      });
+
+      // Update ring on completion count
+      var ring = document.querySelector('.ring-fg');
+      var ringLabel = document.querySelector('.ring-label b');
+      var circ = 314;
+      function updateRing() {
+        var all = document.querySelectorAll('.check');
+        var done = document.querySelectorAll('.check:checked').length;
+        var pct = Math.round((done / all.length) * 100);
+        if (ring) ring.setAttribute('stroke-dashoffset', String(circ - (circ * pct / 100)));
+        if (ringLabel) ringLabel.textContent = pct + '%';
+      }
+      document.querySelectorAll('.check').forEach(function (cb) {
+        cb.addEventListener('change', updateRing);
+      });
+
+      // New task button: loading -> success micro-interaction
+      var addBtn = document.getElementById('addBtn');
+      if (addBtn) {
+        addBtn.addEventListener('click', function () {
+          if (addBtn.classList.contains('loading')) return;
+          addBtn.classList.add('loading');
+          setTimeout(function () {
+            addBtn.classList.remove('loading');
+            showToast('Task added to your flow');
+          }, 900);
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+name: test-code-backed
+description: Code-backed test agent (turns produced by middleware, no model query).
+model: opus
+permissionMode: bypassPermissions
+codeBacked: true
+tools:
+  - Read
+systemPromptPrefix: |
+  You are a code-backed test agent. A turn-middleware produces every turn.

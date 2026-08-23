@@ -1,0 +1,12 @@
+{
+  "name": "rome-opencli-linkedin",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "scripts": {
+    "test": "../../scripts/test-env.sh node --test *.test.mjs"
+  },
+  "devDependencies": {
+    "@jackwener/opencli": "^1.8.6"
+  }
+}

@@ -1,0 +1,1 @@
+ALTER TABLE `shared_chats` ADD `project_path` text;

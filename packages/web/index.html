@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en" data-theme="ember">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <!-- maximum-scale=1 + user-scalable=no locks zoom so mobile browsers stop
+         auto-zooming when a sub-16px input gains focus (and disables pinch-zoom
+         on this guardian-only app). -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <!-- Add-to-Home-Screen / installable PWA. iOS ignores the SVG favicon and
+         the manifest for the Home Screen icon — it uses apple-touch-icon.png —
+         so both are declared. apple-mobile-web-app-capable launches it as a
+         standalone app (no Safari chrome); the standard mobile-web-app-capable
+         covers Android/Chrome. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Rome" />
+    <meta name="application-name" content="Rome" />
+    <meta name="theme-color" content="#f4f3ef" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Funnel+Sans:wght@300;400;500;600;700&family=Petrona:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+    />
+    <style>
+      /* Mirror globals.css's `html { font-family: var(--font-sans) }` inline so
+         the font match (and the woff2 subset download) starts as soon as the
+         Google Fonts stylesheet lands — without waiting for the rome-web CSS
+         bundle to parse or React to mount. Kept in sync with --font-sans in
+         globals.css. */
+      html {
+        font-family:
+          "Funnel Sans",
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+    </style>
+    <title>Rome</title>
+    <!-- Per-deployment browser config. Referenced unconditionally:
+         the committed public/ copy is an empty stub for dev servers and host
+         runs; the container-boot script overwrites it in the web root, which is
+         the only delivery that survives Caddy's file_server serving this shell
+         straight from disk. Classic sync script so config exists before the
+         bundle runs. -->
+    <script src="/runtime-config.js"></script>
+    <script>
+      // No-flash bootstrap. Runs during head parse, before first paint. Seeds
+      // the mode (.dark + color-scheme) and the theme (data-theme), then replays
+      // the active theme's token CSS cached by lib/theme.ts → applyThemeName, so
+      // the page paints in the correct palette before the JS bundle loads. The
+      // per-theme blocks are no longer in the bundled stylesheet — they are
+      // generated from src/lib/themes.ts and injected at runtime.
+      (function () {
+        try {
+          var stored = localStorage.getItem("rome-theme");
+          var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          var resolved = stored === "light" || stored === "dark" ? stored : prefersDark ? "dark" : "light";
+          if (resolved === "dark") document.documentElement.classList.add("dark");
+          document.documentElement.style.colorScheme = resolved;
+          var name = localStorage.getItem("rome-theme-name") || "ember";
+          document.documentElement.setAttribute("data-theme", name);
+          // Defense in depth: this CSS is replayed before any JS or CSP runs,
+          // so a one-time localStorage write would otherwise persist across
+          // reloads. The generator never emits @import or url() — the two CSS
+          // exfiltration primitives — so reject any cached value containing
+          // them, and cap the size to block recursive/oversized payloads.
+          // Key is versioned by payload shape (THEME_CSS_CACHE_KEY in
+          // lib/theme.ts). An entry written by an older build has an incompatible
+          // shape, so a superseded key is ignored rather than replayed.
+          // theme.test.ts fails if the two drift.
+          var css = localStorage.getItem("rome-theme-css-4");
+          if (css && css.length < 65536 && !/@import|url\(/i.test(css)) {
+            var style = document.createElement("style");
+            style.id = "rome-theme-tokens";
+            style.textContent = css;
+            document.head.appendChild(style);
+          }
+        } catch (_) {}
+      })();
+    </script>
+  </head>
+  <body class="bg-background text-foreground antialiased">
+    <div id="root"></div>
+  </body>
+</html>

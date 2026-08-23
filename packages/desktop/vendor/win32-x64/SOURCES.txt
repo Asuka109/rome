@@ -1,0 +1,12 @@
+Vendored from MSYS2 package archives:
+
+- https://mirror.msys2.org/msys/x86_64/openssh-10.2p1-2-x86_64.pkg.tar.zst
+- https://mirror.msys2.org/msys/x86_64/heimdal-7.8.0-5-x86_64.pkg.tar.zst
+- https://mirror.msys2.org/msys/x86_64/libedit-20240808_3.1-1-x86_64.pkg.tar.zst
+- https://mirror.msys2.org/msys/x86_64/libfido2-1.16.0-1-x86_64.pkg.tar.zst
+- https://mirror.msys2.org/msys/x86_64/libxcrypt-4.5.2-1-x86_64.pkg.tar.zst
+- https://mirror.msys2.org/msys/x86_64/libopenssl-3.6.1-1-x86_64.pkg.tar.zst
+- https://mirror.msys2.org/msys/x86_64/libiconv-1.19-1-x86_64.pkg.tar.zst
+- https://mirror.msys2.org/msys/x86_64/liblz4-1.10.0-1-x86_64.pkg.tar.zst
+- https://mirror.msys2.org/msys/x86_64/libxxhash-0.8.3-1-x86_64.pkg.tar.zst
+- https://mirror.msys2.org/msys/x86_64/libzstd-1.5.7-1-x86_64.pkg.tar.zst

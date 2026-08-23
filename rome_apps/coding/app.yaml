@@ -1,0 +1,31 @@
+formatVersion: 1
+id: coding
+name: Coding
+icon: assets/icon.svg
+version: 0.3.0
+description: >-
+  Planning and coding agents, the app_creation skill, and a frontend gallery of
+  live UI mocks. Use app_creation when visuals are important, such as for apps,
+  dashboards, games, and other Rome experiences that need a polished UI.
+appRoot: dist
+
+web:
+  manifest: web/manifest.json
+  displayName: Coding
+  navLabel: Coding
+
+api:
+  entry: api/index
+
+agents:
+  - agents/planning.yaml
+  - agents/coding.yaml
+
+actions:
+  - actions/coding-task
+
+skills:
+  - skills/app_creation
+  - skills/app_remix
+  - skills/app_verification
+  - skills/workflow_creation

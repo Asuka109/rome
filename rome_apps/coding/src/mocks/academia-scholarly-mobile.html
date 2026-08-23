@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Codex — Scholarly Reading</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,300;0,500;0,700;1,300;1,500&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Palette — from Design System Variables */
+    --bg: #1C1714;          /* Mahogany */
+    --bg-alt: #251E19;      /* Oak */
+    --fg: #E8DFD4;          /* Parchment */
+    --muted: #3D332B;       /* Worn Leather */
+    --muted-fg: #9C8B7A;    /* Faded Ink */
+    --border: #4A3F35;
+    --brass: #C9A962;
+    --brass-deep: #9c804a;
+    --crimson: #8B2635;
+
+    /* Radius */
+    --radius: 4px;
+    --arch-radius: 100px;
+
+    /* Shadow */
+    --shadow-card: 0 4px 6px rgba(0,0,0,0.4);
+    --shadow-deep: 0 12px 30px rgba(0,0,0,0.55);
+
+    /* Typography */
+    --font-heading: 'Cormorant Garamond', Georgia, serif;
+    --font-body: 'Crimson Pro', Georgia, serif;
+    --font-label: 'Cinzel', 'Times New Roman', serif;
+
+    /* Spacing scale */
+    --s-1: 4px;
+    --s-2: 8px;
+    --s-3: 12px;
+    --s-4: 16px;
+    --s-5: 24px;
+    --s-6: 32px;
+    --s-7: 48px;
+
+    /* Motion — non-spring timing per spec (Easing.out poly(4)) */
+    --ease-scholar: cubic-bezier(0.22, 1, 0.36, 1);
+    --t-fast: 200ms;
+    --t-med: 420ms;
+    --t-slow: 700ms;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: var(--font-body);
+    color: var(--fg);
+    background:
+      radial-gradient(120% 80% at 50% -10%, #2a2018 0%, #140f0c 70%),
+      #140f0c;
+    min-height: 100dvh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: clamp(0px, 4vw, 48px);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+
+  /* Phone frame */
+  .phone {
+    position: relative;
+    width: 100%;
+    max-width: 412px;
+    min-height: 760px;
+    background: var(--bg);
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: var(--shadow-deep), 0 0 0 1px var(--border) inset;
+    isolation: isolate;
+  }
+
+  /* Wood-grain + vignette overlay */
+  .phone::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    background:
+      radial-gradient(140% 120% at 50% 35%, transparent 52%, rgba(0,0,0,0.55) 100%);
+  }
+  .phone::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.5;
+    background:
+      repeating-linear-gradient(92deg, rgba(0,0,0,0.18) 0 2px, transparent 2px 7px),
+      repeating-linear-gradient(88deg, rgba(201,169,98,0.025) 0 1px, transparent 1px 11px);
+  }
+
+  .screen {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Status bar */
+  .statusbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--s-2) var(--s-5) 0;
+    font-family: var(--font-label);
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--muted-fg);
+  }
+  .statusbar .dots { display: flex; gap: 5px; align-items: center; }
+  .statusbar .dots span {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--brass); opacity: 0.7;
+  }
+
+  /* Header */
+  header.app-head {
+    padding: var(--s-4) var(--s-5) var(--s-3);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand { display: flex; align-items: center; gap: var(--s-3); }
+  .crest {
+    width: 38px; height: 38px;
+    color: var(--brass);
+    flex: none;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));
+  }
+  .brand h1 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 26px;
+    line-height: 1;
+    letter-spacing: 0.5px;
+  }
+  .brand .sub {
+    font-family: var(--font-label);
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--brass);
+    text-transform: uppercase;
+    margin-top: 3px;
+  }
+  .icon-btn {
+    width: 40px; height: 40px;
+    display: grid; place-items: center;
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--fg);
+    cursor: pointer;
+    transition: border-color var(--t-fast) var(--ease-scholar),
+                color var(--t-fast) var(--ease-scholar),
+                transform var(--t-fast) var(--ease-scholar);
+  }
+  .icon-btn svg { width: 20px; height: 20px; }
+  .icon-btn:hover { border-color: var(--brass); color: var(--brass); }
+  .icon-btn:focus-visible {
+    outline: 2px solid var(--brass);
+    outline-offset: 2px;
+  }
+  .icon-btn:active { transform: scale(0.94); }
+
+  /* Ornate brass divider */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    padding: 0 var(--s-5);
+    margin: var(--s-2) 0 var(--s-4);
+    color: var(--brass);
+  }
+  .divider .line {
+    flex: 1; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--brass-deep) 50%, transparent);
+  }
+  .divider .glyph { font-size: 14px; opacity: 0.85; }
+
+  /* Scroll body */
+  main {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 92px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--muted) transparent;
+  }
+  main::-webkit-scrollbar { width: 6px; }
+  main::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 3px; }
+
+  .overline {
+    font-family: var(--font-label);
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--brass);
+  }
+
+  /* Hero — arch-top feature */
+  .hero { padding: 0 var(--s-5); }
+  .hero-card {
+    position: relative;
+    border: 1px solid var(--border);
+    border-bottom-color: var(--brass-deep);
+    background: var(--bg-alt);
+    border-top-left-radius: var(--arch-radius);
+    border-top-right-radius: var(--arch-radius);
+    border-bottom-left-radius: var(--radius);
+    border-bottom-right-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+  }
+  .hero-art {
+    position: relative;
+    aspect-ratio: 4 / 3.4;
+    border-top-left-radius: var(--arch-radius);
+    border-top-right-radius: var(--arch-radius);
+    overflow: hidden;
+    background:
+      radial-gradient(80% 60% at 50% 30%, #4a3a26 0%, #2a2017 60%, #1a130d 100%);
+  }
+  .hero-art svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .hero-art .vignette {
+    position: absolute; inset: 0;
+    background: radial-gradient(70% 70% at 50% 40%, transparent 45%, rgba(0,0,0,0.7) 100%);
+    mix-blend-mode: multiply;
+  }
+  .seal {
+    position: absolute;
+    top: var(--s-4); right: var(--s-4);
+    width: 56px; height: 56px;
+    color: var(--crimson);
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6));
+  }
+  .hero-body { padding: var(--s-5) var(--s-5) var(--s-6); }
+  .hero-body .overline { display: block; margin-bottom: var(--s-3); }
+  .hero-title {
+    font-family: var(--font-heading);
+    font-weight: 500;
+    font-size: 34px;
+    line-height: 1.05;
+    margin-bottom: var(--s-3);
+  }
+  .hero-meta {
+    display: flex; gap: var(--s-4);
+    color: var(--muted-fg);
+    font-size: 14px;
+    font-style: italic;
+    margin-bottom: var(--s-4);
+  }
+  .hero-meta span { display: inline-flex; align-items: center; gap: 6px; }
+  .hero-meta svg { width: 14px; height: 14px; color: var(--brass); }
+
+  /* Drop cap excerpt */
+  .excerpt {
+    font-size: 16px;
+    line-height: 1.62;
+    color: #d9cdbd;
+  }
+  .excerpt::first-letter {
+    font-family: var(--font-label);
+    font-weight: 600;
+    font-size: 58px;
+    line-height: 0.78;
+    float: left;
+    color: var(--brass);
+    padding: 6px 10px 0 0;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  }
+
+  /* Primary CTA — brass */
+  .cta {
+    margin-top: var(--s-5);
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--s-2);
+    padding: 14px var(--s-5);
+    background: linear-gradient(180deg, #d9bd7c, var(--brass) 60%, var(--brass-deep));
+    color: #221a10;
+    font-family: var(--font-label);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border: 1px solid var(--brass-deep);
+    border-radius: var(--radius);
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35);
+    transition: transform var(--t-fast) var(--ease-scholar),
+                box-shadow var(--t-fast) var(--ease-scholar),
+                filter var(--t-fast) var(--ease-scholar);
+  }
+  .cta svg { width: 16px; height: 16px; }
+  .cta:hover { filter: brightness(1.06); box-shadow: 0 4px 10px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.4); }
+  .cta:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+  .cta:active { transform: translateY(1px) scale(0.99); box-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+
+  /* Section */
+  section { padding: var(--s-6) var(--s-5) 0; }
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: var(--s-4);
+  }
+  .section-head .roman {
+    font-family: var(--font-label);
+    font-size: 12px;
+    color: var(--brass);
+    letter-spacing: 2px;
+    margin-right: var(--s-3);
+  }
+  .section-head h2 {
+    font-family: var(--font-heading);
+    font-weight: 500;
+    font-size: 24px;
+    flex: 1;
+  }
+  .see-all {
+    font-family: var(--font-label);
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted-fg);
+    background: none; border: none; cursor: pointer;
+    transition: color var(--t-fast) var(--ease-scholar);
+  }
+  .see-all:hover { color: var(--brass); }
+  .see-all:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; border-radius: 2px; }
+
+  /* Volume list cards */
+  .vol-list { display: flex; flex-direction: column; gap: var(--s-3); }
+  .vol {
+    display: flex;
+    gap: var(--s-4);
+    align-items: stretch;
+    padding: var(--s-3);
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+    cursor: pointer;
+    transition: border-color var(--t-med) var(--ease-scholar),
+                transform var(--t-med) var(--ease-scholar);
+  }
+  .vol:hover { border-color: var(--brass-deep); transform: translateX(3px); }
+  .vol:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+  .vol:active { transform: translateX(1px) scale(0.995); }
+  .spine {
+    flex: none;
+    width: 52px;
+    border-radius: 2px;
+    background:
+      linear-gradient(90deg, rgba(0,0,0,0.4), transparent 30%),
+      linear-gradient(160deg, #5c3a3f, #3a2226);
+    border: 1px solid rgba(0,0,0,0.4);
+    display: grid;
+    place-items: center;
+    position: relative;
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.5);
+  }
+  .spine.brass-spine {
+    background: linear-gradient(160deg, #6b5a36, #3a3019);
+  }
+  .spine .num {
+    font-family: var(--font-label);
+    font-size: 13px;
+    color: var(--brass);
+    writing-mode: vertical-rl;
+    letter-spacing: 2px;
+  }
+  .vol-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .vol-info .overline { font-size: 8px; letter-spacing: 2px; }
+  .vol-info h3 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 19px;
+    line-height: 1.1;
+    margin: 3px 0 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .vol-info p { font-size: 13px; font-style: italic; color: var(--muted-fg); }
+  .vol-prog {
+    margin-top: 7px;
+    height: 3px;
+    background: var(--muted);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .vol-prog i {
+    display: block; height: 100%;
+    background: linear-gradient(90deg, var(--brass-deep), var(--brass));
+  }
+  .vol-chev { align-self: center; color: var(--muted-fg); flex: none; }
+  .vol-chev svg { width: 18px; height: 18px; }
+
+  /* Reading goal panel */
+  .panel {
+    margin-top: var(--s-3);
+    padding: var(--s-5);
+    background:
+      linear-gradient(180deg, rgba(201,169,98,0.05), transparent),
+      var(--bg-alt);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--brass);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+  }
+  .panel .overline { display: block; margin-bottom: var(--s-3); }
+  .goal-row { display: flex; align-items: center; gap: var(--s-5); }
+  .ring { flex: none; width: 84px; height: 84px; position: relative; }
+  .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ring .center {
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--fg);
+  }
+  .goal-text { flex: 1; }
+  .goal-text h3 {
+    font-family: var(--font-heading);
+    font-weight: 500; font-size: 22px; line-height: 1.1;
+    margin-bottom: 4px;
+  }
+  .goal-text p { font-size: 14px; color: var(--muted-fg); font-style: italic; }
+  .goal-stats { display: flex; gap: var(--s-5); margin-top: var(--s-4); }
+  .stat .n { font-family: var(--font-heading); font-weight: 700; font-size: 26px; color: var(--brass); line-height: 1; }
+  .stat .l {
+    font-family: var(--font-label); font-size: 8px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--muted-fg); margin-top: 4px;
+  }
+
+  /* Inputs — worn leather */
+  .quill {
+    margin-top: var(--s-5);
+    position: relative;
+  }
+  .quill label {
+    display: block;
+    font-family: var(--font-label);
+    font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--muted-fg); margin-bottom: var(--s-2);
+  }
+  .quill .field {
+    display: flex; align-items: center; gap: var(--s-3);
+    padding: 12px var(--s-4);
+    background: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+  }
+  .quill .field:focus-within { border-color: var(--brass); }
+  .quill svg { width: 18px; height: 18px; color: var(--brass); flex: none; }
+  .quill input {
+    flex: 1; min-width: 0;
+    background: none; border: none; outline: none;
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 16px;
+    font-style: italic;
+  }
+  .quill input::placeholder { color: var(--muted-fg); }
+
+  /* Bottom tab bar */
+  nav.tabbar {
+    position: absolute;
+    z-index: 6;
+    left: 0; right: 0; bottom: 0;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 10px var(--s-4) max(10px, env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(28,23,20,0.4), var(--bg-alt));
+    border-top: 1px solid var(--brass-deep);
+    backdrop-filter: blur(6px);
+  }
+  .tab {
+    background: none; border: none; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    color: var(--muted-fg);
+    font-family: var(--font-label);
+    font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
+    padding: 4px 6px;
+    transition: color var(--t-fast) var(--ease-scholar);
+  }
+  .tab svg { width: 22px; height: 22px; }
+  .tab[aria-current="page"] { color: var(--brass); }
+  .tab:hover { color: var(--fg); }
+  .tab:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; border-radius: 3px; }
+  .tab[aria-current="page"]::after {
+    content: "";
+    width: 4px; height: 4px; border-radius: 50%;
+    background: var(--brass); margin-top: 1px;
+  }
+
+  /* Entrance motion */
+  .rise { opacity: 0; transform: translateY(14px); animation: rise var(--t-slow) var(--ease-scholar) forwards; }
+  .rise.d1 { animation-delay: 80ms; }
+  .rise.d2 { animation-delay: 180ms; }
+  .rise.d3 { animation-delay: 300ms; }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+    .rise { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="phone">
+    <div class="screen">
+
+      <div class="statusbar" aria-hidden="true">
+        <span>9:41</span>
+        <span class="dots"><span></span><span></span><span></span></span>
+      </div>
+
+      <header class="app-head">
+        <div class="brand">
+          <svg class="crest" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+            <path d="M24 3 6 11v13c0 11 8 18 18 22 10-4 18-11 18-22V11L24 3Z" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M24 9 13 13v11c0 7 5 12 11 15 6-3 11-8 11-15V13L24 9Z" fill="currentColor" opacity="0.12"/>
+            <path d="M18 18h12M18 23h12M18 28h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M24 13v22" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+          </svg>
+          <div>
+            <h1>Codex</h1>
+            <div class="sub">Bibliotheca Privata</div>
+          </div>
+        </div>
+        <button class="icon-btn" aria-label="Open the index">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </header>
+
+      <div class="divider" aria-hidden="true">
+        <span class="line"></span>
+        <span class="glyph">&#10086;</span>
+        <span class="line"></span>
+      </div>
+
+      <main>
+        <!-- Hero feature -->
+        <div class="hero rise">
+          <article class="hero-card">
+            <div class="hero-art">
+              <svg viewBox="0 0 400 340" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                <defs>
+                  <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#caa962" stop-opacity="0.9"/>
+                    <stop offset="1" stop-color="#7a5f30" stop-opacity="0.6"/>
+                  </linearGradient>
+                </defs>
+                <g stroke="url(#g1)" fill="none" stroke-width="1.2" opacity="0.85">
+                  <circle cx="200" cy="150" r="90"/>
+                  <circle cx="200" cy="150" r="64"/>
+                  <circle cx="200" cy="150" r="40"/>
+                  <path d="M200 60v180M110 150h180"/>
+                  <path d="M137 87l126 126M263 87L137 213"/>
+                  <circle cx="200" cy="150" r="6" fill="url(#g1)" stroke="none"/>
+                  <circle cx="290" cy="150" r="9"/>
+                  <circle cx="110" cy="150" r="5"/>
+                  <circle cx="200" cy="60" r="7"/>
+                  <circle cx="248" cy="102" r="4"/>
+                </g>
+              </svg>
+              <div class="vignette"></div>
+              <svg class="seal" viewBox="0 0 64 64" aria-label="Reading circle seal">
+                <circle cx="32" cy="32" r="28" fill="#7d2230"/>
+                <circle cx="32" cy="32" r="28" fill="none" stroke="#5a1822" stroke-width="2"/>
+                <path d="M32 14l4.5 9.5 10.5 1.4-7.7 7.2 1.9 10.4L32 48.4l-9.2 4.6 1.9-10.4L17 35.4l10.5-1.4L32 14Z" fill="#caa962" opacity="0.9"/>
+              </svg>
+            </div>
+            <div class="hero-body">
+              <span class="overline">Featured Volume &middot; MMXXVI</span>
+              <h2 class="hero-title">On the Architecture of Memory</h2>
+              <div class="hero-meta">
+                <span>
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/></svg>
+                  42 min read
+                </span>
+                <span>
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5h13a3 3 0 0 1 3 3v11l-6-3-6 3V5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+                  Treatise IX
+                </span>
+              </div>
+              <p class="excerpt">The mind, when it would preserve a thing, builds for it a chamber of light and shadow — and to each idea assigns its place along the corridor, that recollection may walk there freely.</p>
+              <button class="cta">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 4h11l4 4v12H5V4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12h7M9 16h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                Resume Reading
+              </button>
+            </div>
+          </article>
+        </div>
+
+        <!-- Continue reading -->
+        <section class="rise d1" aria-labelledby="sec-continue">
+          <div class="section-head">
+            <span class="roman" aria-hidden="true">I.</span>
+            <h2 id="sec-continue">On Your Lectern</h2>
+            <button class="see-all">All Volumes</button>
+          </div>
+          <div class="vol-list">
+            <a href="#" class="vol">
+              <div class="spine"><span class="num" aria-hidden="true">IV</span></div>
+              <div class="vol-info">
+                <span class="overline">Philosophy</span>
+                <h3>Meditations at Dusk</h3>
+                <p>M. Aurelius &middot; ch. 6</p>
+                <div class="vol-prog" aria-hidden="true"><i style="width:64%"></i></div>
+              </div>
+              <span class="vol-chev" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+            </a>
+            <a href="#" class="vol">
+              <div class="spine brass-spine"><span class="num" aria-hidden="true">XII</span></div>
+              <div class="vol-info">
+                <span class="overline">Natural History</span>
+                <h3>The Cartography of Stars</h3>
+                <p>H. Mercator &middot; ch. 2</p>
+                <div class="vol-prog" aria-hidden="true"><i style="width:23%"></i></div>
+              </div>
+              <span class="vol-chev" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+            </a>
+            <a href="#" class="vol">
+              <div class="spine"><span class="num" aria-hidden="true">VII</span></div>
+              <div class="vol-info">
+                <span class="overline">Letters</span>
+                <h3>Correspondence, Vol. III</h3>
+                <p>S. Antiqua &middot; ch. 14</p>
+                <div class="vol-prog" aria-hidden="true"><i style="width:88%"></i></div>
+              </div>
+              <span class="vol-chev" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+            </a>
+          </div>
+        </section>
+
+        <!-- Reading covenant / goal -->
+        <section class="rise d2" aria-labelledby="sec-goal">
+          <div class="section-head">
+            <span class="roman" aria-hidden="true">II.</span>
+            <h2 id="sec-goal">The Daily Covenant</h2>
+          </div>
+          <div class="panel">
+            <span class="overline">Hours kept this fortnight</span>
+            <div class="goal-row">
+              <div class="ring">
+                <svg viewBox="0 0 100 100" aria-hidden="true">
+                  <circle cx="50" cy="50" r="42" fill="none" stroke="#3D332B" stroke-width="7"/>
+                  <circle cx="50" cy="50" r="42" fill="none" stroke="#C9A962" stroke-width="7"
+                          stroke-linecap="round" stroke-dasharray="264"
+                          stroke-dashoffset="74" />
+                </svg>
+                <span class="center">72%</span>
+              </div>
+              <div class="goal-text">
+                <h3>Eleven of fifteen days</h3>
+                <p>The lamp has not gone cold.</p>
+              </div>
+            </div>
+            <div class="goal-stats">
+              <div class="stat"><div class="n">316</div><div class="l">Pages</div></div>
+              <div class="stat"><div class="n">9.4</div><div class="l">Hours</div></div>
+              <div class="stat"><div class="n">23</div><div class="l">Marginalia</div></div>
+            </div>
+          </div>
+
+          <!-- Marginalia input -->
+          <form class="quill" onsubmit="return false">
+            <label for="note">Inscribe a marginal note</label>
+            <div class="field">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 21l3-1 12-12-2-2L4 18l-1 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M15 6l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              <input id="note" type="text" placeholder="As the author observes&hellip;" />
+            </div>
+          </form>
+        </section>
+      </main>
+
+      <nav class="tabbar" aria-label="Primary">
+        <button class="tab" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 19V6a2 2 0 0 1 2-2h6v15H6a2 2 0 0 0-2 2ZM20 19V6a2 2 0 0 0-2-2h-6v15h6a2 2 0 0 1 2 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          Library
+        </button>
+        <button class="tab">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.6"/><path d="M16.5 16.5 21 21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Index
+        </button>
+        <button class="tab">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 4h12v16l-6-3-6 3V4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+          Marks
+        </button>
+        <button class="tab">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Scholar
+        </button>
+      </nav>
+
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1780875690428,
+      "tag": "0000_thin_talon",
+      "breakpoints": true
+    }
+  ]
+}

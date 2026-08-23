@@ -1,0 +1,1 @@
+ALTER TABLE `connection_grants` ADD `profile` text;

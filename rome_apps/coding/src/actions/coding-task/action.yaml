@@ -1,0 +1,8 @@
+name: coding_task
+type: custom
+description: Run a coding task through the coding app boundary
+entry: ./index.ts
+complexity: complex
+speed: slow
+reliability: high
+sideEffects: write

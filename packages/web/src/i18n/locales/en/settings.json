@@ -1,0 +1,722 @@
+{
+  "page": {
+    "title": "Settings",
+    "loading": "Loading settings...",
+    "loadFailedFallback": "Failed to load settings.",
+    "retry": "Retry",
+    "savedFlash": "Settings saved",
+    "saveFailedFallback": "Failed to save"
+  },
+  "tabs": {
+    "Appearance": "Appearance",
+    "Connections": "Connections",
+    "Favors": "Favors",
+    "Trust": "Trust",
+    "Channels": "Channels",
+    "AI Tools": "AI Tools",
+    "Advanced": "Advanced"
+  },
+  "appearance": {
+    "title": "Appearance",
+    "language": {
+      "title": "Language"
+    },
+    "theme": {
+      "title": "Theme"
+    },
+    "mode": {
+      "title": "Appearance mode",
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "saving": "Saving...",
+    "disconnect": "Disconnect",
+    "disconnecting": "Disconnecting...",
+    "connect": "Connect",
+    "connecting": "Connecting...",
+    "networkError": "Network error. Please try again.",
+    "connectionFailed": "Connection failed.",
+    "unknown": "unknown",
+    "online": "Online",
+    "offline": "Offline",
+    "remove": "Remove",
+    "cancel": "Cancel"
+  },
+  "connections": {
+    "loading": "Loading connections",
+    "errorTitle": "Connections couldn't be loaded",
+    "emptyTitle": "No connections available",
+    "loadFailedFallback": "Failed to load connections.",
+    "headings": {
+      "connected": "This connection lets your agent",
+      "primary": "This connection will let your agent",
+      "secondary": "Adding it lets your agent also",
+      "availableToAdd": "Available to add"
+    },
+    "oauth": {
+      "unavailable": "This integration is unavailable on this host.",
+      "accessActive": "Access active",
+      "accessExpired": "Access expired — reconnect to keep it working",
+      "reconnect": "Reconnect",
+      "reconnecting": "Reconnecting account…",
+      "resumePending": "You started connecting {{label}} but didn't finish. Continue on {{label}}, or cancel."
+    },
+    "composio": {
+      "unavailable": "Composio is not available on this host."
+    },
+    "cards": {
+      "telegram": {
+        "bot": {
+          "titleFallback": "Your Telegram bot",
+          "subtitle": "Add a bot from @BotFather",
+          "bullets": {
+            "reply": "Reply when people message {{identity}}",
+            "start": "Start a task when a new message arrives"
+          },
+          "bulletsFallback": {
+            "reply": "Reply when people message your bot",
+            "start": "Start a task when a new message arrives"
+          }
+        },
+        "session": {
+          "title": "Your account",
+          "subtitle": "Sign in with your phone number",
+          "bullets": {
+            "send": "Send messages from your account — reach suppliers and customers as you",
+            "read": "Read and summarize your chats and groups",
+            "notice": "Notice when something needs your attention in a group"
+          },
+          "privacyNote": "Encrypted, stored only on your instance, visible in Telegram's active sessions. Disconnect anytime."
+        }
+      },
+      "whatsapp": {
+        "bot": {
+          "title": "Your WhatsApp",
+          "subtitle": "Pair a device with a pairing code",
+          "bullets": {
+            "reply": "Reply when people message you on WhatsApp",
+            "start": "Start a task when a new message arrives"
+          }
+        }
+      },
+      "wechat": {
+        "bot": {
+          "title": "Your WeChat",
+          "subtitle": "Link your account by scanning a QR code",
+          "bullets": {
+            "reply": "Reply when people message you on WeChat",
+            "start": "Start a task when a new message arrives"
+          }
+        }
+      },
+      "linkedin": {
+        "bot": {
+          "title": "Your LinkedIn",
+          "subtitle": "Sign in through Rome's browser",
+          "bullets": {
+            "read": "Keep a synced copy of your LinkedIn inbox",
+            "recap": "Read and recap your LinkedIn conversations"
+          }
+        }
+      },
+      "discord": {
+        "bot": {
+          "titleFallback": "Your Discord bot",
+          "subtitle": "Add a bot from the Discord Developer Portal",
+          "bullets": {
+            "reply": "Reply when people message {{identity}} in your servers",
+            "start": "Start a task when a new message arrives"
+          },
+          "bulletsFallback": {
+            "reply": "Reply when people message your bot in your servers",
+            "start": "Start a task when a new message arrives"
+          }
+        }
+      },
+      "feishu": {
+        "bot": {
+          "title": "Your Feishu app",
+          "bullets": {
+            "reply": "Reply when people message your agent on Feishu",
+            "start": "Start a task when a new message arrives"
+          }
+        }
+      },
+      "email": {
+        "bot": {
+          "title": "Your agent's email address",
+          "bullets": {
+            "reply": "Email your agent and it replies",
+            "start": "Start a task when a new email arrives"
+          }
+        }
+      },
+      "webchat": {
+        "bot": {
+          "title": "Dashboard chat",
+          "bullets": {
+            "chat": "Chat with your agent right here in the dashboard"
+          },
+          "alwaysOn": "Always on — nothing to configure."
+        }
+      },
+      "github": {
+        "user": {
+          "title": "Your GitHub account",
+          "bullets": {
+            "work": "Work with your repositories, issues, pull requests, and project boards as you",
+            "watch": "React when something happens in your repositories"
+          },
+          "privacyNote": "You approve access on GitHub; you can disconnect here anytime."
+        }
+      },
+      "google": {
+        "user": {
+          "title": "Your Google account",
+          "bullets": {
+            "work": "Work across your Google services as you"
+          },
+          "privacyNote": "You approve access on Google; you can disconnect here anytime."
+        }
+      },
+      "slack": {
+        "user": {
+          "title": "Your Slack account",
+          "bullets": {
+            "work": "Send and read messages in your Slack workspace as you"
+          },
+          "privacyNote": "You approve access on Slack; you can disconnect here anytime."
+        }
+      },
+      "composio": {
+        "user": {
+          "title": "Your Composio account",
+          "bullets": {
+            "act": "Act through the third-party apps you connect via Composio"
+          }
+        }
+      }
+    }
+  },
+  "trust": {
+    "title": "Bond Level Rules",
+    "trustedLevels": {
+      "title": "Trusted messages",
+      "description": "Messages from persons with these bond levels bypass sentinel triage."
+    },
+    "replyToLevels": {
+      "title": "Reply to messages",
+      "description": "Rome replies only to incoming messages from these bond levels. Sender mapping still runs before this rule."
+    },
+    "levels": {
+      "guardian": "guardian",
+      "inner-circle": "inner-circle",
+      "acquaintance": "acquaintance",
+      "other": "other"
+    }
+  },
+  "channels": {
+    "title": "Channel Connections",
+    "conversationSettings": {
+      "configure": "Configure conversations",
+      "searchPlaceholder": "Search provider, workspace, or conversation",
+      "allConnections": "All connections",
+      "anyStatus": "Any status",
+      "connectionFilterAria": "Filter by connection",
+      "statusFilterAria": "Filter by status",
+      "status": {
+        "online": "Online",
+        "offline": "Offline",
+        "notConnected": "Not connected"
+      },
+      "kinds": {
+        "channel": "Channel",
+        "group": "Group",
+        "dm": "Direct message",
+        "topic": "Topic"
+      },
+      "loading": "Loading conversations…",
+      "emptyTitle": "No configurable conversations found",
+      "emptyDescription": "Connect a supported chat service, or send a message so Rome can discover the conversation.",
+      "loadMore": "Load more",
+      "overrideCount_one": "{{count}} override",
+      "overrideCount_other": "{{count}} overrides",
+      "providerDefaults": "product defaults",
+      "sections": {
+        "activation": "Activation",
+        "replies": "Replies",
+        "session": "Session",
+        "routing": "Routing"
+      },
+      "fields": {
+        "enabled": "Rome in this conversation",
+        "respond": "Respond",
+        "botMessages": "Bot messages",
+        "whenOthersMentioned": "When others are mentioned",
+        "replies": "Reply placement",
+        "agent": "Agent",
+        "sessionReset": "Provider session reset"
+      },
+      "descriptions": {
+        "enabled": "Turn off to stop Rome responding here entirely",
+        "respond": "When Rome joins the conversation",
+        "botMessages": "How Rome treats messages from other bots",
+        "whenOthersMentioned": "Someone else is mentioned, not Rome",
+        "replies": "Where Rome posts its reply",
+        "agent": "Which agent handles this conversation",
+        "sessionReset": "Clears the provider-side conversation memory"
+      },
+      "source": {
+        "overridden": "Overridden"
+      },
+      "options": {
+        "mention": "Only when mentioned",
+        "mentions": "Only mentions",
+        "all": "All",
+        "ignore": "Ignore",
+        "respond": "Respond",
+        "thread": "Native thread",
+        "inline": "Inline"
+      },
+      "mainAgent": "main (default)",
+      "sessionReset": {
+        "never": "Never",
+        "afterInactivity": "After inactivity",
+        "inactiveFor": "Inactive for",
+        "duration": "Inactivity duration",
+        "unit": "Duration unit",
+        "minutes": "minutes",
+        "hours": "hours",
+        "days": "days",
+        "daily": "Daily",
+        "resetAt": "Reset at",
+        "dailyHour": "Daily reset hour",
+        "utc": "UTC"
+      },
+      "saving": "Saving…",
+      "retry": "Retry"
+    },
+    "restartNeededFallback": "Backend unreachable — restart required to apply changes",
+    "disconnectFailedFallback": "Failed to disconnect.",
+    "status": {
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "configured": "Configured",
+      "awaitingVerification": "Awaiting Verification",
+      "codePending": "Code Pending"
+    },
+    "connectedAs": "Connected as",
+    "telegram": {
+      "title": "Telegram",
+      "guardianLinked": "Your Telegram account is linked as guardian.",
+      "linkAccount": "Link your Telegram account",
+      "sendCodeTo": "Send this code to <link>{{target}}</link> on Telegram:",
+      "sendCodeToPlain": "Send this code to {{target}} on Telegram:",
+      "yourBot": "your bot",
+      "waitingVerification": "Waiting for verification...",
+      "codeShownEarlier": "Verification code was shown when you first connected. Disconnect and reconnect to generate a new code.",
+      "botTokenLabel": "Bot Token",
+      "botTokenPlaceholder": "Bot token from @BotFather"
+    },
+    "telegramUser": {
+      "fallbackName": "Telegram user",
+      "disconnectFailedFallback": "Failed to disconnect Telegram user account."
+    },
+    "wechat": {
+      "title": "WeChat",
+      "guardianLinked": "Your WeChat account is linked as guardian."
+    },
+    "discord": {
+      "title": "Discord",
+      "guardianLinked": "Your Discord account is linked as guardian.",
+      "botTokenLabel": "Bot Token",
+      "botTokenPlaceholder": "Paste your bot token here",
+      "routing": {
+        "title": "Channel routing",
+        "channelHeader": "Channel",
+        "agentHeader": "Agent",
+        "main": "main (default)",
+        "noBindings": "No channel bindings yet. In Discord, run /channel agent set <name> in the target channel.",
+        "loading": "Loading…",
+        "save": "Save",
+        "clear": "Clear",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "saveError": "Failed to save: ",
+        "remove": "Remove binding",
+        "removing": "Removing…",
+        "removeConfirm": "Remove the binding for this channel? It will fall back to main on the trusted path.",
+        "removeConfirmYes": "Remove",
+        "removeConfirmNo": "Cancel",
+        "stale": "Saved, but the list may be out of date — reload to refresh.",
+        "addButton": "+ Add binding",
+        "addTitle": "Add a channel → agent binding",
+        "addChannelPlaceholder": "Pick a Discord channel…",
+        "addAgentPlaceholder": "Pick an agent…",
+        "addSubmit": "Add",
+        "adding": "Adding…",
+        "addCancel": "Cancel",
+        "addPickBoth": "Pick both a channel and an agent first.",
+        "addAllBound": "Every discoverable channel already has a binding — edit one above to rebind.",
+        "addDiscordOffline": "Discord isn't connected. Connect the bot above to populate this list.",
+        "suggestionsTitle": "App suggestions",
+        "suggestionFromApp": "{{app}} suggests routing a Discord channel to"
+      }
+    },
+    "feishu": {
+      "title": "Feishu",
+      "guardianLinked": "Your Feishu account is linked as guardian."
+    }
+  },
+  "favors": {
+    "payingApprovalRequest": "Paying approval request",
+    "decliningApprovalRequest": "Declining approval request",
+    "startingPackPurchase": "Starting favor pack purchase"
+  },
+  "tailscale": {
+    "title": "Tailscale",
+    "daemonMode": "daemon mode",
+    "status": {
+      "connected": "Connected",
+      "notConnected": "Not connected",
+      "authenticating": "Authenticating",
+      "notConfigured": "Not configured"
+    },
+    "connectButton": "Connect to Tailscale",
+    "connectButtonOauth": "Connect Tailscale",
+    "authPrompt": "Complete authentication in your browser:",
+    "polling": "Polling for completion...",
+    "infoLabels": {
+      "ip": "Tailscale IP",
+      "hostname": "Hostname",
+      "fqdn": "FQDN"
+    },
+    "peersTable": {
+      "hostname": "Hostname",
+      "fqdn": "FQDN",
+      "ip": "IP",
+      "os": "OS",
+      "status": "Status",
+      "thisDevice": "THIS"
+    },
+    "noPeers": "No peers found in your tailnet.",
+    "exitNode": {
+      "title": "Exit Node",
+      "description": "Let other devices on your tailnet send internet traffic through this Rome server.",
+      "updating": "Updating exit node setting...",
+      "updateFailed": "Failed to update exit node setting."
+    },
+    "downloadBannerPrefix": "Running outside Docker. Download the",
+    "downloadBannerLink": "Tailscale desktop app",
+    "downloadBannerSuffix": "to connect this machine to your tailnet.",
+    "devicesTable": {
+      "name": "Name",
+      "os": "OS",
+      "ipAddresses": "IP Addresses",
+      "version": "Version",
+      "status": "Status",
+      "lastSeen": "Last Seen"
+    },
+    "noDevices": "No devices found in your tailnet.",
+    "modal": {
+      "title": "Connect Tailscale",
+      "introPrefix": "Enter your Tailscale OAuth client credentials. You can create them in the",
+      "introLink": "Tailscale admin console",
+      "introSuffix": ". The client needs at least <code>devices:read</code> scope.",
+      "clientIdLabel": "Client ID",
+      "clientIdPlaceholder": "k1234567890abcdef",
+      "clientSecretLabel": "Client Secret",
+      "clientSecretPlaceholder": "tskey-client-...",
+      "cancel": "Cancel"
+    }
+  },
+  "publicAccess": {
+    "title": "Access Control",
+    "description": "Guardian auth protects the dashboard whichever option you pick.",
+    "savedFlash": "Public access settings saved",
+    "saveFailedFallback": "Failed to save public access settings.",
+    "openFirst": "Open your Rome Tailscale URL from this device before turning on access control.",
+    "handoffFailed": "Could not transfer your session to the Tailscale URL.",
+    "toggleLabel": "Restrict to Tailscale host",
+    "restrictedNote": "Public internet access is restricted. Continue using the Tailscale hostname for the dashboard.",
+    "needTailscaleNote": "Connect this machine to Tailscale before restricting the dashboard to the Tailscale host.",
+    "needHttpsNote": "Finish the Tailscale HTTPS setup before turning on access control.",
+    "openTailnetNote": "Open your Rome Tailscale URL from this device first so Rome can verify the connection works.",
+    "checkingSuffix": " Checking...",
+    "publicEnabledNote": "Public host access is enabled. Dashboard sign-in is still required, except for apps with public or Rome Cloud email access.",
+    "dashboardEmails": {
+      "title": "Allowed emails",
+      "description": "Grants the full dashboard, not just individual apps.",
+      "accountCount_one": "{{count}} account",
+      "accountCount_other": "{{count}} accounts",
+      "inputLabel": "Add email address",
+      "placeholder": "name@example.com",
+      "add": "Add",
+      "help": "Press Enter to add. Paste a list and we'll split it on commas, spaces, or new lines.",
+      "empty": "No accounts yet. Shared dashboard access stays off until you add one.",
+      "remove": "Remove {{email}}",
+      "invalidEmails": "Invalid email address: {{emails}}",
+      "savedFlash": "Allowed emails saved",
+      "saveFailedFallback": "Failed to save allowed emails."
+    }
+  },
+  "aiTools": {
+    "title": "AI Tools",
+    "description": "Use your existing subscription to power the agent.",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing…",
+    "refreshFailed": "Could not refresh AI tools. Please try again.",
+    "providers": {
+      "claudeCode": {
+        "name": "Claude"
+      },
+      "codex": {
+        "name": "ChatGPT"
+      },
+      "geminiCli": {
+        "name": "Gemini"
+      },
+      "grok": {
+        "name": "Grok"
+      }
+    },
+    "status": {
+      "connected": "Connected",
+      "notConnected": "Not connected",
+      "needsReauth": "Needs re-login",
+      "apiKeyActive": "API key active",
+      "apiKeyNeedsUpdate": "API key needs update",
+      "comingSoon": "Coming soon",
+      "signedInWith": "Signed in with <1>{{method}}</1>",
+      "signedIn": "Signed in",
+      "accountType": "Account type: <1>{{type}}</1>"
+    },
+    "authSource": {
+      "environmentApiKey": "Environment API key"
+    },
+    "usage": {
+      "fiveHour": "5H USED",
+      "sevenDay": "7D USED",
+      "resetsIn": "Resets in <1>{{time}}</1>"
+    },
+    "logIn": "Log In",
+    "logOut": "Log Out",
+    "loggingOut": "Logging out…",
+    "codexLogout": {
+      "title": "Log out of ChatGPT?",
+      "description": "Signs out on this server only. You can sign back in anytime.",
+      "failed": "Could not log out of ChatGPT. Please try again."
+    },
+    "claudeLogout": {
+      "title": "Log out of Claude?",
+      "description": "Signs out on this server only. You can sign back in anytime.",
+      "failed": "Could not log out of Claude. Please try again."
+    },
+    "methods": {
+      "browser": "Browser",
+      "terminal": "Terminal",
+      "deviceCode": "Device code"
+    },
+    "otherProviders": {
+      "title": "Other API providers",
+      "experimental": "Experimental",
+      "apiKey": "API Key",
+      "apiProvidersTooltip": "MiniMax, DeepSeek, Kimi, Z.ai, and more",
+      "changeProvider": "Change",
+      "dialogDescription": "Takes priority over your Claude account until removed.",
+      "providerLabel": "Provider",
+      "providerPlaceholder": "Select a provider",
+      "apiKeyLabel": "API key",
+      "apiKeyPlaceholderReplace": "Enter a new key to replace the saved key",
+      "apiKeyPlaceholderNew": "Paste API key",
+      "saveKey": "Save Key",
+      "saveConfiguration": "Save Configuration",
+      "envHint": "{{envVar}} is sent to {{baseUrl}} for Anthropic-compatible Claude sessions.",
+      "needsApiKeyUpdate": "The saved {{providerName}} API key was rejected. Save a new key to reconnect this provider.",
+      "saveFailedFallback": "Failed to save provider key.",
+      "removeFailedFallback": "Failed to remove provider key.",
+      "removeConfirm": {
+        "title": "Remove {{providerName}} API key?",
+        "description": "Claude sessions stop using {{providerName}}. Restoring it needs a new key."
+      },
+      "custom": {
+        "providerName": "Custom",
+        "title": "Custom environment",
+        "inputModeLabel": "Environment input mode",
+        "jsonMode": "Paste JSON",
+        "fieldsMode": "Key / Value",
+        "jsonLabel": "Custom environment JSON",
+        "jsonPlaceholder": "{\n  \"env\": {\n    \"ANTHROPIC_AUTH_TOKEN\": \"...\",\n    \"ANTHROPIC_BASE_URL\": \"https://...\"\n  }\n}",
+        "emptyFields": "No environment variables yet.",
+        "keyAriaLabel": "Environment variable {{index}} name",
+        "valueAriaLabel": "Environment variable {{index}} value",
+        "keyPlaceholder": "VARIABLE_NAME",
+        "valuePlaceholder": "Value",
+        "addVariable": "Add variable",
+        "removeVariable": "Remove {{key}}",
+        "securityHint": "Only Claude and Anthropic provider variables are accepted. Values are shown exactly as saved.",
+        "errors": {
+          "invalidJson": "Enter valid JSON.",
+          "envMustBeObject": "The env value must be a JSON object.",
+          "valuesMustBeStrings": "Every environment variable value must be a string.",
+          "emptyKey": "Every environment variable needs a name.",
+          "emptyValue": "Every environment variable needs a value.",
+          "duplicateKey": "Environment variable names must be unique.",
+          "emptyEnv": "Add at least one environment variable."
+        }
+      }
+    }
+  },
+  "sentinelLog": {
+    "title": "Sentinel Log",
+    "empty": "No sentinel log entries.",
+    "responsePrefix": "Response: {{response}}",
+    "markReviewed": "Mark Reviewed",
+    "reviewed": "Reviewed"
+  },
+  "advanced": {
+    "title": "Advanced Settings",
+    "presentationMode": {
+      "title": "Presentation mode",
+      "description": "Hides pinned-agent names, avatars, and the composer chip. Applies to this browser only.",
+      "toggleLabel": "Mask agent identity in chat"
+    },
+    "developerSettings": {
+      "title": "Developer Settings"
+    },
+    "fable": {
+      "title": "Fable",
+      "description": "Only applies when Claude is available.",
+      "toggleLabel": "Route large models to Fable"
+    },
+    "modelSelector": {
+      "title": "Model selector",
+      "toggleLabel": "Enable model selector in chat"
+    },
+    "impersonation": {
+      "title": "Impersonation",
+      "toggleLabel": "Enable impersonation in chat"
+    },
+    "aiToolUsage": {
+      "title": "AI tool usage",
+      "description": "Usage windows appear on the AI Tools tab.",
+      "toggleLabel": "Show Claude and ChatGPT usage"
+    },
+    "relayHealth": {
+      "title": "Webhook relay",
+      "loading": "Checking relay status…",
+      "loadFailed": "Failed to load relay status.",
+      "status": {
+        "connected": "Connected",
+        "notConnected": "Not connected",
+        "notConfigured": "Not configured",
+        "reconnecting": "Reconnecting",
+        "retrying": "Retrying delivery",
+        "blocked": "Delivery blocked"
+      },
+      "notConfiguredHint": "No relay credential is stored, so webhooks are not being drained to this instance.",
+      "depositUrl": "Deposit URL",
+      "drainUrl": "Drain URL",
+      "targetApp": "Target app",
+      "noConsumer": "No installed app consumes relay webhooks",
+      "backlog": "Backlog",
+      "nextAttempt": "Next attempt",
+      "failure": "Last failure",
+      "resume": "Retry now",
+      "resuming": "Retrying…",
+      "resumed": "Delivery retry resumed.",
+      "resumeFailed": "Could not resume delivery retry.",
+      "copy": "Copy",
+      "copied": "Copied"
+    },
+    "diagnosis": {
+      "title": "System diagnosis",
+      "loading": "Running diagnosis…",
+      "loadFailed": "Failed to load diagnosis.",
+      "refresh": "Refresh",
+      "reconnect": "Reconnect",
+      "reconnecting": "Reconnecting…",
+      "reconnectFailed": "Could not start reconnect. Please try again.",
+      "status": {
+        "ok": "Healthy",
+        "degraded": "Degraded"
+      },
+      "version": "Version",
+      "unversioned": "Unversioned build",
+      "commit": "Commit",
+      "builtAt": "Built",
+      "uptime": "Uptime",
+      "enrollment": "Instance enrollment",
+      "account": "Account ID",
+      "auth": {
+        "ok": "Enrolled",
+        "no_token": "Not enrolled",
+        "unconfigured": "Rome Cloud not configured",
+        "unreachable": "Rome Cloud unreachable",
+        "revoked": "Token revoked",
+        "unknown": "Token rejected"
+      },
+      "database": "Database",
+      "dbReachable": "Reachable",
+      "dbUnreachable": "Unreachable",
+      "relayDepositUrl": "Relay deposit URL",
+      "relayDepositConfigured": "Configured",
+      "relayDepositMissing": "Missing",
+      "relayNotConfigured": "Relay not configured",
+      "channels": "Channels",
+      "noChannels": "None active",
+      "apps": "Apps",
+      "appsHealthy": "{{count}} loaded, none failed",
+      "appsUnhealthy": "{{count}} loaded; failed: {{ids}}"
+    },
+    "uptimePrefix": "running for {{uptime}}",
+    "buildPrefix": "build {{sha}} · built {{builtAt}}"
+  },
+  "system": {
+    "title": "System",
+    "currentVersion": "Current version",
+    "versionUnknown": "Unknown — source build or pre-versioned image",
+    "builtAt": "Built {{builtAt}}",
+    "buildInfoFailed": "Couldn't load version info.",
+    "retry": "Retry",
+    "upgradedNotice": "Rome was upgraded from {{from}} to {{to}} since the last boot.",
+    "checkButton": "Check for updates",
+    "checking": "Checking…",
+    "upToDate": "You're up to date — {{version}} is the latest version.",
+    "upgradeAvailable": "Version {{version}} is available.",
+    "upgradeButton": "Upgrade to {{version}}",
+    "notManaged": "This instance is not managed by Rome Cloud, so upgrades can't be started from the dashboard.",
+    "upgradeUnsupported": "This build has no release version, so upgrades aren't supported. Dev and test builds are updated by recreating the instance.",
+    "unresolvable": "Couldn't determine the latest version — the release registry is unreachable. Try again later.",
+    "checkFailed": "Update check failed: {{message}}",
+    "checkFailedFallback": "Update check failed.",
+    "confirmTitle": "Upgrade Rome to {{version}}?",
+    "confirmDescription": "Rome will restart to apply the upgrade. Expect a few minutes of downtime, and any in-progress work will be interrupted. This page reconnects automatically once Rome is back.",
+    "confirmButton": "Upgrade and restart",
+    "targetChanged": "A newer version ({{version}}) was published in the meantime — confirm again to upgrade to it.",
+    "upgradeFailed": "Upgrade request failed: {{message}}",
+    "upgradeFailedFallback": "Upgrade request failed.",
+    "restartingTitle": "Rome is restarting",
+    "restartingBody": "Upgrading to {{version}}. This page will reload automatically when Rome is back online.",
+    "restartTimeoutTitle": "The upgrade is taking longer than expected",
+    "restartTimeoutBody": "Rome hasn't come back on {{version}} after {{minutes}} minutes. The upgrade may still be running, or it may have failed.",
+    "restartTimeoutAction": "Check the instance status in Rome Cloud."
+  },
+  "sentinel": {
+    "title": "Sentinel Settings",
+    "intervalLabel": "Review interval (minutes)",
+    "intervalHelp": "How often the guardian is reminded to review sentinel log entries."
+  },
+  "easterEgg": {
+    "closeLabel": "Close advanced easter egg",
+    "console": "Console",
+    "artLabel": "Advanced easter egg",
+    "estLine": "Est · MMXXVI",
+    "tagline": "Svmmvs · Civitatis"
+  }
+}

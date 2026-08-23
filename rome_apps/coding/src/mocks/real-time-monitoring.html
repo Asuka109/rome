@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sentinel — Live Infrastructure Monitoring</title>
+<style>
+  :root {
+    /* Alert / status palette (from style row) */
+    --critical: #DC2626;
+    --critical-bright: #FF3B3B;
+    --warning: #FFA500;
+    --normal: #22C55E;
+    --live-indicator: #22C55E;
+    --updating: #3B82F6;
+
+    /* Dark monitoring surface */
+    --bg-0: #070A12;
+    --bg-1: #0C111D;
+    --bg-2: #121826;
+    --panel: #141B2B;
+    --panel-raised: #1A2234;
+    --border: #232C40;
+    --border-soft: #1B2334;
+
+    /* Text */
+    --fg: #E6ECF7;
+    --fg-muted: #8B97AD;
+    --fg-dim: #5C6679;
+
+    /* Effects */
+    --glow-critical: 0 0 0 1px rgba(220,38,38,.4), 0 0 18px rgba(220,38,38,.35);
+    --glow-normal: 0 0 12px rgba(34,197,94,.35);
+    --shadow-panel: 0 1px 0 rgba(255,255,255,.03), 0 12px 30px -12px rgba(0,0,0,.7);
+
+    /* Radius */
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 14px;
+
+    /* Spacing */
+    --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px;
+    --sp-4: 16px; --sp-5: 24px; --sp-6: 32px;
+
+    /* Type */
+    --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    --fs-xs: 11px; --fs-sm: 13px; --fs-md: 15px;
+    --fs-lg: 20px; --fs-xl: 28px; --fs-2xl: 40px;
+
+    /* Motion */
+    --pulse-animation: pulse 2s infinite;
+    --update-interval: 5s;
+    --toast-duration: 5s;
+    --ease: cubic-bezier(.4,0,.2,1);
+    --alert-z-index: 1000;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { background: var(--bg-0); }
+
+  body {
+    font-family: var(--font-ui);
+    color: var(--fg);
+    font-size: var(--fs-md);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    background:
+      radial-gradient(900px 500px at 85% -10%, rgba(59,130,246,.08), transparent 60%),
+      radial-gradient(700px 400px at 0% 100%, rgba(34,197,94,.05), transparent 55%),
+      var(--bg-0);
+  }
+
+  .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+  /* ===== Top bar ===== */
+  header.topbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; gap: var(--sp-4);
+    padding: var(--sp-3) var(--sp-5);
+    background: rgba(12,17,29,.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .brand { display: flex; align-items: center; gap: var(--sp-3); flex-shrink: 0; }
+  .brand-mark {
+    width: 34px; height: 34px; border-radius: 9px;
+    display: grid; place-items: center;
+    background: linear-gradient(145deg, #0f1626, #1c2740);
+    border: 1px solid var(--border);
+    color: var(--normal);
+  }
+  .brand-name { font-weight: 700; letter-spacing: .3px; font-size: var(--fs-md); }
+  .brand-name span { color: var(--fg-dim); font-weight: 500; }
+
+  nav.primary { display: flex; gap: var(--sp-1); margin-left: var(--sp-4); }
+  nav.primary a {
+    color: var(--fg-muted); text-decoration: none;
+    font-size: var(--fs-sm); font-weight: 500;
+    padding: 7px 12px; border-radius: var(--r-sm);
+    transition: color .15s var(--ease), background .15s var(--ease);
+  }
+  nav.primary a:hover { color: var(--fg); background: var(--bg-2); }
+  nav.primary a.active { color: var(--fg); background: var(--panel-raised); }
+  nav.primary a:focus-visible { outline: 2px solid var(--updating); outline-offset: 2px; }
+
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: var(--sp-3); }
+
+  .conn-status {
+    display: inline-flex; align-items: center; gap: var(--sp-2);
+    font-size: var(--fs-xs); font-weight: 600; letter-spacing: .4px;
+    text-transform: uppercase;
+    padding: 6px 11px; border-radius: 999px;
+    background: rgba(34,197,94,.08);
+    border: 1px solid rgba(34,197,94,.3);
+    color: var(--normal);
+  }
+  .refresh-pill {
+    display: inline-flex; align-items: center; gap: var(--sp-2);
+    font-size: var(--fs-xs); color: var(--fg-muted);
+    font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+    padding: 6px 11px; border-radius: 999px;
+    background: var(--bg-2); border: 1px solid var(--border-soft);
+  }
+  .refresh-pill svg { animation: spin 2s linear infinite; color: var(--updating); }
+
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: var(--r-sm);
+    display: grid; place-items: center;
+    background: var(--bg-2); border: 1px solid var(--border-soft);
+    color: var(--fg-muted); cursor: pointer; position: relative;
+    transition: background .15s var(--ease), color .15s var(--ease), border-color .15s var(--ease);
+  }
+  .icon-btn:hover { background: var(--panel-raised); color: var(--fg); }
+  .icon-btn:focus-visible { outline: 2px solid var(--updating); outline-offset: 2px; }
+  .icon-btn:active { transform: translateY(1px); }
+  .icon-btn .badge {
+    position: absolute; top: -4px; right: -4px;
+    min-width: 17px; height: 17px; padding: 0 4px;
+    border-radius: 999px; background: var(--critical); color: #fff;
+    font-size: 10px; font-weight: 700; display: grid; place-items: center;
+    border: 2px solid var(--bg-0);
+    animation: var(--pulse-animation);
+  }
+
+  /* ===== Layout ===== */
+  main {
+    max-width: 1340px; margin: 0 auto;
+    padding: var(--sp-5);
+    display: grid; grid-template-columns: 1fr 320px; gap: var(--sp-5);
+  }
+  .col-main { min-width: 0; display: flex; flex-direction: column; gap: var(--sp-5); }
+  .col-side { min-width: 0; display: flex; flex-direction: column; gap: var(--sp-5); }
+
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-4); flex-wrap: wrap; }
+  .page-head h1 { font-size: var(--fs-xl); font-weight: 700; letter-spacing: -.5px; }
+  .page-head p { color: var(--fg-muted); font-size: var(--fs-sm); margin-top: 2px; }
+
+  .range-tabs { display: inline-flex; background: var(--bg-2); border: 1px solid var(--border-soft); border-radius: var(--r-sm); padding: 3px; }
+  .range-tabs button {
+    font: inherit; font-size: var(--fs-xs); font-weight: 600;
+    color: var(--fg-muted); background: transparent; border: 0;
+    padding: 6px 12px; border-radius: 5px; cursor: pointer;
+    font-family: var(--font-mono);
+    transition: color .15s var(--ease), background .15s var(--ease);
+  }
+  .range-tabs button:hover { color: var(--fg); }
+  .range-tabs button.active { color: var(--fg); background: var(--panel-raised); box-shadow: 0 1px 2px rgba(0,0,0,.4); }
+  .range-tabs button:focus-visible { outline: 2px solid var(--updating); outline-offset: 1px; }
+
+  .primary-btn {
+    display: inline-flex; align-items: center; gap: var(--sp-2);
+    font: inherit; font-size: var(--fs-sm); font-weight: 600;
+    color: #06210f; background: var(--normal); border: 0;
+    padding: 9px 15px; border-radius: var(--r-sm); cursor: pointer;
+    transition: filter .15s var(--ease), box-shadow .15s var(--ease), transform .1s var(--ease);
+  }
+  .primary-btn:hover { filter: brightness(1.08); box-shadow: var(--glow-normal); }
+  .primary-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  .primary-btn:active { transform: translateY(1px); }
+
+  /* ===== KPI stat strip ===== */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-4); }
+  .kpi {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--r-md); padding: var(--sp-4);
+    box-shadow: var(--shadow-panel); position: relative; overflow: hidden;
+  }
+  .kpi::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: var(--accent, var(--updating));
+  }
+  .kpi.is-critical { --accent: var(--critical); }
+  .kpi.is-warning { --accent: var(--warning); }
+  .kpi.is-normal { --accent: var(--normal); }
+  .kpi-label { font-size: var(--fs-xs); color: var(--fg-muted); text-transform: uppercase; letter-spacing: .6px; font-weight: 600; }
+  .kpi-value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-2xl); font-weight: 600; line-height: 1.1; margin-top: 6px; }
+  .kpi-meta { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: var(--fs-xs); font-family: var(--font-mono); }
+  .delta-up { color: var(--normal); }
+  .delta-down { color: var(--critical-bright); }
+  .kpi-unit { color: var(--fg-dim); }
+
+  /* ===== Panels ===== */
+  .panel {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--r-lg); box-shadow: var(--shadow-panel); overflow: hidden;
+  }
+  .panel-head {
+    display: flex; align-items: center; gap: var(--sp-3);
+    padding: var(--sp-4) var(--sp-4) var(--sp-3);
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .panel-head h2 { font-size: var(--fs-md); font-weight: 600; }
+  .panel-head .sub { font-size: var(--fs-xs); color: var(--fg-dim); font-family: var(--font-mono); }
+  .panel-body { padding: var(--sp-4); }
+
+  /* Live dot */
+  .live-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--live-indicator); position: relative; flex-shrink: 0;
+  }
+  .live-dot::after {
+    content: ""; position: absolute; inset: -3px; border-radius: 50%;
+    border: 1px solid var(--live-indicator);
+    animation: var(--pulse-animation);
+  }
+  .live-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 10px; font-weight: 700; letter-spacing: .8px;
+    color: var(--live-indicator); text-transform: uppercase;
+    font-family: var(--font-mono);
+  }
+
+  /* ===== Streaming chart (SVG) ===== */
+  .chart-wrap { position: relative; }
+  .chart-svg { width: 100%; height: auto; display: block; aspect-ratio: 16 / 6; }
+  .grid-line { stroke: var(--border-soft); stroke-width: 1; }
+  .axis-text { fill: var(--fg-dim); font-family: var(--font-mono); font-size: 10px; }
+  .sweep {
+    transform-origin: center; transform-box: fill-box;
+    animation: sweep 5s linear infinite;
+  }
+  .chart-legend { display: flex; gap: var(--sp-4); flex-wrap: wrap; margin-top: var(--sp-3); padding-top: var(--sp-3); border-top: 1px solid var(--border-soft); }
+  .legend-item { display: inline-flex; align-items: center; gap: 7px; font-size: var(--fs-xs); color: var(--fg-muted); font-family: var(--font-mono); }
+  .legend-swatch { width: 12px; height: 3px; border-radius: 2px; }
+
+  /* ===== Service health grid ===== */
+  .svc-list { display: grid; gap: 2px; }
+  .svc-row {
+    display: grid; grid-template-columns: 14px 1fr auto auto; align-items: center;
+    gap: var(--sp-3); padding: 11px var(--sp-2); border-radius: var(--r-sm);
+    transition: background .12s var(--ease);
+  }
+  .svc-row:hover { background: var(--bg-2); }
+  .svc-name { font-weight: 500; font-size: var(--fs-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .svc-name small { display: block; color: var(--fg-dim); font-family: var(--font-mono); font-size: 10px; font-weight: 400; }
+  .status-dot { width: 10px; height: 10px; border-radius: 50%; position: relative; }
+  .status-dot.normal { background: var(--normal); }
+  .status-dot.normal::after { content:""; position:absolute; inset:-3px; border-radius:50%; border:1px solid var(--normal); animation: var(--pulse-animation); }
+  .status-dot.warning { background: var(--warning); }
+  .status-dot.critical { background: var(--critical-bright); box-shadow: var(--glow-critical); animation: blink 1.1s steps(1) infinite; }
+  .svc-metric { font-family: var(--font-mono); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+  .svc-tag {
+    font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+    font-family: var(--font-mono); padding: 3px 8px; border-radius: 999px;
+  }
+  .svc-tag.normal { color: var(--normal); background: rgba(34,197,94,.1); }
+  .svc-tag.warning { color: var(--warning); background: rgba(255,165,0,.12); }
+  .svc-tag.critical { color: var(--critical-bright); background: rgba(220,38,38,.15); }
+
+  /* ===== Sidebar: alerts ===== */
+  .alert-item {
+    display: grid; grid-template-columns: auto 1fr; gap: var(--sp-3);
+    padding: var(--sp-3); border-radius: var(--r-sm);
+    border: 1px solid var(--border-soft); background: var(--bg-2);
+    margin-bottom: var(--sp-2);
+  }
+  .alert-item.sev-critical { border-color: rgba(220,38,38,.4); background: rgba(220,38,38,.06); }
+  .alert-item.sev-warning { border-color: rgba(255,165,0,.35); background: rgba(255,165,0,.05); }
+  .alert-icn { width: 28px; height: 28px; border-radius: var(--r-sm); display: grid; place-items: center; flex-shrink: 0; }
+  .sev-critical .alert-icn { color: var(--critical-bright); background: rgba(220,38,38,.15); }
+  .sev-warning .alert-icn { color: var(--warning); background: rgba(255,165,0,.12); }
+  .alert-title { font-size: var(--fs-sm); font-weight: 600; }
+  .alert-desc { font-size: var(--fs-xs); color: var(--fg-muted); margin-top: 2px; }
+  .alert-time { font-size: 10px; color: var(--fg-dim); font-family: var(--font-mono); margin-top: 5px; }
+
+  /* ===== Mini sparkline gauges ===== */
+  .gauge-row { display: flex; align-items: center; gap: var(--sp-3); padding: 10px 0; border-bottom: 1px solid var(--border-soft); }
+  .gauge-row:last-child { border-bottom: 0; }
+  .gauge-row .lbl { font-size: var(--fs-sm); flex: 1; }
+  .gauge-row .val { font-family: var(--font-mono); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+  .bar { width: 88px; height: 6px; border-radius: 3px; background: var(--bg-0); overflow: hidden; flex-shrink: 0; }
+  .bar > i { display: block; height: 100%; border-radius: 3px; }
+
+  /* ===== Toast ===== */
+  .toast-stack {
+    position: fixed; right: var(--sp-5); bottom: var(--sp-5);
+    z-index: var(--alert-z-index); display: flex; flex-direction: column; gap: var(--sp-2);
+    max-width: calc(100vw - 32px); width: 340px;
+  }
+  .toast {
+    display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-4); border-radius: var(--r-md);
+    background: var(--panel-raised); border: 1px solid var(--border);
+    box-shadow: 0 18px 40px -12px rgba(0,0,0,.8);
+    animation: toast-in .35s var(--ease) both;
+  }
+  .toast.sev-critical { border-color: rgba(220,38,38,.5); box-shadow: var(--glow-critical), 0 18px 40px -12px rgba(0,0,0,.8); }
+  .toast .t-icn { color: var(--critical-bright); }
+  .toast .t-title { font-size: var(--fs-sm); font-weight: 700; }
+  .toast .t-desc { font-size: var(--fs-xs); color: var(--fg-muted); margin-top: 2px; }
+  .toast-close { background: none; border: 0; color: var(--fg-dim); cursor: pointer; padding: 2px; line-height: 0; }
+  .toast-close:hover { color: var(--fg); }
+  .toast-close:focus-visible { outline: 2px solid var(--updating); outline-offset: 2px; border-radius: 4px; }
+
+  /* ===== Animations ===== */
+  @keyframes pulse {
+    0% { transform: scale(.95); opacity: .9; }
+    70% { transform: scale(1.6); opacity: 0; }
+    100% { transform: scale(1.6); opacity: 0; }
+  }
+  @keyframes blink { 0%,49% { opacity: 1; } 50%,100% { opacity: .25; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes sweep { 0% { transform: translateX(-4%); opacity:.0;} 6%{opacity:.6;} 100% { transform: translateX(102%); opacity:.0; } }
+  @keyframes dash { to { stroke-dashoffset: -1000; } }
+  @keyframes toast-in { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  @keyframes drift { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(-2px);} }
+
+  .stream-path { stroke-dasharray: 6 6; animation: dash 18s linear infinite; }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 1080px) {
+    main { grid-template-columns: 1fr; }
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 760px) {
+    nav.primary { display: none; }
+    .refresh-pill { display: none; }
+  }
+  @media (max-width: 560px) {
+    main { padding: var(--sp-4); }
+    .kpis { grid-template-columns: repeat(2, 1fr); gap: var(--sp-3); }
+    .kpi-value { font-size: var(--fs-xl); }
+    .page-head h1 { font-size: var(--fs-lg); }
+    .toast-stack { left: var(--sp-4); right: var(--sp-4); width: auto; }
+    .conn-status .ctxt { display: none; }
+    .svc-row { grid-template-columns: 14px 1fr auto; }
+    .svc-metric { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition-duration: .01ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12h4l2 6 4-14 2 8h6"/>
+      </svg>
+    </span>
+    <span class="brand-name">Sentinel<span>/ops</span></span>
+  </div>
+
+  <nav class="primary" aria-label="Primary">
+    <a href="#" class="active" aria-current="page">Overview</a>
+    <a href="#">Services</a>
+    <a href="#">Metrics</a>
+    <a href="#">Alerts</a>
+    <a href="#">Logs</a>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="refresh-pill" title="Auto refreshing">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/>
+      </svg>
+      auto&nbsp;<span aria-hidden="true">·</span>&nbsp;5s
+    </span>
+    <span class="conn-status">
+      <span class="live-dot" aria-hidden="true"></span>
+      <span class="ctxt">Connected</span>
+    </span>
+    <button class="icon-btn" aria-label="Active alerts">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>
+      </svg>
+      <span class="badge" aria-hidden="true">3</span>
+    </button>
+    <button class="icon-btn" aria-label="Settings">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<main>
+  <div class="col-main">
+    <div class="page-head">
+      <div>
+        <h1>Production Cluster — us-east-1</h1>
+        <p>42 services monitored across 6 nodes · last incident 4d 11h ago</p>
+      </div>
+      <div style="display:flex; gap:var(--sp-3); align-items:center;">
+        <div class="range-tabs" role="tablist" aria-label="Time range">
+          <button role="tab" aria-selected="false">1H</button>
+          <button role="tab" class="active" aria-selected="true">6H</button>
+          <button role="tab" aria-selected="false">24H</button>
+          <button role="tab" aria-selected="false">7D</button>
+        </div>
+        <button class="primary-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h14"/><path d="M12 5v14"/>
+          </svg>
+          New Monitor
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI strip -->
+    <section class="kpis" aria-label="Key metrics">
+      <div class="kpi is-normal">
+        <div class="kpi-label">Requests / sec</div>
+        <div class="kpi-value" id="kpi-rps">18,402</div>
+        <div class="kpi-meta"><span class="delta-up">▲ 6.2%</span><span class="kpi-unit">vs 5m ago</span></div>
+      </div>
+      <div class="kpi is-normal">
+        <div class="kpi-label">p99 Latency</div>
+        <div class="kpi-value">142<span style="font-size:.5em; color:var(--fg-dim);"> ms</span></div>
+        <div class="kpi-meta"><span class="delta-up">▼ 8 ms</span><span class="kpi-unit">improving</span></div>
+      </div>
+      <div class="kpi is-warning">
+        <div class="kpi-label">Error rate</div>
+        <div class="kpi-value">0.94<span style="font-size:.5em; color:var(--fg-dim);"> %</span></div>
+        <div class="kpi-meta"><span class="delta-down">▲ 0.31%</span><span class="kpi-unit">threshold 1%</span></div>
+      </div>
+      <div class="kpi is-critical">
+        <div class="kpi-label">Active alerts</div>
+        <div class="kpi-value" id="kpi-alerts">3</div>
+        <div class="kpi-meta"><span class="delta-down">1 critical</span><span class="kpi-unit">2 warning</span></div>
+      </div>
+    </section>
+
+    <!-- Streaming chart -->
+    <section class="panel" aria-label="Throughput stream">
+      <div class="panel-head">
+        <h2>Throughput &amp; Latency Stream</h2>
+        <span class="live-tag"><span class="live-dot" aria-hidden="true"></span>Live</span>
+        <span class="sub" style="margin-left:auto;">window 6h · 5s resolution</span>
+      </div>
+      <div class="panel-body">
+        <div class="chart-wrap">
+          <svg class="chart-svg" viewBox="0 0 960 360" preserveAspectRatio="none" role="img" aria-label="Live throughput and latency time-series chart">
+            <defs>
+              <linearGradient id="fillReq" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#22C55E" stop-opacity="0.35"/>
+                <stop offset="100%" stop-color="#22C55E" stop-opacity="0"/>
+              </linearGradient>
+              <linearGradient id="sweepGrad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#3B82F6" stop-opacity="0"/>
+                <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.5"/>
+              </linearGradient>
+            </defs>
+
+            <!-- grid -->
+            <g>
+              <line class="grid-line" x1="0" y1="72"  x2="960" y2="72"/>
+              <line class="grid-line" x1="0" y1="144" x2="960" y2="144"/>
+              <line class="grid-line" x1="0" y1="216" x2="960" y2="216"/>
+              <line class="grid-line" x1="0" y1="288" x2="960" y2="288"/>
+              <text class="axis-text" x="6" y="68">20k</text>
+              <text class="axis-text" x="6" y="140">15k</text>
+              <text class="axis-text" x="6" y="212">10k</text>
+              <text class="axis-text" x="6" y="284">5k</text>
+              <text class="axis-text" x="0"  y="348">-6h</text>
+              <text class="axis-text" x="450" y="348">-3h</text>
+              <text class="axis-text" x="905" y="348">now</text>
+            </g>
+
+            <!-- throughput area -->
+            <path d="M0,250 60,232 120,244 180,210 240,225 300,196 360,205 420,178 480,190 540,160 600,176 660,150 720,168 780,140 840,158 900,128 960,150 L960,360 L0,360 Z" fill="url(#fillReq)"/>
+            <path d="M0,250 60,232 120,244 180,210 240,225 300,196 360,205 420,178 480,190 540,160 600,176 660,150 720,168 780,140 840,158 900,128 960,150" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+
+            <!-- latency line -->
+            <path class="stream-path" d="M0,300 60,296 120,305 180,290 240,298 300,286 360,300 420,282 480,294 540,278 600,300 660,272 720,288 780,300 840,276 900,266 960,284" fill="none" stroke="#FFA500" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="0.9"/>
+
+            <!-- live edge marker -->
+            <circle cx="960" cy="150" r="5" fill="#22C55E"/>
+            <circle cx="960" cy="150" r="5" fill="none" stroke="#22C55E" stroke-width="1.5">
+              <animate attributeName="r" values="5;16;16" dur="2s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.8;0;0" dur="2s" repeatCount="indefinite"/>
+            </circle>
+
+            <!-- sweep -->
+            <rect class="sweep" x="0" y="0" width="120" height="360" fill="url(#sweepGrad)"/>
+          </svg>
+          <div class="chart-legend">
+            <span class="legend-item"><span class="legend-swatch" style="background:#22C55E"></span>Requests/sec</span>
+            <span class="legend-item"><span class="legend-swatch" style="background:#FFA500"></span>p99 latency</span>
+            <span class="legend-item"><span class="legend-swatch" style="background:#3B82F6"></span>ingest sweep</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Service health -->
+    <section class="panel" aria-label="Service health">
+      <div class="panel-head">
+        <h2>Service Health</h2>
+        <span class="sub" style="margin-left:auto;">8 of 42 shown</span>
+      </div>
+      <div class="panel-body">
+        <div class="svc-list">
+          <div class="svc-row">
+            <span class="status-dot critical" aria-hidden="true"></span>
+            <span class="svc-name">payments-api <small>svc/checkout · v3.14.2</small></span>
+            <span class="svc-metric">512 ms</span>
+            <span class="svc-tag critical">Critical</span>
+          </div>
+          <div class="svc-row">
+            <span class="status-dot warning" aria-hidden="true"></span>
+            <span class="svc-name">search-indexer <small>svc/discovery · v1.8.0</small></span>
+            <span class="svc-metric">88% CPU</span>
+            <span class="svc-tag warning">Warning</span>
+          </div>
+          <div class="svc-row">
+            <span class="status-dot warning" aria-hidden="true"></span>
+            <span class="svc-name">notification-worker <small>svc/queue · v2.2.1</small></span>
+            <span class="svc-metric">1.2k lag</span>
+            <span class="svc-tag warning">Warning</span>
+          </div>
+          <div class="svc-row">
+            <span class="status-dot normal" aria-hidden="true"></span>
+            <span class="svc-name">auth-gateway <small>svc/edge · v5.0.3</small></span>
+            <span class="svc-metric">38 ms</span>
+            <span class="svc-tag normal">Healthy</span>
+          </div>
+          <div class="svc-row">
+            <span class="status-dot normal" aria-hidden="true"></span>
+            <span class="svc-name">user-profile <small>svc/core · v4.1.0</small></span>
+            <span class="svc-metric">22 ms</span>
+            <span class="svc-tag normal">Healthy</span>
+          </div>
+          <div class="svc-row">
+            <span class="status-dot normal" aria-hidden="true"></span>
+            <span class="svc-name">media-cdn <small>svc/static · v2.9.7</small></span>
+            <span class="svc-metric">11 ms</span>
+            <span class="svc-tag normal">Healthy</span>
+          </div>
+          <div class="svc-row">
+            <span class="status-dot normal" aria-hidden="true"></span>
+            <span class="svc-name">analytics-stream <small>svc/data · v0.7.4</small></span>
+            <span class="svc-metric">64 ms</span>
+            <span class="svc-tag normal">Healthy</span>
+          </div>
+          <div class="svc-row">
+            <span class="status-dot normal" aria-hidden="true"></span>
+            <span class="svc-name">postgres-primary <small>db/cluster · 16.2</small></span>
+            <span class="svc-metric">9 ms</span>
+            <span class="svc-tag normal">Healthy</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Sidebar -->
+  <aside class="col-side" aria-label="Alerts and resources">
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Active Alerts</h2>
+        <span class="live-tag" style="margin-left:auto;"><span class="live-dot" aria-hidden="true"></span>Live</span>
+      </div>
+      <div class="panel-body">
+        <div class="alert-item sev-critical">
+          <span class="alert-icn" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/>
+            </svg>
+          </span>
+          <div>
+            <div class="alert-title">payments-api error spike</div>
+            <div class="alert-desc">5xx rate 6.4% &gt; threshold 2% · checkout</div>
+            <div class="alert-time">triggered 00:01:12 ago</div>
+          </div>
+        </div>
+        <div class="alert-item sev-warning">
+          <span class="alert-icn" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/>
+            </svg>
+          </span>
+          <div>
+            <div class="alert-title">search-indexer CPU high</div>
+            <div class="alert-desc">88% sustained for 4m · node-3</div>
+            <div class="alert-time">triggered 00:06:48 ago</div>
+          </div>
+        </div>
+        <div class="alert-item sev-warning" style="margin-bottom:0;">
+          <span class="alert-icn" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/>
+            </svg>
+          </span>
+          <div>
+            <div class="alert-title">queue backlog growing</div>
+            <div class="alert-desc">notification-worker lag 1.2k msgs</div>
+            <div class="alert-time">triggered 00:12:03 ago</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Cluster Resources</h2>
+        <span class="sub" style="margin-left:auto;">node avg</span>
+      </div>
+      <div class="panel-body">
+        <div class="gauge-row">
+          <span class="lbl">CPU</span>
+          <span class="bar"><i style="width:62%; background:var(--normal);"></i></span>
+          <span class="val">62%</span>
+        </div>
+        <div class="gauge-row">
+          <span class="lbl">Memory</span>
+          <span class="bar"><i style="width:78%; background:var(--warning);"></i></span>
+          <span class="val">78%</span>
+        </div>
+        <div class="gauge-row">
+          <span class="lbl">Disk I/O</span>
+          <span class="bar"><i style="width:34%; background:var(--normal);"></i></span>
+          <span class="val">34%</span>
+        </div>
+        <div class="gauge-row">
+          <span class="lbl">Network</span>
+          <span class="bar"><i style="width:91%; background:var(--critical);"></i></span>
+          <span class="val">91%</span>
+        </div>
+      </div>
+    </section>
+  </aside>
+</main>
+
+<!-- Toast -->
+<div class="toast-stack" aria-live="polite" aria-atomic="true">
+  <div class="toast sev-critical" role="alert" id="liveToast">
+    <span class="t-icn" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/>
+      </svg>
+    </span>
+    <div>
+      <div class="t-title">Critical · payments-api</div>
+      <div class="t-desc">5xx error rate exceeded threshold in us-east-1</div>
+    </div>
+    <button class="toast-close" aria-label="Dismiss alert" onclick="this.closest('.toast').remove()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<script>
+  // Lightweight "live" feel: jitter the RPS counter on the update interval.
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) return;
+    var el = document.getElementById('kpi-rps');
+    if (!el) return;
+    var base = 18402;
+    setInterval(function () {
+      var v = base + Math.round((Math.random() - 0.45) * 600);
+      el.textContent = v.toLocaleString('en-US');
+    }, 5000);
+  })();
+
+  // Range tabs toggle
+  document.querySelectorAll('.range-tabs button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      this.parentElement.querySelectorAll('button').forEach(function (x) {
+        x.classList.remove('active'); x.setAttribute('aria-selected', 'false');
+      });
+      this.classList.add('active'); this.setAttribute('aria-selected', 'true');
+    });
+  });
+</script>
+</body>
+</html>

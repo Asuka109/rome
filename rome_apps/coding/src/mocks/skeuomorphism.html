@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vinyl &mdash; Hi-Fi Music Studio</title>
+<style>
+  /* ============ DESIGN TOKENS (Skeuomorphism) ============ */
+  :root {
+    /* Material colors: wood, leather, metal */
+    --leather-dark: #2a1f17;
+    --leather: #3d2c1d;
+    --leather-light: #5a4029;
+    --wood-dark: #3a2614;
+    --wood: #6b4423;
+    --wood-light: #9a6c3a;
+    --metal-dark: #6e7378;
+    --metal: #b8bdc2;
+    --metal-light: #eef1f4;
+    --metal-hi: #ffffff;
+    --brass-dark: #8a6a1f;
+    --brass: #d4af37;
+    --brass-light: #f5e6a8;
+    --felt: #2f6b4f;
+    --felt-dark: #1d3f2f;
+
+    /* Display / accent */
+    --ink: #1a1410;
+    --cream: #f3ead7;
+    --amber: #ffb347;
+    --amber-glow: #ff8c2e;
+    --led-green: #6cff8a;
+    --led-red: #ff5a52;
+
+    /* Radius */
+    --r-sm: 8px;
+    --r-md: 14px;
+    --r-lg: 22px;
+    --r-pill: 999px;
+
+    /* Shadow layers (multi-layer realistic) */
+    --shadow-raised:
+      0 1px 0 rgba(255,255,255,0.35) inset,
+      0 -2px 4px rgba(0,0,0,0.45) inset,
+      0 2px 4px rgba(0,0,0,0.35),
+      0 8px 18px rgba(0,0,0,0.45);
+    --shadow-inset:
+      0 2px 6px rgba(0,0,0,0.6) inset,
+      0 -1px 0 rgba(255,255,255,0.08) inset,
+      0 1px 0 rgba(255,255,255,0.1);
+    --shadow-panel:
+      0 1px 0 rgba(255,255,255,0.12) inset,
+      0 24px 48px rgba(0,0,0,0.6),
+      0 4px 10px rgba(0,0,0,0.5);
+    --shadow-knob:
+      0 1px 1px rgba(255,255,255,0.6) inset,
+      0 -6px 10px rgba(0,0,0,0.45) inset,
+      0 6px 12px rgba(0,0,0,0.55),
+      0 2px 3px rgba(0,0,0,0.4);
+
+    /* Spacing scale */
+    --sp-1: 6px;
+    --sp-2: 10px;
+    --sp-3: 16px;
+    --sp-4: 24px;
+    --sp-5: 36px;
+    --sp-6: 52px;
+
+    /* Type scale */
+    --fs-xs: 11px;
+    --fs-sm: 13px;
+    --fs-md: 15px;
+    --fs-lg: 19px;
+    --fs-xl: 28px;
+    --fs-2xl: 40px;
+    --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+    /* Motion */
+    --dur: 380ms;
+    --ease: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-smooth: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+    /* Texture: grain noise overlay (data URI fractal noise) */
+    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: var(--font-ui);
+    color: var(--cream);
+    min-height: 100%;
+    /* Wood-grain desk surface with complex multi-stop gradient */
+    background-color: var(--wood-dark);
+    background-image:
+      repeating-linear-gradient(92deg,
+        rgba(0,0,0,0.18) 0px, rgba(0,0,0,0) 3px, rgba(255,255,255,0.04) 6px,
+        rgba(0,0,0,0) 9px, rgba(0,0,0,0.14) 13px),
+      linear-gradient(180deg,
+        #7a5128 0%, #6b4423 14%, #5c3a1e 30%, #6e4724 48%,
+        #5a3a1f 64%, #4d3019 80%, #3a2614 100%);
+    background-attachment: fixed;
+    padding: var(--sp-4);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: var(--grain);
+    background-size: 160px 160px;
+    opacity: 0.06;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+    z-index: 1;
+  }
+
+  .stage {
+    position: relative;
+    z-index: 2;
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  /* ============ TOP NAV / HEADER ============ */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+    /* Brushed metal bar */
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0) 40%),
+      repeating-linear-gradient(90deg, rgba(0,0,0,0.05) 0 1px, rgba(255,255,255,0.05) 1px 2px),
+      linear-gradient(180deg, var(--metal-light) 0%, var(--metal) 48%, var(--metal-dark) 100%);
+    border-radius: var(--r-lg);
+    padding: var(--sp-3) var(--sp-4);
+    color: var(--ink);
+    box-shadow: var(--shadow-panel), var(--shadow-raised);
+    border: 1px solid rgba(0,0,0,0.35);
+    margin-bottom: var(--sp-4);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+  .brand .logo {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    background:
+      radial-gradient(circle at 35% 30%, var(--brass-light), var(--brass) 45%, var(--brass-dark) 100%);
+    box-shadow: var(--shadow-knob);
+    border: 1px solid rgba(0,0,0,0.4);
+    flex: 0 0 auto;
+  }
+  .brand h1 {
+    font-family: var(--font-display);
+    font-size: var(--fs-xl);
+    letter-spacing: -0.5px;
+    color: var(--ink);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.7);
+  }
+  .brand .sub {
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #4a4035;
+    font-weight: 600;
+  }
+
+  nav.menu {
+    display: flex;
+    gap: var(--sp-1);
+    background: linear-gradient(180deg, #9aa0a5, #c9ced3);
+    padding: 4px;
+    border-radius: var(--r-pill);
+    box-shadow: var(--shadow-inset);
+  }
+  nav.menu a {
+    text-decoration: none;
+    color: #3a322a;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    padding: 7px 16px;
+    border-radius: var(--r-pill);
+    transition: all var(--dur) var(--ease-smooth);
+  }
+  nav.menu a:hover { background: rgba(255,255,255,0.4); }
+  nav.menu a:focus-visible {
+    outline: 3px solid var(--amber-glow);
+    outline-offset: 2px;
+  }
+  nav.menu a.active {
+    color: var(--ink);
+    background:
+      linear-gradient(180deg, var(--metal-hi), var(--metal-light) 50%, var(--metal) 100%);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.9) inset,
+      0 2px 4px rgba(0,0,0,0.4),
+      0 1px 2px rgba(0,0,0,0.3);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.8);
+  }
+
+  .acct {
+    display: flex; align-items: center; gap: var(--sp-2);
+  }
+  .acct .who { text-align: right; }
+  .acct .who strong { display: block; font-size: var(--fs-sm); color: var(--ink); }
+  .acct .who span { font-size: var(--fs-xs); color: #5a5046; }
+  .avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #e9d6b0, #b3895a 60%, #6b4423);
+    box-shadow: var(--shadow-knob);
+    border: 2px solid rgba(255,255,255,0.5);
+    flex: 0 0 auto;
+  }
+
+  /* ============ MAIN LAYOUT ============ */
+  main {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: var(--sp-4);
+  }
+
+  /* ===== Player Deck (leather + turntable) ===== */
+  .deck {
+    /* Stitched leather panel */
+    background:
+      radial-gradient(circle at 30% 20%, rgba(255,255,255,0.05), rgba(0,0,0,0) 60%),
+      linear-gradient(155deg, var(--leather-light) 0%, var(--leather) 45%, var(--leather-dark) 100%);
+    border-radius: var(--r-lg);
+    padding: var(--sp-4);
+    box-shadow: var(--shadow-panel);
+    border: 1px solid rgba(0,0,0,0.5);
+    position: relative;
+    overflow: hidden;
+  }
+  .deck::after {
+    /* stitching border */
+    content: "";
+    position: absolute;
+    inset: 12px;
+    border-radius: var(--r-md);
+    border: 2px dashed rgba(243,234,215,0.28);
+    pointer-events: none;
+  }
+  .deck::before {
+    content: "";
+    position: absolute; inset: 0;
+    background-image: var(--grain);
+    background-size: 140px 140px;
+    opacity: 0.12;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+  }
+
+  .deck-inner { position: relative; z-index: 1; }
+
+  .now-label {
+    font-size: var(--fs-xs);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--brass);
+    font-weight: 700;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+  }
+
+  .turntable {
+    display: flex;
+    gap: var(--sp-4);
+    align-items: center;
+    margin: var(--sp-3) 0 var(--sp-4);
+    flex-wrap: wrap;
+  }
+
+  .platter {
+    --size: 200px;
+    width: var(--size); height: var(--size);
+    border-radius: 50%;
+    flex: 0 0 auto;
+    margin: 0 auto;
+    position: relative;
+    background:
+      repeating-radial-gradient(circle at center,
+        #141414 0 1px, #1e1e1e 1px 2px, #161616 2px 3px),
+      radial-gradient(circle at 38% 30%, #2a2a2a, #0a0a0a 70%);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.15) inset,
+      0 -8px 18px rgba(0,0,0,0.6) inset,
+      0 10px 26px rgba(0,0,0,0.6),
+      0 2px 4px rgba(0,0,0,0.5);
+    display: grid; place-items: center;
+  }
+  .platter .vinyl-spin {
+    position: absolute; inset: 0; border-radius: 50%;
+    background:
+      conic-gradient(from 0deg, rgba(255,255,255,0.08), rgba(255,255,255,0) 25%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0) 75%, rgba(255,255,255,0.08));
+    animation: spin 4s linear infinite;
+  }
+  .platter .label {
+    width: 78px; height: 78px; border-radius: 50%;
+    background:
+      radial-gradient(circle at 35% 30%, var(--brass-light), var(--brass) 50%, var(--brass-dark) 100%);
+    display: grid; place-items: center;
+    box-shadow: 0 0 0 4px #0a0a0a, var(--shadow-knob);
+    position: relative; z-index: 2;
+    animation: spin 4s linear infinite;
+  }
+  .platter .label span {
+    font-family: var(--font-display);
+    font-weight: 800; font-size: var(--fs-sm); color: var(--ink);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .track-meta { flex: 1 1 200px; min-width: 0; }
+  .track-meta .title {
+    font-family: var(--font-display);
+    font-size: var(--fs-2xl);
+    line-height: 1.05;
+    color: var(--cream);
+    text-shadow: 0 2px 4px rgba(0,0,0,0.7);
+    letter-spacing: -0.5px;
+    word-wrap: break-word;
+  }
+  .track-meta .artist { font-size: var(--fs-md); color: #d8c39a; margin-top: 4px; }
+  .track-meta .album { font-size: var(--fs-sm); color: #a9926a; margin-top: 2px; }
+
+  /* LCD progress display */
+  .lcd {
+    margin-top: var(--sp-3);
+    background:
+      linear-gradient(180deg, #0c1f17, #07140e);
+    border-radius: var(--r-sm);
+    padding: var(--sp-2) var(--sp-3);
+    box-shadow: var(--shadow-inset), 0 0 14px rgba(108,255,138,0.12) inset;
+    border: 1px solid rgba(0,0,0,0.6);
+  }
+  .lcd .times {
+    display: flex; justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+    color: var(--led-green);
+    text-shadow: 0 0 6px rgba(108,255,138,0.6);
+  }
+  .scrub {
+    margin-top: 6px;
+    height: 12px;
+    border-radius: var(--r-pill);
+    background: linear-gradient(180deg, #050a07, #0c1810);
+    box-shadow: var(--shadow-inset);
+    position: relative;
+    overflow: hidden;
+  }
+  .scrub .fill {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 42%;
+    background: linear-gradient(180deg, #9affb4, var(--led-green) 50%, #2faf54);
+    box-shadow: 0 0 10px rgba(108,255,138,0.7);
+    border-radius: var(--r-pill);
+  }
+  .scrub .fill::after {
+    content: ""; position: absolute; right: -6px; top: 50%;
+    width: 16px; height: 16px; transform: translateY(-50%);
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, var(--metal-hi), var(--metal) 55%, var(--metal-dark));
+    box-shadow: var(--shadow-knob);
+  }
+
+  /* Transport controls */
+  .transport {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-3);
+    margin-top: var(--sp-4);
+  }
+  .btn-round {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.5);
+    display: grid; place-items: center;
+    cursor: pointer;
+    color: var(--ink);
+    background:
+      radial-gradient(circle at 35% 28%, var(--metal-hi), var(--metal-light) 40%, var(--metal) 70%, var(--metal-dark) 100%);
+    box-shadow: var(--shadow-knob);
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .btn-round svg { width: 22px; height: 22px; fill: #2b2620; filter: drop-shadow(0 1px 0 rgba(255,255,255,0.6)); }
+  .btn-round:hover { transform: translateY(-2px); }
+  .btn-round:focus-visible { outline: 3px solid var(--amber-glow); outline-offset: 3px; }
+  .btn-round:active {
+    transform: translateY(2px) scale(0.96);
+    box-shadow:
+      0 2px 5px rgba(0,0,0,0.6) inset,
+      0 -1px 0 rgba(255,255,255,0.3) inset;
+  }
+  .btn-play {
+    width: 74px; height: 74px;
+  }
+  .btn-play {
+    background:
+      radial-gradient(circle at 35% 28%, var(--brass-light), var(--brass) 45%, var(--brass-dark) 100%);
+  }
+  .btn-play svg { width: 30px; height: 30px; fill: #3a2c08; }
+
+  /* ===== Right column ===== */
+  .side { display: flex; flex-direction: column; gap: var(--sp-4); }
+
+  .panel {
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0) 30%),
+      linear-gradient(160deg, var(--leather-light), var(--leather) 55%, var(--leather-dark));
+    border-radius: var(--r-lg);
+    padding: var(--sp-4);
+    box-shadow: var(--shadow-panel);
+    border: 1px solid rgba(0,0,0,0.5);
+    position: relative;
+    overflow: hidden;
+  }
+  .panel::before {
+    content: ""; position: absolute; inset: 0;
+    background-image: var(--grain); background-size: 130px;
+    opacity: 0.1; mix-blend-mode: overlay; pointer-events: none;
+  }
+  .panel > * { position: relative; z-index: 1; }
+
+  .panel h2 {
+    font-family: var(--font-display);
+    font-size: var(--fs-lg);
+    color: var(--cream);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    margin-bottom: var(--sp-3);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel h2 svg { width: 18px; height: 18px; fill: var(--brass); }
+
+  /* Knobs / EQ */
+  .knobs { display: flex; justify-content: space-around; gap: var(--sp-2); flex-wrap: wrap; }
+  .knob-wrap { text-align: center; }
+  .knob {
+    width: 64px; height: 64px; border-radius: 50%;
+    margin: 0 auto 6px;
+    background:
+      radial-gradient(circle at 38% 30%, var(--metal-hi), var(--metal) 55%, var(--metal-dark) 100%);
+    box-shadow: var(--shadow-knob);
+    border: 1px solid rgba(0,0,0,0.45);
+    position: relative;
+    cursor: ns-resize;
+  }
+  .knob::after {
+    content: ""; position: absolute;
+    left: 50%; top: 8px; width: 4px; height: 18px;
+    background: #2b2620; border-radius: 2px;
+    transform: translateX(-50%);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.5);
+  }
+  .knob:focus-visible { outline: 3px solid var(--amber-glow); outline-offset: 3px; }
+  .knob.k1::after { transform: translateX(-50%) rotate(-40deg); transform-origin: 50% 24px; }
+  .knob.k2::after { transform: translateX(-50%) rotate(30deg); transform-origin: 50% 24px; }
+  .knob.k3::after { transform: translateX(-50%) rotate(70deg); transform-origin: 50% 24px; }
+  .knob-wrap label {
+    font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 1px;
+    color: #c9b58a; font-weight: 600;
+  }
+
+  /* VU meter */
+  .vu {
+    margin-top: var(--sp-4);
+    background: linear-gradient(180deg, #1a1208, #0c0904);
+    border-radius: var(--r-sm);
+    padding: var(--sp-3);
+    box-shadow: var(--shadow-inset);
+    display: flex; gap: 4px; align-items: flex-end; height: 70px;
+  }
+  .vu .bar {
+    flex: 1; border-radius: 2px;
+    background: linear-gradient(180deg, var(--led-red), var(--amber) 35%, var(--led-green) 75%);
+    box-shadow: 0 0 6px rgba(255,140,46,0.4);
+    transform-origin: bottom;
+    animation: eq 1.2s ease-in-out infinite alternate;
+  }
+  .vu .bar:nth-child(2n) { animation-duration: 0.9s; }
+  .vu .bar:nth-child(3n) { animation-duration: 1.5s; }
+  .vu .bar:nth-child(4n) { animation-duration: 0.7s; }
+  @keyframes eq { from { height: 18%; } to { height: 100%; } }
+
+  /* Playlist / queue */
+  .queue { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+  .queue li {
+    display: flex; align-items: center; gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-2);
+    border-radius: var(--r-sm);
+    background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.18));
+    box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset, 0 1px 2px rgba(0,0,0,0.4);
+    transition: transform var(--dur) var(--ease-smooth), box-shadow var(--dur) var(--ease-smooth);
+    cursor: pointer;
+  }
+  .queue li:hover { transform: translateX(3px); }
+  .queue li:focus-visible { outline: 3px solid var(--amber-glow); outline-offset: 2px; }
+  .queue li.playing {
+    background: linear-gradient(180deg, rgba(212,175,55,0.28), rgba(138,106,31,0.18));
+    box-shadow: 0 0 0 1px rgba(212,175,55,0.5) inset, 0 2px 6px rgba(0,0,0,0.5);
+  }
+  .q-num {
+    font-family: var(--font-mono); font-size: var(--fs-xs);
+    color: #b39a6a; width: 20px; flex: 0 0 auto; text-align: center;
+  }
+  .q-art {
+    width: 38px; height: 38px; border-radius: 6px; flex: 0 0 auto;
+    background:
+      radial-gradient(circle at 30% 25%, var(--metal-light), var(--metal-dark));
+    box-shadow: var(--shadow-raised);
+    display: grid; place-items: center;
+  }
+  .q-art svg { width: 18px; height: 18px; fill: #3a342c; }
+  .q-info { min-width: 0; flex: 1; }
+  .q-info b { display: block; font-size: var(--fs-sm); color: var(--cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .q-info span { font-size: var(--fs-xs); color: #b39a6a; }
+  .q-dur { font-family: var(--font-mono); font-size: var(--fs-xs); color: #c9b58a; flex: 0 0 auto; }
+
+  /* Bottom status strip */
+  .status-strip {
+    margin-top: var(--sp-4);
+    display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: center; justify-content: space-between;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.45), rgba(255,255,255,0) 45%),
+      linear-gradient(180deg, var(--metal-light), var(--metal) 50%, var(--metal-dark));
+    border-radius: var(--r-md);
+    padding: var(--sp-3) var(--sp-4);
+    color: var(--ink);
+    box-shadow: var(--shadow-panel), var(--shadow-raised);
+    border: 1px solid rgba(0,0,0,0.4);
+  }
+  .led-row { display: flex; gap: var(--sp-4); flex-wrap: wrap; }
+  .led-item { display: flex; align-items: center; gap: 8px; font-size: var(--fs-sm); font-weight: 600; color: #3a322a; }
+  .led {
+    width: 12px; height: 12px; border-radius: 50%;
+    box-shadow: 0 0 6px currentColor, 0 1px 1px rgba(0,0,0,0.4) inset;
+  }
+  .led.on { background: var(--led-green); color: var(--led-green); }
+  .led.warn { background: var(--amber); color: var(--amber); }
+  .led.off { background: #7a7066; color: #7a7066; box-shadow: 0 1px 1px rgba(0,0,0,0.4) inset; }
+
+  .toggle {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: var(--fs-sm); font-weight: 600; color: #3a322a; cursor: pointer;
+  }
+  .switch {
+    width: 52px; height: 28px; border-radius: var(--r-pill);
+    background: linear-gradient(180deg, #8a9096, #b6bbc0);
+    box-shadow: var(--shadow-inset); position: relative;
+    transition: background var(--dur) var(--ease-smooth);
+  }
+  .switch::after {
+    content: ""; position: absolute; top: 2px; left: 2px;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, var(--metal-hi), var(--metal) 60%, var(--metal-dark));
+    box-shadow: var(--shadow-knob);
+    transition: transform var(--dur) var(--ease);
+  }
+  .toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .toggle input:checked + .switch { background: linear-gradient(180deg, #2faf54, #6cff8a); }
+  .toggle input:checked + .switch::after { transform: translateX(24px); }
+  .toggle input:focus-visible + .switch { outline: 3px solid var(--amber-glow); outline-offset: 3px; }
+
+  footer {
+    margin-top: var(--sp-4);
+    text-align: center;
+    font-size: var(--fs-xs);
+    color: rgba(243,234,215,0.55);
+    letter-spacing: 1px;
+  }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 880px) {
+    main { grid-template-columns: 1fr; }
+    .topbar { flex-direction: column; align-items: stretch; }
+    nav.menu { justify-content: center; flex-wrap: wrap; }
+    .acct { justify-content: center; }
+  }
+  @media (max-width: 480px) {
+    body { padding: var(--sp-2); }
+    .track-meta .title { font-size: var(--fs-xl); }
+    .transport { gap: var(--sp-2); }
+    .btn-round { width: 50px; height: 50px; }
+    .btn-play { width: 64px; height: 64px; }
+    nav.menu a { padding: 6px 11px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .platter .vinyl-spin, .platter .label { animation: none !important; }
+    .vu .bar { animation: none !important; height: 55% !important; }
+    *, *::before, *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <!-- ===== HEADER / NAV ===== -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="#3a2c08"><path d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 12a3 3 0 110-6 3 3 0 010 6zm0-2a1 1 0 100-2 1 1 0 000 2z"/></svg>
+        </span>
+        <div>
+          <h1>Vinyl</h1>
+          <div class="sub">Hi-Fi Studio</div>
+        </div>
+      </div>
+      <nav class="menu" aria-label="Primary">
+        <a href="#" class="active" aria-current="page">Player</a>
+        <a href="#">Library</a>
+        <a href="#">Mixer</a>
+        <a href="#">Store</a>
+      </nav>
+      <div class="acct">
+        <div class="who">
+          <strong>Marco Reyes</strong>
+          <span>Audiophile Plan</span>
+        </div>
+        <span class="avatar" role="img" aria-label="User avatar"></span>
+      </div>
+    </header>
+
+    <!-- ===== MAIN ===== -->
+    <main>
+      <!-- Player deck -->
+      <section class="deck" aria-label="Now playing">
+        <div class="deck-inner">
+          <p class="now-label">Now Playing &middot; Side A</p>
+          <div class="turntable">
+            <div class="platter" role="img" aria-label="Spinning vinyl record">
+              <div class="vinyl-spin" aria-hidden="true"></div>
+              <div class="label"><span>VNL</span></div>
+            </div>
+            <div class="track-meta">
+              <div class="title">Midnight Reverb</div>
+              <div class="artist">The Velvet Coils</div>
+              <div class="album">from &ldquo;Analog Dreams&rdquo; &middot; 1978 Remaster</div>
+            </div>
+          </div>
+
+          <div class="lcd" aria-label="Playback progress">
+            <div class="times"><span>2:14</span><span>-3:02</span></div>
+            <div class="scrub" role="slider" aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="42" tabindex="0">
+              <div class="fill"></div>
+            </div>
+          </div>
+
+          <div class="transport">
+            <button class="btn-round" aria-label="Previous track">
+              <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+            </button>
+            <button class="btn-round" aria-label="Rewind">
+              <svg viewBox="0 0 24 24"><path d="M11 12l8-6v12zm-9 0l8-6v12z"/></svg>
+            </button>
+            <button class="btn-round btn-play" aria-label="Play">
+              <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <button class="btn-round" aria-label="Fast forward">
+              <svg viewBox="0 0 24 24"><path d="M13 12l-8 6V6zm9 0l-8 6V6z"/></svg>
+            </button>
+            <button class="btn-round" aria-label="Next track">
+              <svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right column -->
+      <div class="side">
+        <!-- EQ panel -->
+        <section class="panel" aria-label="Equalizer">
+          <h2>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17h4v4H3zm7-6h4v10h-4zm7-8h4v18h-4z"/></svg>
+            Tone &amp; Levels
+          </h2>
+          <div class="knobs">
+            <div class="knob-wrap">
+              <div class="knob k1" tabindex="0" role="slider" aria-label="Bass" aria-valuenow="35"></div>
+              <label>Bass</label>
+            </div>
+            <div class="knob-wrap">
+              <div class="knob k2" tabindex="0" role="slider" aria-label="Mid" aria-valuenow="62"></div>
+              <label>Mid</label>
+            </div>
+            <div class="knob-wrap">
+              <div class="knob k3" tabindex="0" role="slider" aria-label="Treble" aria-valuenow="78"></div>
+              <label>Treble</label>
+            </div>
+          </div>
+          <div class="vu" aria-hidden="true">
+            <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+            <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+            <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+            <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+          </div>
+        </section>
+
+        <!-- Queue panel -->
+        <section class="panel" aria-label="Up next queue">
+          <h2>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h13v2H3zm0 5h13v2H3zm0 5h9v2H3zm15-9l4 4-4 4z"/></svg>
+            Up Next
+          </h2>
+          <ul class="queue">
+            <li class="playing" tabindex="0">
+              <span class="q-num">1</span>
+              <span class="q-art" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 12a3 3 0 110-6 3 3 0 010 6z"/></svg></span>
+              <span class="q-info"><b>Midnight Reverb</b><span>The Velvet Coils</span></span>
+              <span class="q-dur">5:16</span>
+            </li>
+            <li tabindex="0">
+              <span class="q-num">2</span>
+              <span class="q-art" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 12a3 3 0 110-6 3 3 0 010 6z"/></svg></span>
+              <span class="q-info"><b>Amber Static</b><span>Lowell Grove</span></span>
+              <span class="q-dur">3:48</span>
+            </li>
+            <li tabindex="0">
+              <span class="q-num">3</span>
+              <span class="q-art" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 12a3 3 0 110-6 3 3 0 010 6z"/></svg></span>
+              <span class="q-info"><b>Brass Horizon</b><span>Solene Marr</span></span>
+              <span class="q-dur">4:21</span>
+            </li>
+            <li tabindex="0">
+              <span class="q-num">4</span>
+              <span class="q-art" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 12a3 3 0 110-6 3 3 0 010 6z"/></svg></span>
+              <span class="q-info"><b>Walnut Lullaby</b><span>The Velvet Coils</span></span>
+              <span class="q-dur">6:02</span>
+            </li>
+          </ul>
+        </section>
+      </div>
+    </main>
+
+    <!-- ===== STATUS STRIP ===== -->
+    <section class="status-strip" aria-label="Device status">
+      <div class="led-row">
+        <span class="led-item"><span class="led on" aria-hidden="true"></span>Amp Ready</span>
+        <span class="led-item"><span class="led warn" aria-hidden="true"></span>48 kHz / 24-bit</span>
+        <span class="led-item"><span class="led off" aria-hidden="true"></span>Auto-Repeat</span>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" checked />
+        <span class="switch" aria-hidden="true"></span>
+        Loudness
+      </label>
+    </section>
+
+    <footer>Vinyl Hi-Fi Studio &mdash; Warm analog sound, all digital convenience.</footer>
+  </div>
+</body>
+</html>

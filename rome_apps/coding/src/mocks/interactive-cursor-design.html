@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vellum — Creative Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Color — dark creative canvas with cursor accent */
+    --bg: #0E0D0C;
+    --bg-2: #161413;
+    --surface: #1C1916;
+    --fg: #F7F4F1;
+    --muted: #A8A29E;
+    --muted-2: #78716C;
+    --border: rgba(247, 244, 241, 0.10);
+    --border-strong: rgba(247, 244, 241, 0.22);
+    --accent: #D97706;
+    --accent-2: #F59E0B;
+    --on-accent: #1A1410;
+
+    /* Cursor system tokens */
+    --cursor-size: 20px;
+    --cursor-hover-scale: 1.5;
+    --magnetic-distance: 100px;
+    --trail-fade: 0.1;
+    --blend-mode: difference;
+
+    /* Radius */
+    --r-sm: 8px;
+    --r-md: 14px;
+    --r-lg: 24px;
+    --r-pill: 999px;
+
+    /* Shadow */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.55);
+    --glow: 0 0 40px rgba(217, 119, 6, 0.35);
+
+    /* Spacing scale */
+    --s-1: 6px;
+    --s-2: 12px;
+    --s-3: 18px;
+    --s-4: 28px;
+    --s-5: 44px;
+    --s-6: 72px;
+    --s-7: 110px;
+
+    /* Type scale */
+    --font-head: 'Space Grotesk', system-ui, sans-serif;
+    --font-body: 'Archivo', system-ui, sans-serif;
+    --t-xs: 0.72rem;
+    --t-sm: 0.86rem;
+    --t-md: 1rem;
+    --t-lg: 1.35rem;
+    --t-xl: clamp(2.2rem, 6vw, 4.4rem);
+    --t-2xl: clamp(3rem, 11vw, 8rem);
+
+    /* Motion */
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --t-fast: 0.18s;
+    --t-mid: 0.4s;
+    --t-slow: 0.8s;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: var(--t-md);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* Hide native cursor only when custom cursor active (pointer devices) */
+  @media (hover: hover) and (pointer: fine) {
+    body.cursor-on, body.cursor-on a, body.cursor-on button { cursor: none; }
+  }
+
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; color: inherit; border: none; background: none; }
+  ::selection { background: var(--accent); color: var(--on-accent); }
+
+  /* ============ CUSTOM CURSOR ============ */
+  .cursor-dot,
+  .cursor-ring {
+    position: fixed;
+    top: 0; left: 0;
+    pointer-events: none;
+    z-index: 9999;
+    border-radius: 50%;
+    transform: translate3d(-50%, -50%, 0);
+    will-change: transform;
+  }
+  .cursor-dot {
+    width: 7px; height: 7px;
+    background: var(--accent-2);
+    transition: width var(--t-fast) var(--ease), height var(--t-fast) var(--ease), opacity var(--t-fast);
+  }
+  .cursor-ring {
+    width: var(--cursor-size); height: var(--cursor-size);
+    border: 1.5px solid var(--fg);
+    mix-blend-mode: var(--blend-mode);
+    transition: width var(--t-mid) var(--ease), height var(--t-mid) var(--ease),
+      background var(--t-mid) var(--ease), border-color var(--t-mid) var(--ease),
+      opacity var(--t-fast);
+  }
+  body.cursor-hover .cursor-ring {
+    width: calc(var(--cursor-size) * var(--cursor-hover-scale) * 2);
+    height: calc(var(--cursor-size) * var(--cursor-hover-scale) * 2);
+    background: rgba(247, 244, 241, 0.92);
+    border-color: transparent;
+  }
+  body.cursor-hover .cursor-dot { opacity: 0; }
+  body.cursor-active .cursor-ring { width: 12px; height: 12px; }
+  /* trail dots */
+  .trail {
+    position: fixed; top: 0; left: 0;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+    pointer-events: none; z-index: 9998;
+    transform: translate3d(-50%, -50%, 0);
+    opacity: 0; will-change: transform, opacity;
+  }
+  /* Hide custom cursor on touch / no-hover devices */
+  @media (hover: none), (pointer: coarse) {
+    .cursor-dot, .cursor-ring, .trail { display: none !important; }
+    body { cursor: auto; }
+  }
+
+  /* ============ LAYOUT ============ */
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 0 clamp(18px, 5vw, 56px); }
+
+  /* Header */
+  header {
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(14px);
+    background: linear-gradient(180deg, rgba(14,13,12,0.92), rgba(14,13,12,0.55));
+    border-bottom: 1px solid var(--border);
+  }
+  .nav {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--s-3); padding: var(--s-3) 0;
+  }
+  .brand { display: flex; align-items: center; gap: var(--s-2); font-family: var(--font-head); font-weight: 600; font-size: 1.1rem; letter-spacing: -0.02em; }
+  .brand .logo { width: 30px; height: 30px; flex: none; }
+  .nav-links { display: flex; align-items: center; gap: var(--s-4); }
+  .nav-links a {
+    font-size: var(--t-sm); color: var(--muted);
+    position: relative; padding: var(--s-1) 2px;
+    transition: color var(--t-fast) var(--ease);
+  }
+  .nav-links a::after {
+    content: ""; position: absolute; left: 0; bottom: -2px;
+    width: 100%; height: 1.5px; background: var(--accent);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform var(--t-mid) var(--ease);
+  }
+  .nav-links a:hover, .nav-links a:focus-visible { color: var(--fg); }
+  .nav-links a:hover::after, .nav-links a:focus-visible::after { transform: scaleX(1); }
+  .nav-desktop { display: none; }
+  @media (min-width: 880px) { .nav-desktop { display: flex; } }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: var(--s-2);
+    border-radius: var(--r-pill);
+    padding: 11px 20px; font-size: var(--t-sm); font-weight: 500;
+    font-family: var(--font-head);
+    transition: transform var(--t-mid) var(--ease), background var(--t-mid) var(--ease),
+      color var(--t-mid) var(--ease), box-shadow var(--t-mid) var(--ease);
+  }
+  .btn-primary {
+    background: var(--accent); color: var(--on-accent);
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-primary:hover, .btn-primary:focus-visible { background: var(--accent-2); box-shadow: var(--glow); }
+  .btn-primary:active { transform: scale(0.96); }
+  .btn-ghost {
+    border: 1px solid var(--border-strong); color: var(--fg);
+  }
+  .btn-ghost:hover, .btn-ghost:focus-visible { border-color: var(--accent); color: var(--accent-2); }
+  .btn-ghost:active { transform: scale(0.96); }
+  :focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; border-radius: var(--r-sm); }
+
+  /* ============ HERO ============ */
+  .hero { position: relative; padding: var(--s-7) 0 var(--s-6); overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: -20% -10% auto -10%; height: 70%;
+    background: radial-gradient(60% 80% at 30% 20%, rgba(217,119,6,0.20), transparent 60%),
+                radial-gradient(50% 60% at 90% 10%, rgba(245,158,11,0.12), transparent 60%);
+    filter: blur(8px); pointer-events: none; z-index: 0;
+  }
+  .hero-grid {
+    position: absolute; inset: 0; z-index: 0; opacity: 0.4;
+    background-image:
+      linear-gradient(to right, var(--border) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(80% 70% at 50% 30%, #000, transparent 75%);
+  }
+  .hero-inner { position: relative; z-index: 1; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: var(--s-2);
+    font-family: var(--font-head); font-size: var(--t-xs); letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--accent-2);
+    border: 1px solid var(--border); border-radius: var(--r-pill);
+    padding: 7px 14px; margin-bottom: var(--s-4);
+  }
+  .eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-2); box-shadow: var(--glow); }
+  .display {
+    font-family: var(--font-head); font-weight: 600;
+    font-size: var(--t-2xl); line-height: 0.94; letter-spacing: -0.035em;
+    max-width: 14ch;
+  }
+  .display .out { color: transparent; -webkit-text-stroke: 1.4px var(--muted); }
+  .display .accent { color: var(--accent-2); }
+  .hero-sub {
+    margin-top: var(--s-4); max-width: 46ch;
+    color: var(--muted); font-size: var(--t-lg); font-weight: 300; line-height: 1.5;
+  }
+  .hero-cta { margin-top: var(--s-5); display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
+  .hint {
+    display: inline-flex; align-items: center; gap: var(--s-2);
+    color: var(--muted-2); font-size: var(--t-sm);
+  }
+  .hint svg { width: 18px; height: 18px; }
+
+  .hero-stats {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: var(--s-4); margin-top: var(--s-6);
+    border-top: 1px solid var(--border); padding-top: var(--s-4);
+  }
+  @media (min-width: 720px) { .hero-stats { grid-template-columns: repeat(4, 1fr); } }
+  .stat .num { font-family: var(--font-head); font-size: var(--t-xl); font-weight: 600; letter-spacing: -0.03em; line-height: 1; }
+  .stat .lbl { color: var(--muted-2); font-size: var(--t-sm); margin-top: var(--s-1); }
+
+  /* ============ WORK GRID ============ */
+  section { padding: var(--s-7) 0; }
+  .sec-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; margin-bottom: var(--s-5); }
+  .sec-title { font-family: var(--font-head); font-weight: 600; font-size: var(--t-xl); letter-spacing: -0.03em; }
+  .sec-kicker { color: var(--accent-2); font-family: var(--font-head); font-size: var(--t-sm); letter-spacing: 0.15em; text-transform: uppercase; }
+  .sec-note { color: var(--muted); max-width: 34ch; font-size: var(--t-sm); }
+
+  .work-grid {
+    display: grid; gap: var(--s-3);
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 760px) { .work-grid { grid-template-columns: 1fr 1fr; } }
+
+  .card {
+    position: relative; overflow: hidden;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    transition: transform var(--t-mid) var(--ease), border-color var(--t-mid) var(--ease), box-shadow var(--t-mid) var(--ease);
+  }
+  .card:hover, .card:focus-within {
+    transform: translateY(-6px);
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-lg);
+  }
+  .card.feature { grid-column: 1 / -1; }
+  .card-visual {
+    aspect-ratio: 16 / 9; position: relative; overflow: hidden;
+    background: linear-gradient(135deg, var(--bg-2), var(--surface));
+  }
+  .card.feature .card-visual { aspect-ratio: 21 / 8; }
+  @media (max-width: 600px) { .card.feature .card-visual { aspect-ratio: 16/10; } }
+  .card-visual svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .blob { transition: transform var(--t-slow) var(--ease); transform-origin: center; }
+  .card:hover .blob { transform: scale(1.08) rotate(4deg); }
+  .card-tag {
+    position: absolute; top: var(--s-3); left: var(--s-3); z-index: 2;
+    font-family: var(--font-head); font-size: var(--t-xs); letter-spacing: 0.12em; text-transform: uppercase;
+    background: rgba(14,13,12,0.6); backdrop-filter: blur(6px);
+    border: 1px solid var(--border); border-radius: var(--r-pill);
+    padding: 6px 12px; color: var(--fg);
+  }
+  .card-body { padding: var(--s-4); display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s-3); }
+  .card-body h3 { font-family: var(--font-head); font-weight: 500; font-size: var(--t-lg); letter-spacing: -0.02em; }
+  .card-body .meta { color: var(--muted-2); font-size: var(--t-sm); margin-top: 4px; }
+  .arrow {
+    flex: none; width: 44px; height: 44px; border-radius: 50%;
+    border: 1px solid var(--border-strong);
+    display: grid; place-items: center;
+    transition: background var(--t-mid) var(--ease), transform var(--t-mid) var(--ease), border-color var(--t-mid) var(--ease);
+  }
+  .arrow svg { width: 18px; height: 18px; transition: transform var(--t-mid) var(--ease); }
+  .card:hover .arrow { background: var(--accent); border-color: var(--accent); }
+  .card:hover .arrow svg { transform: translate(2px, -2px); color: var(--on-accent); }
+
+  /* ============ MAGNETIC CTA ============ */
+  .cta-panel {
+    position: relative; overflow: hidden;
+    border: 1px solid var(--border); border-radius: var(--r-lg);
+    background:
+      radial-gradient(120% 140% at 0% 0%, rgba(217,119,6,0.18), transparent 55%),
+      var(--bg-2);
+    padding: clamp(40px, 7vw, 96px) clamp(24px, 5vw, 80px);
+    text-align: center;
+  }
+  .cta-panel h2 { font-family: var(--font-head); font-weight: 600; font-size: var(--t-xl); letter-spacing: -0.03em; max-width: 18ch; margin: 0 auto; }
+  .cta-panel p { color: var(--muted); margin: var(--s-3) auto 0; max-width: 40ch; }
+  .magnetic-wrap { margin-top: var(--s-5); display: inline-block; }
+  .magnetic {
+    display: inline-flex; align-items: center; gap: var(--s-2);
+    background: var(--accent); color: var(--on-accent);
+    font-family: var(--font-head); font-weight: 600; font-size: var(--t-lg);
+    padding: 20px 38px; border-radius: var(--r-pill);
+    will-change: transform; box-shadow: var(--glow);
+    transition: background var(--t-mid) var(--ease);
+  }
+  .magnetic span.inner { display: inline-flex; align-items: center; gap: var(--s-2); will-change: transform; }
+  .magnetic:hover { background: var(--accent-2); }
+  .magnetic:active { transform: scale(0.97); }
+
+  /* ============ CAPABILITIES ============ */
+  .cap-grid { display: grid; gap: var(--s-3); grid-template-columns: 1fr; }
+  @media (min-width: 640px) { .cap-grid { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 980px) { .cap-grid { grid-template-columns: repeat(4, 1fr); } }
+  .cap {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r-md); padding: var(--s-4);
+    transition: transform var(--t-mid) var(--ease), border-color var(--t-mid) var(--ease);
+  }
+  .cap:hover { transform: translateY(-4px); border-color: var(--accent); }
+  .cap .ico { width: 40px; height: 40px; border-radius: var(--r-sm); background: rgba(217,119,6,0.14); display: grid; place-items: center; color: var(--accent-2); margin-bottom: var(--s-3); }
+  .cap .ico svg { width: 22px; height: 22px; }
+  .cap h4 { font-family: var(--font-head); font-weight: 500; font-size: var(--t-md); margin-bottom: 6px; }
+  .cap p { color: var(--muted-2); font-size: var(--t-sm); }
+
+  /* ============ FOOTER ============ */
+  footer { border-top: 1px solid var(--border); padding: var(--s-6) 0 var(--s-5); }
+  .foot-grid { display: flex; flex-wrap: wrap; gap: var(--s-4); align-items: center; justify-content: space-between; }
+  .foot-grid .copy { color: var(--muted-2); font-size: var(--t-sm); }
+  .socials { display: flex; gap: var(--s-2); }
+  .socials a {
+    width: 42px; height: 42px; border-radius: 50%;
+    border: 1px solid var(--border); display: grid; place-items: center;
+    color: var(--muted); transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+  }
+  .socials a svg { width: 18px; height: 18px; }
+  .socials a:hover, .socials a:focus-visible { color: var(--accent-2); border-color: var(--accent); transform: translateY(-2px); }
+
+  /* ============ REDUCED MOTION ============ */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+    .cursor-dot, .cursor-ring, .trail { display: none !important; }
+    body { cursor: auto !important; }
+  }
+</style>
+</head>
+<body>
+  <!-- Custom cursor elements -->
+  <div class="cursor-ring" aria-hidden="true"></div>
+  <div class="cursor-dot" aria-hidden="true"></div>
+
+  <header>
+    <div class="wrap">
+      <nav class="nav" aria-label="Primary">
+        <a class="brand" href="#" data-cursor="hover" aria-label="Vellum home">
+          <svg class="logo" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <rect width="32" height="32" rx="9" fill="#D97706"/>
+            <path d="M9 10l7 13 7-13" stroke="#1A1410" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Vellum<span style="color:var(--accent-2)">.</span>
+        </a>
+        <div class="nav-links nav-desktop">
+          <a href="#work" data-cursor="hover">Work</a>
+          <a href="#capabilities" data-cursor="hover">Studio</a>
+          <a href="#about" data-cursor="hover">Approach</a>
+          <a href="#contact" data-cursor="hover">Journal</a>
+        </div>
+        <a class="btn btn-primary" href="#contact" data-cursor="hover">
+          Start a project
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero" aria-labelledby="hero-title" style="padding-top:var(--s-6)">
+      <div class="hero-grid" aria-hidden="true"></div>
+      <div class="wrap hero-inner">
+        <span class="eyebrow"><span class="dot"></span>Independent design studio — Lisbon &amp; remote</span>
+        <h1 class="display" id="hero-title">
+          We build <span class="accent">interactive</span> worlds people <span class="out">remember</span>
+        </h1>
+        <p class="hero-sub">
+          Vellum is a small studio crafting immersive websites, motion systems, and brand experiences for ambitious teams. Move your pointer — the interface moves with you.
+        </p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="#work" data-cursor="hover">
+            View selected work
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <a class="btn btn-ghost" href="#contact" data-cursor="hover">Book a call</a>
+          <span class="hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4l7 16 2-7 7-2z"/></svg>
+            Hover the canvas
+          </span>
+        </div>
+
+        <div class="hero-stats">
+          <div class="stat"><div class="num">48</div><div class="lbl">Shipped projects</div></div>
+          <div class="stat"><div class="num">12</div><div class="lbl">Awwwards &amp; FWA</div></div>
+          <div class="stat"><div class="num">9</div><div class="lbl">Years in motion</div></div>
+          <div class="stat"><div class="num">100<span style="color:var(--accent-2)">%</span></div><div class="lbl">Founder-led</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WORK -->
+    <section id="work" aria-labelledby="work-title">
+      <div class="wrap">
+        <div class="sec-head">
+          <div>
+            <div class="sec-kicker">Selected work</div>
+            <h2 class="sec-title" id="work-title">Recent experiences</h2>
+          </div>
+          <p class="sec-note">A glimpse of immersive sites and product launches built over the last year.</p>
+        </div>
+
+        <div class="work-grid">
+          <article class="card feature" tabindex="0" data-cursor="hover">
+            <div class="card-visual">
+              <svg viewBox="0 0 800 305" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                <defs>
+                  <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#D97706"/><stop offset="1" stop-color="#7C2D12"/>
+                  </linearGradient>
+                </defs>
+                <rect width="800" height="305" fill="#161413"/>
+                <g class="blob">
+                  <circle cx="200" cy="150" r="150" fill="url(#g1)" opacity="0.85"/>
+                  <circle cx="520" cy="120" r="90" fill="none" stroke="#F59E0B" stroke-width="2" opacity="0.5"/>
+                  <circle cx="600" cy="220" r="160" fill="none" stroke="#F59E0B" stroke-width="1.5" opacity="0.3"/>
+                </g>
+              </svg>
+            </div>
+            <span class="card-tag">WebGL · Brand</span>
+            <div class="card-body">
+              <div>
+                <h3>Meridian — fluid commerce platform</h3>
+                <div class="meta">Art direction, motion, front-end · 2025</div>
+              </div>
+              <span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></span>
+            </div>
+          </article>
+
+          <article class="card" tabindex="0" data-cursor="hover">
+            <div class="card-visual">
+              <svg viewBox="0 0 400 225" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                <rect width="400" height="225" fill="#1C1916"/>
+                <g class="blob">
+                  <rect x="70" y="50" width="120" height="120" rx="20" fill="#D97706" opacity="0.8" transform="rotate(12 130 110)"/>
+                  <rect x="190" y="70" width="120" height="120" rx="20" fill="none" stroke="#F59E0B" stroke-width="2" transform="rotate(12 250 130)"/>
+                </g>
+              </svg>
+            </div>
+            <span class="card-tag">Motion</span>
+            <div class="card-body">
+              <div><h3>Orbit Festival</h3><div class="meta">Identity &amp; site · 2025</div></div>
+              <span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></span>
+            </div>
+          </article>
+
+          <article class="card" tabindex="0" data-cursor="hover">
+            <div class="card-visual">
+              <svg viewBox="0 0 400 225" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                <rect width="400" height="225" fill="#13110F"/>
+                <g class="blob">
+                  <path d="M40 180 Q120 40 200 130 T360 90" fill="none" stroke="#D97706" stroke-width="4"/>
+                  <path d="M40 200 Q120 80 200 160 T360 130" fill="none" stroke="#F59E0B" stroke-width="2" opacity="0.6"/>
+                  <circle cx="200" cy="130" r="10" fill="#F59E0B"/>
+                </g>
+              </svg>
+            </div>
+            <span class="card-tag">Product</span>
+            <div class="card-body">
+              <div><h3>Nimbus Analytics</h3><div class="meta">UX &amp; design system · 2024</div></div>
+              <span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- CAPABILITIES -->
+    <section id="capabilities" aria-labelledby="cap-title">
+      <div class="wrap">
+        <div class="sec-head">
+          <div>
+            <div class="sec-kicker">Studio</div>
+            <h2 class="sec-title" id="cap-title">What we craft</h2>
+          </div>
+          <p class="sec-note">From first concept to a shipped, interactive build — all under one roof.</p>
+        </div>
+        <div class="cap-grid">
+          <div class="cap" tabindex="0" data-cursor="hover">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z"/></svg></div>
+            <h4>Brand &amp; identity</h4>
+            <p>Logo systems, type, and motion guidelines that feel alive in every state.</p>
+          </div>
+          <div class="cap" tabindex="0" data-cursor="hover">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8a2 2 0 012-2h16a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2z"/><path d="M7 21h10M12 18v3"/></svg></div>
+            <h4>Interactive web</h4>
+            <p>Custom cursors, scroll choreography, and WebGL scenes that respond to touch.</p>
+          </div>
+          <div class="cap" tabindex="0" data-cursor="hover">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+            <h4>Motion design</h4>
+            <p>Micro-interactions and transitions tuned frame-by-frame for momentum.</p>
+          </div>
+          <div class="cap" tabindex="0" data-cursor="hover">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6 4 4 6-7"/><path d="M4 21h16"/></svg></div>
+            <h4>Product UX</h4>
+            <p>Design systems and flows that scale from prototype to production.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAGNETIC CTA -->
+    <section id="contact" aria-labelledby="cta-title" style="padding-bottom:var(--s-6)">
+      <div class="wrap">
+        <div class="cta-panel">
+          <h2 id="cta-title">Have something worth remembering?</h2>
+          <p>Tell us about the experience you want people to feel. We reply within two working days.</p>
+          <div class="magnetic-wrap">
+            <button class="magnetic" id="magnetic-btn" data-cursor="hover">
+              <span class="inner">
+                Start a project
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer id="about">
+    <div class="wrap">
+      <div class="foot-grid">
+        <div>
+          <a class="brand" href="#" data-cursor="hover" style="margin-bottom:8px" aria-label="Vellum home">
+            <svg class="logo" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+              <rect width="32" height="32" rx="9" fill="#D97706"/>
+              <path d="M9 10l7 13 7-13" stroke="#1A1410" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Vellum<span style="color:var(--accent-2)">.</span>
+          </a>
+          <p class="copy">© 2026 Vellum Studio. Crafted with intent.</p>
+        </div>
+        <div class="socials" aria-label="Social links">
+          <a href="#" data-cursor="hover" aria-label="Dribbble"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5 8c5 1 11 1 14-2M3.5 14c5-2 11-1 15 4M9 3.5c4 4 6 10 6.5 17"/></svg></a>
+          <a href="#" data-cursor="hover" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg></a>
+          <a href="#" data-cursor="hover" aria-label="X"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 4l16 16M20 4L4 20"/></svg></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    if (reduce || !fine) return;
+
+    document.body.classList.add('cursor-on');
+
+    var ring = document.querySelector('.cursor-ring');
+    var dot = document.querySelector('.cursor-dot');
+
+    var mx = window.innerWidth / 2, my = window.innerHeight / 2;
+    var rx = mx, ry = my;   // ring lerped position
+    var dx = mx, dy = my;   // dot (fast)
+
+    // Trail dots
+    var TRAIL = 8;
+    var trail = [];
+    for (var i = 0; i < TRAIL; i++) {
+      var t = document.createElement('div');
+      t.className = 'trail';
+      document.body.appendChild(t);
+      trail.push({ el: t, x: mx, y: my });
+    }
+
+    window.addEventListener('mousemove', function (e) {
+      mx = e.clientX; my = e.clientY;
+    }, { passive: true });
+
+    document.addEventListener('mousedown', function () { document.body.classList.add('cursor-active'); });
+    document.addEventListener('mouseup', function () { document.body.classList.remove('cursor-active'); });
+
+    // Hover targets morph the ring
+    document.querySelectorAll('[data-cursor="hover"]').forEach(function (el) {
+      el.addEventListener('mouseenter', function () { document.body.classList.add('cursor-hover'); });
+      el.addEventListener('mouseleave', function () { document.body.classList.remove('cursor-hover'); });
+    });
+
+    // Magnetic button
+    var mag = document.getElementById('magnetic-btn');
+    if (mag) {
+      var inner = mag.querySelector('.inner');
+      var DIST = 100;
+      mag.addEventListener('mousemove', function (e) {
+        var r = mag.getBoundingClientRect();
+        var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        var ox = e.clientX - cx, oy = e.clientY - cy;
+        var d = Math.hypot(ox, oy);
+        if (d < DIST + r.width / 2) {
+          mag.style.transform = 'translate(' + ox * 0.28 + 'px,' + oy * 0.28 + 'px)';
+          if (inner) inner.style.transform = 'translate(' + ox * 0.18 + 'px,' + oy * 0.18 + 'px)';
+        }
+      });
+      mag.addEventListener('mouseleave', function () {
+        mag.style.transform = '';
+        if (inner) inner.style.transform = '';
+      });
+    }
+
+    function raf() {
+      // fast dot
+      dx += (mx - dx) * 0.45;
+      dy += (my - dy) * 0.45;
+      dot.style.transform = 'translate3d(' + dx + 'px,' + dy + 'px,0) translate(-50%,-50%)';
+      // smooth ring (magnetic feel)
+      rx += (mx - rx) * 0.16;
+      ry += (my - ry) * 0.16;
+      ring.style.transform = 'translate3d(' + rx + 'px,' + ry + 'px,0) translate(-50%,-50%)';
+
+      // trail chain
+      var px = mx, py = my;
+      for (var i = 0; i < trail.length; i++) {
+        var node = trail[i];
+        node.x += (px - node.x) * 0.35;
+        node.y += (py - node.y) * 0.35;
+        var fade = 1 - i / trail.length;
+        node.el.style.opacity = (fade * 0.5).toFixed(3);
+        var scale = fade * 0.9 + 0.2;
+        node.el.style.transform = 'translate3d(' + node.x + 'px,' + node.y + 'px,0) translate(-50%,-50%) scale(' + scale + ')';
+        px = node.x; py = node.y;
+      }
+      requestAnimationFrame(raf);
+    }
+    requestAnimationFrame(raf);
+
+    // Hide cursor when leaving window
+    document.addEventListener('mouseleave', function () { ring.style.opacity = '0'; dot.style.opacity = '0'; });
+    document.addEventListener('mouseenter', function () { ring.style.opacity = ''; dot.style.opacity = ''; });
+  })();
+  </script>
+</body>
+</html>

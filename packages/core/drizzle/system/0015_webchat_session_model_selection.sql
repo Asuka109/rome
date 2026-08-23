@@ -1,0 +1,1 @@
+ALTER TABLE `webchat_sessions` ADD `large_model_selection` text;

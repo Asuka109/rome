@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Stratos — Workspace Analytics</title>
+<style>
+  /* ============ DESIGN TOKENS ============ */
+  :root {
+    /* Neutral base (from CSV Primary Colors) */
+    --bg-0: #eef1f6;      /* deepest backdrop */
+    --bg-1: #f5f6fa;
+    --surface: #ffffff;
+    --surface-2: #f5f5f5;
+    --border: #e0e0e0;
+
+    /* Brand accent for elevated elements */
+    --accent: #5b5bf6;
+    --accent-2: #8b5cf6;
+    --accent-glow: rgba(91, 91, 246, 0.35);
+    --accent-soft: rgba(91, 91, 246, 0.10);
+
+    /* Text */
+    --ink-1: #14161f;
+    --ink-2: #4a5060;
+    --ink-3: #8089a0;
+
+    /* Status */
+    --pos: #18a957;
+    --pos-soft: rgba(24, 169, 87, 0.12);
+    --neg: #e0395a;
+    --neg-soft: rgba(224, 57, 90, 0.12);
+    --warn: #e0922f;
+
+    /* Elevation scale (4 levels — from CSV Design System Variables) */
+    --elevation-1: 0 1px 3px rgba(20, 22, 31, 0.10);
+    --elevation-2: 0 4px 6px rgba(20, 22, 31, 0.10);
+    --elevation-3: 0 10px 20px rgba(20, 22, 31, 0.12);
+    --elevation-4: 0 20px 40px rgba(20, 22, 31, 0.16);
+    /* Layered, tinted shadow for the hero floating elements */
+    --elevation-accent: 0 18px 40px -12px var(--accent-glow), 0 6px 12px rgba(20,22,31,0.10);
+
+    --blur-amount: 8px;
+
+    /* Radius */
+    --r-sm: 8px;
+    --r-md: 14px;
+    --r-lg: 22px;
+    --r-pill: 999px;
+
+    /* Spacing scale */
+    --s-1: 4px;
+    --s-2: 8px;
+    --s-3: 12px;
+    --s-4: 16px;
+    --s-5: 24px;
+    --s-6: 32px;
+    --s-7: 48px;
+
+    /* Typography scale */
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --fs-xs: 0.72rem;
+    --fs-sm: 0.82rem;
+    --fs-base: 0.94rem;
+    --fs-lg: 1.15rem;
+    --fs-xl: 1.5rem;
+    --fs-2xl: 2.1rem;
+    --fs-3xl: 2.9rem;
+
+    /* Motion */
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --t-fast: 140ms;
+    --t-med: 280ms;
+    --t-slow: 520ms;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font);
+    color: var(--ink-1);
+    background:
+      radial-gradient(1200px 600px at 12% -10%, rgba(139,92,246,0.10), transparent 60%),
+      radial-gradient(1000px 500px at 100% 0%, rgba(91,91,246,0.10), transparent 55%),
+      var(--bg-0);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+
+  /* Ambient depth layers behind everything (parallax-ready blobs) */
+  .ambient {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.55;
+    will-change: transform;
+    animation: float 14s var(--ease) infinite alternate;
+  }
+  .blob.a { width: 420px; height: 420px; top: -120px; left: -80px;
+    background: radial-gradient(circle, var(--accent-2), transparent 70%); }
+  .blob.b { width: 520px; height: 520px; top: 30%; right: -160px;
+    background: radial-gradient(circle, var(--accent), transparent 70%); animation-delay: -4s; }
+  .blob.c { width: 360px; height: 360px; bottom: -120px; left: 30%;
+    background: radial-gradient(circle, #36c6ff, transparent 70%); animation-delay: -8s; opacity: 0.35; }
+
+  @keyframes float {
+    from { transform: translate3d(0,0,0) scale(1); }
+    to   { transform: translate3d(40px, -30px, 0) scale(1.08); }
+  }
+
+  .shell {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 248px 1fr;
+    gap: var(--s-5);
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: var(--s-5);
+    min-height: 100vh;
+  }
+
+  /* ============ SIDEBAR (floating layer 3) ============ */
+  .sidebar {
+    position: sticky;
+    top: var(--s-5);
+    align-self: start;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--elevation-3);
+    padding: var(--s-5) var(--s-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-5);
+    height: calc(100vh - var(--s-5) * 2);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    padding: 0 var(--s-2);
+  }
+  .brand-mark {
+    width: 38px; height: 38px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    box-shadow: var(--elevation-accent);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .brand-name { font-weight: 700; font-size: var(--fs-lg); letter-spacing: -0.01em; }
+  .brand-tag { font-size: var(--fs-xs); color: var(--ink-3); }
+
+  nav.menu { display: flex; flex-direction: column; gap: 2px; }
+  .menu-label {
+    font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--ink-3); padding: var(--s-3) var(--s-3) var(--s-2);
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: var(--s-3);
+    padding: var(--s-3);
+    border-radius: var(--r-sm);
+    color: var(--ink-2);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: background var(--t-fast) var(--ease), transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+  }
+  .nav-item svg { flex-shrink: 0; }
+  .nav-item:hover {
+    background: var(--surface-2);
+    color: var(--ink-1);
+    transform: translateY(-1px);
+  }
+  .nav-item:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .nav-item.active {
+    background: linear-gradient(135deg, var(--accent-soft), transparent);
+    color: var(--accent);
+    border-color: rgba(91,91,246,0.25);
+    box-shadow: var(--elevation-1);
+  }
+  .nav-item.active svg { color: var(--accent); }
+
+  .upsell {
+    margin-top: auto;
+    position: relative;
+    border-radius: var(--r-md);
+    padding: var(--s-4);
+    color: #fff;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    box-shadow: var(--elevation-accent);
+  }
+  .upsell::after {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(120px 80px at 80% 0%, rgba(255,255,255,0.35), transparent 70%);
+    pointer-events: none;
+  }
+  .upsell h4 { font-size: var(--fs-sm); position: relative; }
+  .upsell p { font-size: var(--fs-xs); opacity: 0.9; margin: var(--s-1) 0 var(--s-3); position: relative; }
+  .upsell button {
+    position: relative;
+    width: 100%;
+    border: 0;
+    border-radius: var(--r-sm);
+    padding: var(--s-2) var(--s-3);
+    background: #fff;
+    color: var(--accent);
+    font-weight: 600;
+    font-size: var(--fs-xs);
+    font-family: inherit;
+    cursor: pointer;
+    transition: transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+  }
+  .upsell button:hover { transform: translateY(-1px); box-shadow: 0 6px 14px rgba(0,0,0,0.2); }
+  .upsell button:active { transform: translateY(0); }
+  .upsell button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+  /* ============ MAIN ============ */
+  main { display: flex; flex-direction: column; gap: var(--s-5); min-width: 0; }
+
+  .topbar {
+    display: flex; align-items: center; gap: var(--s-4);
+    background: rgba(255,255,255,0.72);
+    -webkit-backdrop-filter: blur(var(--blur-amount));
+    backdrop-filter: blur(var(--blur-amount));
+    border: 1px solid rgba(255,255,255,0.6);
+    border-radius: var(--r-lg);
+    box-shadow: var(--elevation-2);
+    padding: var(--s-3) var(--s-4);
+    position: sticky;
+    top: var(--s-5);
+    z-index: 20;
+  }
+  .page-title { font-size: var(--fs-lg); font-weight: 700; letter-spacing: -0.01em; }
+  .page-sub { font-size: var(--fs-xs); color: var(--ink-3); }
+
+  .search {
+    margin-left: auto;
+    display: flex; align-items: center; gap: var(--s-2);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-pill);
+    padding: var(--s-2) var(--s-4);
+    box-shadow: var(--elevation-1);
+    transition: box-shadow var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+  }
+  .search:focus-within { box-shadow: 0 0 0 3px var(--accent-soft), var(--elevation-2); border-color: var(--accent); }
+  .search input {
+    border: 0; outline: 0; background: transparent;
+    font-family: inherit; font-size: var(--fs-sm); color: var(--ink-1);
+    width: 150px;
+  }
+  .search input::placeholder { color: var(--ink-3); }
+
+  .icon-btn {
+    position: relative;
+    width: 40px; height: 40px;
+    display: grid; place-items: center;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink-2);
+    cursor: pointer;
+    box-shadow: var(--elevation-1);
+    transition: transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+  }
+  .icon-btn:hover { transform: translateY(-2px); box-shadow: var(--elevation-2); color: var(--accent); }
+  .icon-btn:active { transform: translateY(0); }
+  .icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .dot {
+    position: absolute; top: 7px; right: 8px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--neg); border: 2px solid var(--surface);
+  }
+  .avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-2), var(--accent));
+    color: #fff; display: grid; place-items: center;
+    font-weight: 700; font-size: var(--fs-sm);
+    box-shadow: var(--elevation-2);
+    flex-shrink: 0;
+  }
+
+  /* ===== HERO row: overlapping dimensional panels ===== */
+  .hero {
+    position: relative;
+    border-radius: var(--r-lg);
+    padding: var(--s-7) var(--s-6);
+    color: #fff;
+    overflow: hidden;
+    background:
+      radial-gradient(600px 300px at 100% 0%, rgba(255,255,255,0.18), transparent 60%),
+      linear-gradient(135deg, #2a2a8c, var(--accent) 55%, var(--accent-2));
+    box-shadow: var(--elevation-4);
+  }
+  .hero-grid-overlay {
+    position: absolute; inset: 0; opacity: 0.4; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px);
+    background-size: 44px 44px;
+    -webkit-mask-image: radial-gradient(600px 300px at 80% 30%, #000, transparent 70%);
+    mask-image: radial-gradient(600px 300px at 80% 30%, #000, transparent 70%);
+  }
+  .hero-content { position: relative; z-index: 2; max-width: 60%; }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: var(--s-2);
+    font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: rgba(255,255,255,0.16);
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: var(--s-1) var(--s-3);
+    border-radius: var(--r-pill);
+    -webkit-backdrop-filter: blur(var(--blur-amount));
+    backdrop-filter: blur(var(--blur-amount));
+  }
+  .hero h1 {
+    font-size: var(--fs-3xl); line-height: 1.05; letter-spacing: -0.03em;
+    margin: var(--s-4) 0 var(--s-3); font-weight: 800;
+  }
+  .hero p { font-size: var(--fs-base); opacity: 0.9; max-width: 44ch; }
+  .hero-actions { display: flex; gap: var(--s-3); margin-top: var(--s-5); flex-wrap: wrap; }
+  .btn {
+    border: 0; cursor: pointer; font-family: inherit; font-weight: 600;
+    font-size: var(--fs-sm);
+    padding: var(--s-3) var(--s-5);
+    border-radius: var(--r-pill);
+    display: inline-flex; align-items: center; gap: var(--s-2);
+    transition: transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+  }
+  .btn-primary {
+    background: #fff; color: var(--accent);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.25);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 16px 32px rgba(0,0,0,0.3); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-ghost {
+    background: rgba(255,255,255,0.12); color: #fff;
+    border: 1px solid rgba(255,255,255,0.35);
+    -webkit-backdrop-filter: blur(var(--blur-amount));
+    backdrop-filter: blur(var(--blur-amount));
+  }
+  .btn-ghost:hover { background: rgba(255,255,255,0.22); transform: translateY(-2px); }
+  .btn-ghost:active { transform: translateY(0); }
+  .btn:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+  /* Floating stacked cards inside hero — the signature dimensional layering */
+  .float-stack {
+    position: absolute;
+    right: var(--s-6);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 230px;
+    height: 200px;
+    z-index: 3;
+  }
+  .float-card {
+    position: absolute;
+    border-radius: var(--r-md);
+    background: rgba(255,255,255,0.92);
+    -webkit-backdrop-filter: blur(var(--blur-amount));
+    backdrop-filter: blur(var(--blur-amount));
+    border: 1px solid rgba(255,255,255,0.6);
+    box-shadow: var(--elevation-4);
+    color: var(--ink-1);
+    padding: var(--s-4);
+    transition: transform var(--t-med) var(--ease);
+  }
+  .float-card.back  { inset: 0 40px 40px 0; opacity: 0.55; transform: translateZ(0) scale(0.96) rotate(-4deg); }
+  .float-card.mid   { inset: 20px 20px 20px 20px; opacity: 0.8; transform: rotate(-2deg); }
+  .float-card.front { inset: 44px 0 0 40px; }
+  .fc-label { font-size: var(--fs-xs); color: var(--ink-3); }
+  .fc-value { font-size: var(--fs-xl); font-weight: 800; letter-spacing: -0.02em; }
+  .fc-trend { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-xs); font-weight: 700; color: var(--pos); }
+  .spark { margin-top: var(--s-2); }
+
+  /* ===== KPI cards ===== */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--s-4);
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    box-shadow: var(--elevation-2);
+    padding: var(--s-5);
+    transition: transform var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease);
+  }
+  .card.lift:hover { transform: translateY(-6px); box-shadow: var(--elevation-4); }
+
+  .kpi-top { display: flex; align-items: center; justify-content: space-between; }
+  .kpi-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: grid; place-items: center;
+    background: var(--accent-soft); color: var(--accent);
+    box-shadow: var(--elevation-1);
+  }
+  .kpi-label { font-size: var(--fs-xs); color: var(--ink-3); margin-top: var(--s-4); }
+  .kpi-value { font-size: var(--fs-2xl); font-weight: 800; letter-spacing: -0.025em; margin-top: 2px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: var(--fs-xs); font-weight: 700;
+    padding: 3px var(--s-2); border-radius: var(--r-pill);
+  }
+  .badge.up { background: var(--pos-soft); color: var(--pos); }
+  .badge.down { background: var(--neg-soft); color: var(--neg); }
+
+  /* ===== Content split ===== */
+  .content-grid {
+    display: grid;
+    grid-template-columns: 1.65fr 1fr;
+    gap: var(--s-5);
+    align-items: start;
+  }
+
+  .panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: var(--s-5); gap: var(--s-3); flex-wrap: wrap;
+  }
+  .panel-head h3 { font-size: var(--fs-lg); font-weight: 700; letter-spacing: -0.01em; }
+  .seg {
+    display: inline-flex; background: var(--surface-2);
+    border-radius: var(--r-pill); padding: 3px;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.06);
+  }
+  .seg button {
+    border: 0; background: transparent; cursor: pointer;
+    font-family: inherit; font-size: var(--fs-xs); font-weight: 600;
+    color: var(--ink-3); padding: var(--s-2) var(--s-3);
+    border-radius: var(--r-pill);
+    transition: all var(--t-fast) var(--ease);
+  }
+  .seg button[aria-pressed="true"] {
+    background: var(--surface); color: var(--accent);
+    box-shadow: var(--elevation-1);
+  }
+  .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Layered area chart (SVG) */
+  .chart-wrap { width: 100%; aspect-ratio: 16 / 7; min-height: 180px; }
+  .chart-legend { display: flex; gap: var(--s-5); margin-top: var(--s-4); flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: var(--s-2); font-size: var(--fs-xs); color: var(--ink-2); }
+  .swatch { width: 12px; height: 12px; border-radius: 4px; box-shadow: var(--elevation-1); }
+
+  /* Activity list (stacked layers) */
+  .activity { display: flex; flex-direction: column; gap: var(--s-2); }
+  .act-row {
+    display: flex; align-items: center; gap: var(--s-3);
+    padding: var(--s-3);
+    border-radius: var(--r-sm);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--elevation-1);
+    transition: transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+  }
+  .act-row:hover { transform: translateX(3px); box-shadow: var(--elevation-2); }
+  .act-ico {
+    width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+    display: grid; place-items: center; color: #fff;
+    box-shadow: var(--elevation-1);
+  }
+  .act-meta { min-width: 0; flex: 1; }
+  .act-title { font-size: var(--fs-sm); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .act-sub { font-size: var(--fs-xs); color: var(--ink-3); }
+  .act-time { font-size: var(--fs-xs); color: var(--ink-3); flex-shrink: 0; }
+
+  /* Table panel */
+  .tbl { width: 100%; border-collapse: collapse; }
+  .tbl th {
+    text-align: left; font-size: var(--fs-xs); text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--ink-3); font-weight: 600;
+    padding: var(--s-2) var(--s-3); border-bottom: 1px solid var(--border);
+  }
+  .tbl td {
+    padding: var(--s-3); font-size: var(--fs-sm);
+    border-bottom: 1px solid var(--bg-1);
+    vertical-align: middle;
+  }
+  .tbl tr:last-child td { border-bottom: 0; }
+  .tbl tbody tr { transition: background var(--t-fast) var(--ease); }
+  .tbl tbody tr:hover { background: var(--accent-soft); }
+  .u-cell { display: flex; align-items: center; gap: var(--s-3); }
+  .u-avatar {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    display: grid; place-items: center; color: #fff;
+    font-size: var(--fs-xs); font-weight: 700;
+    box-shadow: var(--elevation-1);
+  }
+  .prog {
+    height: 8px; border-radius: var(--r-pill);
+    background: var(--surface-2); overflow: hidden; min-width: 90px;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.08);
+  }
+  .prog span {
+    display: block; height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    border-radius: var(--r-pill);
+  }
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: var(--fs-xs); font-weight: 600;
+    padding: 3px var(--s-3); border-radius: var(--r-pill);
+  }
+  .pill.live { background: var(--pos-soft); color: var(--pos); }
+  .pill.idle { background: var(--surface-2); color: var(--ink-3); }
+  .pill.away { background: rgba(224,146,47,0.14); color: var(--warn); }
+  .pill .led { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+  .section-title { font-size: var(--fs-sm); font-weight: 700; color: var(--ink-2); margin-bottom: var(--s-3); }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 1080px) {
+    .shell { grid-template-columns: 1fr; }
+    .sidebar {
+      position: relative; top: 0; height: auto;
+      flex-direction: row; align-items: center; flex-wrap: wrap;
+    }
+    .sidebar nav.menu { flex-direction: row; flex-wrap: wrap; flex: 1; }
+    .menu-label { display: none; }
+    .upsell { display: none; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .content-grid { grid-template-columns: 1fr; }
+    .hero-content { max-width: 100%; }
+    .float-stack { display: none; }
+  }
+
+  @media (max-width: 640px) {
+    .shell { padding: var(--s-3); gap: var(--s-4); }
+    .hero { padding: var(--s-6) var(--s-5); }
+    .hero h1 { font-size: var(--fs-2xl); }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .search input { width: 90px; }
+    .page-sub { display: none; }
+    .topbar { flex-wrap: wrap; }
+    .hide-sm { display: none; }
+  }
+
+  @media (max-width: 400px) {
+    .kpi-grid { grid-template-columns: 1fr; }
+    .search { display: none; }
+  }
+
+  /* ============ REDUCED MOTION ============ */
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+    .blob { display: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="ambient" aria-hidden="true">
+    <span class="blob a"></span>
+    <span class="blob b"></span>
+    <span class="blob c"></span>
+  </div>
+
+  <div class="shell">
+    <!-- ============ SIDEBAR ============ -->
+    <header class="sidebar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+          </svg>
+        </span>
+        <span>
+          <span class="brand-name">Stratos</span><br />
+          <span class="brand-tag">Workspace v4.2</span>
+        </span>
+      </div>
+
+      <nav class="menu" aria-label="Primary">
+        <span class="menu-label">Overview</span>
+        <a class="nav-item active" href="#" aria-current="page">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+          Dashboard
+        </a>
+        <a class="nav-item" href="#">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Analytics
+        </a>
+        <a class="nav-item" href="#">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          Projects
+        </a>
+        <span class="menu-label">Workspace</span>
+        <a class="nav-item" href="#">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Team
+        </a>
+        <a class="nav-item" href="#">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </a>
+      </nav>
+
+      <aside class="upsell">
+        <h4>Upgrade to Scale</h4>
+        <p>Unlock real-time depth maps and unlimited layered exports.</p>
+        <button type="button">View plans</button>
+      </aside>
+    </header>
+
+    <!-- ============ MAIN ============ -->
+    <main>
+      <!-- Topbar -->
+      <div class="topbar">
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-sub">Tuesday, May 30 · Last synced 2 min ago</div>
+        </div>
+
+        <form class="search" role="search" onsubmit="return false">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="search" placeholder="Search metrics…" aria-label="Search metrics" />
+        </form>
+
+        <button class="icon-btn hide-sm" type="button" aria-label="Notifications">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="dot" aria-hidden="true"></span>
+        </button>
+        <div class="avatar" aria-label="Account: Maya Reyes">MR</div>
+      </div>
+
+      <!-- Hero with overlapping floating cards -->
+      <section class="hero" aria-labelledby="hero-h">
+        <div class="hero-grid-overlay" aria-hidden="true"></div>
+        <div class="hero-content">
+          <span class="hero-eyebrow">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Live performance
+          </span>
+          <h1 id="hero-h">Your workspace is up 23.8% this quarter</h1>
+          <p>Layered insights across every team surface — revenue, engagement, and velocity tracked in real time with full spatial context.</p>
+          <div class="hero-actions">
+            <button class="btn btn-primary" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Build report
+            </button>
+            <button class="btn btn-ghost" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export
+            </button>
+          </div>
+        </div>
+
+        <div class="float-stack" aria-hidden="true">
+          <div class="float-card back"></div>
+          <div class="float-card mid">
+            <div class="fc-label">Active sessions</div>
+            <div class="fc-value">4,820</div>
+          </div>
+          <div class="float-card front">
+            <div class="fc-label">Net revenue</div>
+            <div class="fc-value">$92.4k</div>
+            <div class="fc-trend">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              +18.2%
+            </div>
+            <svg class="spark" width="150" height="34" viewBox="0 0 150 34" preserveAspectRatio="none">
+              <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5b5bf6" stop-opacity="0.35"/><stop offset="1" stop-color="#5b5bf6" stop-opacity="0"/></linearGradient></defs>
+              <path d="M0,28 L20,22 L40,25 L60,14 L80,18 L100,9 L120,12 L150,3 L150,34 L0,34 Z" fill="url(#sg)"/>
+              <path d="M0,28 L20,22 L40,25 L60,14 L80,18 L100,9 L120,12 L150,3" fill="none" stroke="#5b5bf6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- KPI cards -->
+      <section class="kpi-grid" aria-label="Key metrics">
+        <article class="card lift">
+          <div class="kpi-top">
+            <span class="kpi-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+            <span class="badge up"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>18.2%</span>
+          </div>
+          <div class="kpi-label">Net revenue</div>
+          <div class="kpi-value">$92.4k</div>
+        </article>
+
+        <article class="card lift">
+          <div class="kpi-top">
+            <span class="kpi-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+            <span class="badge up"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>9.4%</span>
+          </div>
+          <div class="kpi-label">Active users</div>
+          <div class="kpi-value">14,209</div>
+        </article>
+
+        <article class="card lift">
+          <div class="kpi-top">
+            <span class="kpi-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
+            <span class="badge down"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>2.1%</span>
+          </div>
+          <div class="kpi-label">Avg. latency</div>
+          <div class="kpi-value">128ms</div>
+        </article>
+
+        <article class="card lift">
+          <div class="kpi-top">
+            <span class="kpi-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
+            <span class="badge up"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>4.0%</span>
+          </div>
+          <div class="kpi-label">Uptime</div>
+          <div class="kpi-value">99.98%</div>
+        </article>
+      </section>
+
+      <!-- Content split: chart + activity -->
+      <section class="content-grid">
+        <article class="card">
+          <div class="panel-head">
+            <div>
+              <h3>Revenue & engagement</h3>
+              <span class="page-sub">Layered across two surfaces</span>
+            </div>
+            <div class="seg" role="group" aria-label="Time range">
+              <button type="button" aria-pressed="false">7D</button>
+              <button type="button" aria-pressed="true">30D</button>
+              <button type="button" aria-pressed="false">90D</button>
+            </div>
+          </div>
+
+          <div class="chart-wrap">
+            <svg viewBox="0 0 600 240" preserveAspectRatio="none" width="100%" height="100%" role="img" aria-label="Stacked area chart showing revenue and engagement rising over 30 days">
+              <defs>
+                <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#5b5bf6" stop-opacity="0.45"/>
+                  <stop offset="1" stop-color="#5b5bf6" stop-opacity="0.02"/>
+                </linearGradient>
+                <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#8b5cf6" stop-opacity="0.35"/>
+                  <stop offset="1" stop-color="#8b5cf6" stop-opacity="0.02"/>
+                </linearGradient>
+              </defs>
+              <!-- gridlines -->
+              <g stroke="#e0e0e0" stroke-width="1">
+                <line x1="0" y1="60" x2="600" y2="60"/>
+                <line x1="0" y1="120" x2="600" y2="120"/>
+                <line x1="0" y1="180" x2="600" y2="180"/>
+              </g>
+              <!-- back layer (engagement) -->
+              <path d="M0,170 C60,150 110,165 160,130 C220,90 260,120 320,95 C380,72 430,100 490,70 C540,48 570,60 600,45 L600,240 L0,240 Z" fill="url(#g2)"/>
+              <path d="M0,170 C60,150 110,165 160,130 C220,90 260,120 320,95 C380,72 430,100 490,70 C540,48 570,60 600,45" fill="none" stroke="#8b5cf6" stroke-width="2.5" stroke-linecap="round"/>
+              <!-- front layer (revenue) -->
+              <path d="M0,200 C60,190 110,195 160,170 C220,140 260,165 320,140 C380,118 430,140 490,110 C540,92 570,100 600,85 L600,240 L0,240 Z" fill="url(#g1)"/>
+              <path d="M0,200 C60,190 110,195 160,170 C220,140 260,165 320,140 C380,118 430,140 490,110 C540,92 570,100 600,85" fill="none" stroke="#5b5bf6" stroke-width="2.8" stroke-linecap="round"/>
+              <!-- focus marker -->
+              <circle cx="490" cy="110" r="5.5" fill="#fff" stroke="#5b5bf6" stroke-width="3"/>
+            </svg>
+          </div>
+          <div class="chart-legend">
+            <span class="legend-item"><span class="swatch" style="background:#5b5bf6"></span>Revenue</span>
+            <span class="legend-item"><span class="swatch" style="background:#8b5cf6"></span>Engagement</span>
+            <span class="legend-item" style="margin-left:auto;color:var(--pos);font-weight:700">Peak: $4,210 on May 28</span>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="panel-head">
+            <h3>Recent activity</h3>
+          </div>
+          <div class="activity">
+            <div class="act-row">
+              <span class="act-ico" style="background:linear-gradient(135deg,#5b5bf6,#8b5cf6)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+              <div class="act-meta">
+                <div class="act-title">New project “Aurora” created</div>
+                <div class="act-sub">by Devin Okoro</div>
+              </div>
+              <span class="act-time">2m</span>
+            </div>
+            <div class="act-row">
+              <span class="act-ico" style="background:linear-gradient(135deg,#18a957,#36c6ff)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+              <div class="act-meta">
+                <div class="act-title">Deploy v4.2 succeeded</div>
+                <div class="act-sub">production · us-east</div>
+              </div>
+              <span class="act-time">18m</span>
+            </div>
+            <div class="act-row">
+              <span class="act-ico" style="background:linear-gradient(135deg,#e0922f,#e0395a)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+              <div class="act-meta">
+                <div class="act-title">Latency spike resolved</div>
+                <div class="act-sub">auto-scaled +3 nodes</div>
+              </div>
+              <span class="act-time">1h</span>
+            </div>
+            <div class="act-row">
+              <span class="act-ico" style="background:linear-gradient(135deg,#8b5cf6,#5b5bf6)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span>
+              <div class="act-meta">
+                <div class="act-title">3 members joined Growth</div>
+                <div class="act-sub">invited by Maya Reyes</div>
+              </div>
+              <span class="act-time">3h</span>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <!-- Table panel -->
+      <section class="card" aria-labelledby="tbl-h">
+        <div class="panel-head">
+          <h3 id="tbl-h">Top contributors</h3>
+          <div class="seg" role="group" aria-label="Sort by">
+            <button type="button" aria-pressed="true">Velocity</button>
+            <button type="button" aria-pressed="false">Recent</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th scope="col">Member</th>
+                <th scope="col">Role</th>
+                <th scope="col">Sprint progress</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div class="u-cell"><span class="u-avatar" style="background:linear-gradient(135deg,#5b5bf6,#8b5cf6)">DO</span>Devin Okoro</div></td>
+                <td>Lead Engineer</td>
+                <td><div class="prog"><span style="width:88%"></span></div></td>
+                <td><span class="pill live"><span class="led"></span>Online</span></td>
+              </tr>
+              <tr>
+                <td><div class="u-cell"><span class="u-avatar" style="background:linear-gradient(135deg,#18a957,#36c6ff)">SL</span>Sara Lindqvist</div></td>
+                <td>Product Designer</td>
+                <td><div class="prog"><span style="width:72%"></span></div></td>
+                <td><span class="pill live"><span class="led"></span>Online</span></td>
+              </tr>
+              <tr>
+                <td><div class="u-cell"><span class="u-avatar" style="background:linear-gradient(135deg,#e0922f,#e0395a)">KA</span>Kofi Adjei</div></td>
+                <td>Data Analyst</td>
+                <td><div class="prog"><span style="width:54%"></span></div></td>
+                <td><span class="pill away"><span class="led"></span>Away</span></td>
+              </tr>
+              <tr>
+                <td><div class="u-cell"><span class="u-avatar" style="background:linear-gradient(135deg,#8b5cf6,#5b5bf6)">MR</span>Maya Reyes</div></td>
+                <td>Eng Manager</td>
+                <td><div class="prog"><span style="width:41%"></span></div></td>
+                <td><span class="pill idle"><span class="led"></span>Idle</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // Segmented control toggle (progressive enhancement only)
+    document.querySelectorAll('.seg').forEach(function (group) {
+      group.addEventListener('click', function (e) {
+        var btn = e.target.closest('button');
+        if (!btn) return;
+        group.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', 'false'); });
+        btn.setAttribute('aria-pressed', 'true');
+      });
+    });
+
+    // Subtle parallax on the ambient depth layers (respects reduced motion)
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduce) {
+      var blobs = document.querySelectorAll('.blob');
+      var raf = false;
+      window.addEventListener('scroll', function () {
+        if (raf) return;
+        raf = true;
+        requestAnimationFrame(function () {
+          var y = window.scrollY;
+          blobs.forEach(function (b, i) {
+            b.style.transform = 'translate3d(0,' + (y * (0.04 + i * 0.03)) + 'px,0)';
+          });
+          raf = false;
+        });
+      }, { passive: true });
+    }
+  </script>
+</body>
+</html>

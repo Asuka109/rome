@@ -1,0 +1,414 @@
+import { sql } from "drizzle-orm";
+import { waContacts, waChats, waMessages } from "../schema.js";
+import type { DrizzleDb } from "../index.js";
+import type {
+  WaContactInput,
+  WaChatInput,
+  WaHistoryMessage,
+  WaMessageInput,
+  WhatsAppSyncSink,
+} from "../../channels/whatsapp-sync.js";
+
+// Cap on a single address-book read. A WhatsApp account can carry thousands of
+// contacts; the People-tab viewer paginates client-side, so the API hands back
+// a generous-but-bounded slice rather than the entire table in one payload.
+const CONTACTS_READ_LIMIT = 10000;
+const UPSERT_CHUNK = 200;
+const HISTORY_READ_LIMIT = 1000;
+
+function chunked<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
+}
+
+/**
+ * Group key folding a single person's two WhatsApp addressings — their
+ * phone-number JID (`<pn>@s.whatsapp.net`) and their privacy LID (`<lid>@lid`) —
+ * onto one identity. WhatsApp delivers a contact's conversation under the LID
+ * (which Baileys annotates with the resolved phone number) while the address-book
+ * name lives on the `@s.whatsapp.net` row, so one person otherwise shows up as
+ * two cards: a named-but-silent one and a talking-but-nameless one. Both rows
+ * carry the same phone number, so we key individuals on their digits. Groups
+ * (`@g.us`) never share a phone number and key on their own JID, so they never
+ * merge.
+ */
+function identityKey(r: WhatsAppContactRow): string {
+  if (!r.isGroup && r.phoneNumber) {
+    const digits = r.phoneNumber.replace(/\D/g, "");
+    if (digits) return `pn:${digits}`;
+  }
+  return `jid:${r.jid}`;
+}
+
+/** First non-empty value of `key` across the group, or null. */
+function coalesceField<K extends keyof WhatsAppContactRow>(
+  group: WhatsAppContactRow[],
+  key: K,
+): WhatsAppContactRow[K] | null {
+  for (const r of group) {
+    const v = r[key];
+    if (v != null && v !== "") return v;
+  }
+  return null;
+}
+
+/**
+ * Collapse the LID and phone-number threads of one person into a single card.
+ * `rows` arrives in display order (conversations first, then alphabetical), so
+ * each group's first row is its best representative — we keep its JID as the
+ * card's identity (the conversation-bearing one when a chat exists, so opening
+ * the chat still resolves its messages) and fold the missing pieces in from its
+ * siblings: the address-book name, a person link, and the richer message history.
+ */
+function consolidateByIdentity(rows: WhatsAppContactRow[]): WhatsAppContactRow[] {
+  const groups = new Map<string, WhatsAppContactRow[]>();
+  for (const r of rows) {
+    const k = identityKey(r);
+    const g = groups.get(k);
+    if (g) g.push(r);
+    else groups.set(k, [r]);
+  }
+
+  const merged: WhatsAppContactRow[] = [];
+  for (const group of groups.values()) {
+    if (group.length === 1) {
+      merged.push(group[0]);
+      continue;
+    }
+    const primary = group[0];
+    const linked = group.find((r) => r.linkedPersonId != null);
+    // The whole conversation usually lives on one JID, but take the latest row
+    // defensively in case history is split across both addressings.
+    const latest = group.reduce(
+      (best, r) => ((r.lastMessageAt ?? -1) > (best.lastMessageAt ?? -1) ? r : best),
+      primary,
+    );
+    merged.push({
+      ...primary,
+      phoneNumber: coalesceField(group, "phoneNumber"),
+      name: coalesceField(group, "name"),
+      notify: coalesceField(group, "notify"),
+      verifiedName: coalesceField(group, "verifiedName"),
+      imgUrl: coalesceField(group, "imgUrl"),
+      chatName: coalesceField(group, "chatName"),
+      linkedPersonId: linked?.linkedPersonId ?? null,
+      linkedPersonName: linked?.linkedPersonName ?? null,
+      lastMessageAt: latest.lastMessageAt,
+      lastMessagePreview: latest.lastMessagePreview,
+      messageCount: group.reduce((n, r) => n + r.messageCount, 0),
+    });
+  }
+  return merged;
+}
+
+export interface WhatsAppContactRow {
+  jid: string;
+  phoneNumber: string | null;
+  name: string | null;
+  notify: string | null;
+  verifiedName: string | null;
+  imgUrl: string | null;
+  chatName: string | null;
+  isGroup: boolean;
+  linkedPersonId: string | null;
+  linkedPersonName: string | null;
+  /** Unix seconds, or null when no message history exists for the contact. */
+  lastMessageAt: number | null;
+  lastMessagePreview: string | null;
+  messageCount: number;
+}
+
+export interface WhatsAppMessageRow {
+  id: string;
+  senderJid: string | null;
+  senderName: string | null;
+  senderPhoneNumber: string | null;
+  fromMe: boolean;
+  /** Unix seconds. */
+  timestamp: number;
+  type: string | null;
+  text: string | null;
+  hasMedia: boolean;
+  pushName: string | null;
+  /** For a reaction (`type === "reaction"`), the id of the message it reacts to. */
+  reactsToId: string | null;
+}
+
+/**
+ * Durable store for the WhatsApp address-book mirror (contacts, chats, recent
+ * message history). Writes are fed by the adapter as a {@link WhatsAppSyncSink};
+ * reads back the People-tab contact list + per-contact history.
+ */
+export class WhatsAppStoreRepository implements WhatsAppSyncSink {
+  constructor(private db: DrizzleDb) {}
+
+  async upsertContacts(contacts: WaContactInput[]): Promise<void> {
+    if (contacts.length === 0) return;
+    const now = new Date();
+    for (const chunk of chunked(contacts, UPSERT_CHUNK)) {
+      await this.db
+        .insert(waContacts)
+        .values(
+          chunk.map((c) => ({
+            jid: c.jid,
+            phoneNumber: c.phoneNumber ?? null,
+            name: c.name ?? null,
+            notify: c.notify ?? null,
+            verifiedName: c.verifiedName ?? null,
+            imgUrl: c.imgUrl ?? null,
+            firstSyncedAt: now,
+            updatedAt: now,
+          })),
+        )
+        // coalesce(excluded, existing) so a partial `contacts.update` (e.g. a
+        // bare presence/name delta) never wipes a field we already learned.
+        .onConflictDoUpdate({
+          target: waContacts.jid,
+          set: {
+            phoneNumber: sql`coalesce(excluded.phone_number, phone_number)`,
+            name: sql`coalesce(excluded.name, name)`,
+            notify: sql`coalesce(excluded.notify, notify)`,
+            verifiedName: sql`coalesce(excluded.verified_name, verified_name)`,
+            imgUrl: sql`coalesce(excluded.img_url, img_url)`,
+            updatedAt: sql`excluded.updated_at`,
+          },
+        });
+    }
+  }
+
+  async upsertChats(chats: WaChatInput[]): Promise<void> {
+    if (chats.length === 0) return;
+    const now = new Date();
+    for (const chunk of chunked(chats, UPSERT_CHUNK)) {
+      await this.db
+        .insert(waChats)
+        .values(
+          chunk.map((c) => ({
+            jid: c.jid,
+            name: c.name ?? null,
+            isGroup: c.isGroup,
+            lastMessageAt: c.lastMessageAt ?? null,
+            unreadCount: c.unreadCount ?? null,
+            archived: c.archived ?? false,
+            updatedAt: now,
+          })),
+        )
+        .onConflictDoUpdate({
+          target: waChats.jid,
+          set: {
+            name: sql`coalesce(excluded.name, name)`,
+            isGroup: sql`excluded.is_group`,
+            lastMessageAt: sql`coalesce(excluded.last_message_at, last_message_at)`,
+            unreadCount: sql`coalesce(excluded.unread_count, unread_count)`,
+            archived: sql`excluded.archived`,
+            updatedAt: sql`excluded.updated_at`,
+          },
+        });
+    }
+  }
+
+  async upsertMessages(messages: WaMessageInput[]): Promise<void> {
+    if (messages.length === 0) return;
+    const now = new Date();
+    for (const chunk of chunked(messages, UPSERT_CHUNK)) {
+      // Messages are immutable; the first version we see (live or from history)
+      // wins. The one exception heals data written before reactions were
+      // understood: a reaction that an older sync stored as a contentless
+      // 'other' row (the empty-bubble bug) is upgraded in place on the next
+      // re-sync to carry its emoji + target. The `where` keeps this narrow —
+      // it only fires when the incoming frame is a reaction and the stored row
+      // wasn't yet linked to a target, so no other message type is ever mutated.
+      await this.db
+        .insert(waMessages)
+        .values(
+          chunk.map((m) => ({
+            id: m.id,
+            chatJid: m.chatJid,
+            senderJid: m.senderJid ?? null,
+            fromMe: m.fromMe,
+            timestamp: m.timestamp,
+            type: m.type ?? null,
+            text: m.text ?? null,
+            hasMedia: m.hasMedia,
+            pushName: m.pushName ?? null,
+            reactsToId: m.reactsToId ?? null,
+            createdAt: now,
+          })),
+        )
+        .onConflictDoUpdate({
+          target: [waMessages.chatJid, waMessages.id],
+          set: {
+            type: sql`excluded.type`,
+            text: sql`excluded.text`,
+            reactsToId: sql`excluded.reacts_to_id`,
+          },
+          where: sql`excluded.type = 'reaction' AND ${waMessages.reactsToId} IS NULL`,
+        });
+    }
+  }
+
+  /**
+   * The synced address book, newest-conversation-first then alphabetical,
+   * each row annotated with whether it has been promoted to a `persons` entry.
+   */
+  async listContacts(): Promise<WhatsAppContactRow[]> {
+    const rows = (await this.db.all(sql`
+      WITH wa_threads AS (
+        SELECT jid FROM wa_contacts
+        UNION
+        SELECT jid FROM wa_chats WHERE is_group = 1 OR jid LIKE '%@g.us'
+      )
+      SELECT
+        t.jid AS jid,
+        c.phone_number AS phoneNumber,
+        c.name AS name,
+        c.notify AS notify,
+        c.verified_name AS verifiedName,
+        c.img_url AS imgUrl,
+        ch.name AS chatName,
+        coalesce(ch.is_group, t.jid LIKE '%@g.us') AS isGroup,
+        cm.person_id AS linkedPersonId,
+        p.display_name AS linkedPersonName,
+        -- Reactions are emoji pinned to another message, not a line of their
+        -- own — exclude them so they never become a conversation's last message.
+        (SELECT MAX(m.timestamp) FROM wa_messages m
+           WHERE m.chat_jid = t.jid AND m.type IS NOT 'reaction') AS lastMessageAt,
+        (SELECT m.text FROM wa_messages m
+           WHERE m.chat_jid = t.jid AND m.type IS NOT 'reaction'
+           ORDER BY m.timestamp DESC, m.rowid DESC LIMIT 1) AS lastMessagePreview,
+        (SELECT COUNT(*) FROM wa_messages m WHERE m.chat_jid = t.jid) AS messageCount
+      FROM wa_threads t
+      LEFT JOIN wa_contacts c ON c.jid = t.jid
+      LEFT JOIN wa_chats ch ON ch.jid = t.jid
+      LEFT JOIN channel_mappings cm
+        ON cm.channel = 'whatsapp' AND cm.channel_user_id = t.jid
+      LEFT JOIN persons p ON p.id = cm.person_id
+      WHERE NOT (
+        t.jid LIKE '%@lid'
+        AND c.phone_number IS NULL
+        AND c.name IS NULL
+        AND c.notify IS NULL
+        AND c.verified_name IS NULL
+        AND ch.name IS NULL
+      )
+      ORDER BY (lastMessageAt IS NULL) ASC, lastMessageAt DESC,
+        lower(coalesce(c.name, c.notify, c.verified_name, ch.name, c.phone_number, t.jid)) ASC
+      LIMIT ${CONTACTS_READ_LIMIT}
+    `)) as Array<Record<string, unknown>>;
+
+    const mapped = rows.map((r) => ({
+      jid: String(r.jid),
+      phoneNumber: (r.phoneNumber as string | null) ?? null,
+      name: (r.name as string | null) ?? null,
+      notify: (r.notify as string | null) ?? null,
+      verifiedName: (r.verifiedName as string | null) ?? null,
+      imgUrl: (r.imgUrl as string | null) ?? null,
+      chatName: (r.chatName as string | null) ?? null,
+      isGroup: Boolean(r.isGroup),
+      linkedPersonId: (r.linkedPersonId as string | null) ?? null,
+      linkedPersonName: (r.linkedPersonName as string | null) ?? null,
+      lastMessageAt: r.lastMessageAt == null ? null : Number(r.lastMessageAt),
+      lastMessagePreview: (r.lastMessagePreview as string | null) ?? null,
+      messageCount: Number(r.messageCount ?? 0),
+    }));
+
+    return consolidateByIdentity(mapped);
+  }
+
+  /** Recent messages for one chat, oldest→newest (newest at the bottom). */
+  async getMessages(
+    chatJid: string,
+    opts: { limit?: number; before?: number } = {},
+  ): Promise<WhatsAppMessageRow[]> {
+    const limit = Math.min(Math.max(opts.limit ?? 50, 1), 500);
+    const beforeClause = opts.before != null ? sql`AND timestamp < ${opts.before}` : sql``;
+    const rows = (await this.db.all(sql`
+      SELECT m.id AS id, m.sender_jid AS senderJid,
+        coalesce(sc.name, sc.notify, sc.verified_name) AS senderName,
+        sc.phone_number AS senderPhoneNumber,
+        m.from_me AS fromMe, m.timestamp AS timestamp,
+        m.type AS type, m.text AS text, m.has_media AS hasMedia, m.push_name AS pushName,
+        reacts_to_id AS reactsToId
+      FROM wa_messages m
+      LEFT JOIN wa_contacts sc ON sc.jid = m.sender_jid
+      WHERE m.chat_jid = ${chatJid} ${beforeClause}
+      ORDER BY m.timestamp DESC, m.rowid DESC
+      LIMIT ${limit}
+    `)) as Array<Record<string, unknown>>;
+
+    return rows
+      .map((r) => ({
+        id: String(r.id),
+        senderJid: (r.senderJid as string | null) ?? null,
+        senderName: (r.senderName as string | null) ?? null,
+        senderPhoneNumber: (r.senderPhoneNumber as string | null) ?? null,
+        fromMe: Boolean(r.fromMe),
+        timestamp: Number(r.timestamp),
+        type: (r.type as string | null) ?? null,
+        text: (r.text as string | null) ?? null,
+        hasMedia: Boolean(r.hasMedia),
+        pushName: (r.pushName as string | null) ?? null,
+        reactsToId: (r.reactsToId as string | null) ?? null,
+      }))
+      .reverse();
+  }
+
+  /**
+   * Recent mirrored messages for the channel-level history action. Returns a
+   * bounded chronological slice, enriched with chat and sender display fields.
+   */
+  async fetchHistory(threadJid: string | null, since: Date): Promise<WaHistoryMessage[]> {
+    const sinceSeconds = Math.floor(since.getTime() / 1000);
+    const threadClause = threadJid != null ? sql`AND m.chat_jid = ${threadJid}` : sql``;
+    const rows = (await this.db.all(sql`
+      SELECT
+        m.id AS id,
+        m.chat_jid AS chatJid,
+        coalesce(ch.name, cc.name, cc.notify, cc.verified_name) AS chatName,
+        cc.phone_number AS chatPhoneNumber,
+        coalesce(ch.is_group, m.chat_jid LIKE '%@g.us') AS isGroup,
+        m.sender_jid AS senderJid,
+        coalesce(sc.name, sc.notify, sc.verified_name) AS senderName,
+        sc.phone_number AS senderPhoneNumber,
+        m.from_me AS fromMe,
+        m.timestamp AS timestamp,
+        m.type AS type,
+        m.text AS text,
+        m.has_media AS hasMedia,
+        m.push_name AS pushName,
+        m.reacts_to_id AS reactsToId
+      FROM wa_messages m
+      LEFT JOIN wa_chats ch ON ch.jid = m.chat_jid
+      LEFT JOIN wa_contacts cc ON cc.jid = m.chat_jid
+      LEFT JOIN wa_contacts sc ON sc.jid = m.sender_jid
+      WHERE m.timestamp >= ${sinceSeconds} ${threadClause}
+      ORDER BY m.timestamp DESC, m.rowid DESC
+      LIMIT ${HISTORY_READ_LIMIT}
+    `)) as Array<Record<string, unknown>>;
+
+    return rows
+      .map((r) => ({
+        id: String(r.id),
+        chatJid: String(r.chatJid),
+        chatName: (r.chatName as string | null) ?? null,
+        chatPhoneNumber: (r.chatPhoneNumber as string | null) ?? null,
+        isGroup: Boolean(r.isGroup),
+        senderJid: (r.senderJid as string | null) ?? null,
+        senderName: (r.senderName as string | null) ?? null,
+        senderPhoneNumber: (r.senderPhoneNumber as string | null) ?? null,
+        fromMe: Boolean(r.fromMe),
+        timestamp: new Date(Number(r.timestamp) * 1000),
+        type: (r.type as string | null) ?? null,
+        text: (r.text as string | null) ?? null,
+        hasMedia: Boolean(r.hasMedia),
+        pushName: (r.pushName as string | null) ?? null,
+        reactsToId: (r.reactsToId as string | null) ?? null,
+      }))
+      .reverse();
+  }
+}
+
+export function createWhatsAppStoreRepository(db: DrizzleDb): WhatsAppStoreRepository {
+  return new WhatsAppStoreRepository(db);
+}

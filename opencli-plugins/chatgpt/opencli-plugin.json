@@ -1,0 +1,6 @@
+{
+  "name": "rome-chatgpt",
+  "description": "Rome extensions for OpenCLI's ChatGPT site commands",
+  "version": "0.1.0",
+  "opencli": ">=1.8.0"
+}

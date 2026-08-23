@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kontur — International Practice for Architecture &amp; Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ============================================================
+     Swiss Modernism 2.0 — Design Tokens
+     Strict 12-col grid · Inter · 8px base · single accent
+     ============================================================ */
+  :root {
+    /* Color — high contrast, no gradients */
+    --color-text: #000000;
+    --color-bg: #ffffff;
+    --color-surface: #f5f5f5;
+    --color-line: #000000;
+    --color-line-soft: #e2e2e2;
+    --color-muted: #6b6b6b;
+    --accent: #ff3b00; /* single vibrant accent only */
+    --accent-ink: #ffffff;
+
+    /* Grid */
+    --grid-columns: 12;
+    --grid-gap: 1rem;          /* 16px */
+    --base-unit: 8px;
+    --content-max: 1280px;
+    --page-pad: clamp(1.25rem, 4vw, 3.5rem);
+
+    /* Spacing scale (mathematical · 8px) */
+    --s-1: 8px;
+    --s-2: 16px;
+    --s-3: 24px;
+    --s-4: 32px;
+    --s-5: 48px;
+    --s-6: 64px;
+    --s-7: 96px;
+    --s-8: 128px;
+
+    /* Typography scale */
+    --font-primary: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --fs-display: clamp(2.75rem, 8vw, 6.5rem);
+    --fs-h1: clamp(2rem, 4.5vw, 3.5rem);
+    --fs-h2: clamp(1.5rem, 3vw, 2.25rem);
+    --fs-h3: 1.125rem;
+    --fs-body: 1rem;
+    --fs-small: 0.8125rem;
+    --fs-micro: 0.6875rem;
+    --lh-tight: 0.96;
+    --lh-snug: 1.15;
+    --lh-body: 1.55;
+    --tracking-label: 0.14em;
+
+    /* Radius — Swiss = sharp */
+    --radius: 0px;
+
+    /* Shadow — minimal, structural only */
+    --shadow: none;
+
+    /* Motion */
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --dur-fast: 140ms;
+    --dur: 320ms;
+  }
+
+  *,
+  *::before,
+  *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    font-family: var(--font-primary);
+    font-size: var(--fs-body);
+    line-height: var(--lh-body);
+    color: var(--color-text);
+    background: var(--color-bg);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4, p, figure { margin: 0; }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  .wrap {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    padding-inline: var(--page-pad);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(var(--grid-columns), 1fr);
+    gap: var(--grid-gap);
+  }
+
+  .label {
+    font-size: var(--fs-micro);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    font-weight: 600;
+    color: var(--color-muted);
+  }
+
+  .skip-link {
+    position: absolute;
+    left: var(--s-2);
+    top: -120px;
+    background: var(--color-text);
+    color: var(--color-bg);
+    padding: var(--s-1) var(--s-2);
+    z-index: 100;
+    transition: top var(--dur-fast) var(--ease);
+  }
+  .skip-link:focus { top: var(--s-2); }
+
+  /* ============================ Header ============================ */
+  header.site {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .nav {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    min-height: 64px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-size: 1.0625rem;
+  }
+  .brand svg { display: block; }
+
+  .nav-links {
+    display: flex;
+    align-items: stretch;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 0;
+  }
+  .nav-links li { display: flex; }
+  .nav-links a {
+    display: inline-flex;
+    align-items: center;
+    padding-inline: var(--s-3);
+    font-size: var(--fs-small);
+    font-weight: 500;
+    border-left: 1px solid var(--color-line-soft);
+    position: relative;
+    transition: color var(--dur-fast) var(--ease);
+  }
+  .nav-links a::after {
+    content: "";
+    position: absolute;
+    left: var(--s-3);
+    right: var(--s-3);
+    bottom: 18px;
+    height: 2px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--dur) var(--ease);
+  }
+  .nav-links a:hover::after,
+  .nav-links a:focus-visible::after { transform: scaleX(1); }
+
+  .nav-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-1);
+    background: var(--accent);
+    color: var(--accent-ink);
+    padding-inline: var(--s-3);
+    font-size: var(--fs-small);
+    font-weight: 600;
+    border-left: 1px solid var(--color-line);
+    transition: background var(--dur-fast) var(--ease);
+  }
+  .nav-cta:hover,
+  .nav-cta:focus-visible { background: #000; }
+  .nav-cta:active { background: #cc2f00; }
+
+  .nav-toggle { display: none; }
+
+  /* ============================ Hero ============================ */
+  .hero {
+    border-bottom: 1px solid var(--color-line);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero .grid { align-items: end; }
+  .hero-meta {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--s-2);
+    padding-block: var(--s-3);
+    border-bottom: 1px solid var(--color-line-soft);
+  }
+  .hero-head { grid-column: 1 / 9; padding-block: var(--s-6) var(--s-5); }
+  .hero-head h1 {
+    font-size: var(--fs-display);
+    line-height: var(--lh-tight);
+    letter-spacing: -0.035em;
+    font-weight: 600;
+  }
+  .hero-head h1 em {
+    font-style: normal;
+    color: var(--accent);
+  }
+  .hero-side {
+    grid-column: 9 / -1;
+    padding-block: var(--s-6) var(--s-5);
+    border-left: 1px solid var(--color-line-soft);
+    padding-left: var(--s-3);
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: var(--s-3);
+  }
+  .hero-side p {
+    font-size: var(--fs-body);
+    max-width: 32ch;
+    color: #1a1a1a;
+  }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-1);
+    font-weight: 600;
+    font-size: var(--fs-small);
+    padding: 14px var(--s-3);
+    border: 1px solid var(--color-line);
+    background: var(--color-text);
+    color: var(--color-bg);
+    cursor: pointer;
+    transition: transform var(--dur-fast) var(--ease),
+                background var(--dur-fast) var(--ease);
+  }
+  .btn svg { transition: transform var(--dur) var(--ease); }
+  .btn:hover svg,
+  .btn:focus-visible svg { transform: translateX(4px); }
+  .btn:hover { background: var(--accent); border-color: var(--accent); }
+  .btn:active { transform: translateY(1px); }
+  .btn--ghost {
+    background: transparent;
+    color: var(--color-text);
+  }
+  .btn--ghost:hover { background: var(--color-text); color: var(--color-bg); }
+
+  /* Composition strip — geometric, CSS only */
+  .hero-strip {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 0.6fr 1.2fr;
+    border-top: 1px solid var(--color-line);
+    min-height: 180px;
+  }
+  .hero-strip > div {
+    border-left: 1px solid var(--color-line);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-strip > div:first-child { border-left: 0; }
+  .cell-accent { background: var(--accent); }
+  .cell-grid {
+    background-image:
+      linear-gradient(var(--color-line-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--color-line-soft) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  .cell-dark { background: var(--color-text); }
+  .cell-circle::after {
+    content: "";
+    position: absolute;
+    inset: 24px;
+    border: 1px solid #fff;
+    border-radius: 50%;
+  }
+  .cell-num {
+    position: absolute;
+    bottom: var(--s-1);
+    left: var(--s-1);
+    font-size: var(--fs-micro);
+    letter-spacing: var(--tracking-label);
+    font-weight: 600;
+  }
+  .cell-dark .cell-num { color: #fff; }
+  .cell-accent .cell-num { color: #fff; }
+
+  /* ============================ Index / Work ============================ */
+  section { border-bottom: 1px solid var(--color-line); }
+
+  .sec-head {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-2);
+    padding-block: var(--s-4);
+    border-bottom: 1px solid var(--color-line-soft);
+    flex-wrap: wrap;
+  }
+  .sec-head h2 {
+    font-size: var(--fs-h2);
+    letter-spacing: -0.02em;
+    font-weight: 600;
+  }
+
+  .work-list {
+    grid-column: 1 / -1;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .work-row {
+    display: grid;
+    grid-template-columns: 64px 1fr 1fr auto;
+    align-items: center;
+    gap: var(--s-3);
+    padding-block: var(--s-3);
+    border-bottom: 1px solid var(--color-line-soft);
+    transition: padding-left var(--dur) var(--ease),
+                background var(--dur-fast) var(--ease);
+  }
+  .work-row:hover,
+  .work-row:focus-within {
+    background: var(--color-surface);
+    padding-left: var(--s-2);
+  }
+  .work-row .idx {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--color-muted);
+  }
+  .work-row h3 {
+    font-size: var(--fs-h3);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .work-row .tag {
+    font-size: var(--fs-small);
+    color: var(--color-muted);
+  }
+  .work-row .yr {
+    font-size: var(--fs-small);
+    font-variant-numeric: tabular-nums;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+    font-weight: 500;
+  }
+  .work-row .arrow {
+    width: 28px; height: 28px;
+    display: inline-grid; place-items: center;
+    border: 1px solid var(--color-line);
+    transition: background var(--dur-fast) var(--ease),
+                transform var(--dur) var(--ease);
+  }
+  .work-row:hover .arrow,
+  .work-row:focus-within .arrow {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+    transform: rotate(0deg);
+  }
+
+  /* ============================ Stats / Principles ============================ */
+  .panels { grid-column: 1 / -1; }
+  .panels .grid { gap: 0; border-top: 0; }
+  .panel {
+    grid-column: span 3;
+    padding: var(--s-4) var(--s-3);
+    border-left: 1px solid var(--color-line-soft);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    min-height: 240px;
+  }
+  .panel:first-child { border-left: 0; }
+  .panel .stat {
+    font-size: clamp(2.25rem, 4vw, 3.25rem);
+    line-height: 1;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+  }
+  .panel .stat sup { font-size: 0.45em; color: var(--accent); top: -1.2em; }
+  .panel p { font-size: var(--fs-small); color: #1a1a1a; margin-top: auto; }
+
+  .panel--accent { background: var(--accent); color: #fff; }
+  .panel--accent p,
+  .panel--accent .label { color: rgba(255,255,255,0.85); }
+  .panel--dark { background: var(--color-text); color: #fff; }
+  .panel--dark p { color: rgba(255,255,255,0.8); }
+  .panel--dark .label { color: rgba(255,255,255,0.65); }
+
+  /* ============================ Editorial split ============================ */
+  .editorial .grid { align-items: stretch; }
+  .ed-quote {
+    grid-column: 1 / 8;
+    padding-block: var(--s-6);
+    padding-right: var(--s-4);
+  }
+  .ed-quote blockquote {
+    font-size: var(--fs-h1);
+    line-height: var(--lh-snug);
+    letter-spacing: -0.025em;
+    font-weight: 500;
+    margin: 0;
+  }
+  .ed-quote blockquote span { color: var(--accent); }
+  .ed-cite {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    margin-top: var(--s-4);
+  }
+  .ed-cite .avatar {
+    width: 40px; height: 40px;
+    background: var(--color-text);
+    color: #fff;
+    display: grid; place-items: center;
+    font-weight: 600; font-size: var(--fs-small);
+  }
+  .ed-facts {
+    grid-column: 8 / -1;
+    border-left: 1px solid var(--color-line);
+    padding: var(--s-6) 0 var(--s-6) var(--s-3);
+    display: flex;
+    flex-direction: column;
+  }
+  .fact-row {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--s-2);
+    padding-block: var(--s-2);
+    border-bottom: 1px solid var(--color-line-soft);
+    font-size: var(--fs-small);
+  }
+  .fact-row:last-child { border-bottom: 0; }
+  .fact-row dt { color: var(--color-muted); margin: 0; }
+  .fact-row dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* ============================ CTA ============================ */
+  .cta {
+    background: var(--color-text);
+    color: #fff;
+    border-bottom: 0;
+  }
+  .cta .grid { align-items: center; }
+  .cta-main {
+    grid-column: 1 / 9;
+    padding-block: var(--s-7);
+  }
+  .cta-main h2 {
+    font-size: var(--fs-h1);
+    line-height: var(--lh-snug);
+    letter-spacing: -0.03em;
+    font-weight: 600;
+  }
+  .cta-main h2 em { font-style: normal; color: var(--accent); }
+  .cta-side {
+    grid-column: 9 / -1;
+    padding-block: var(--s-7);
+    border-left: 1px solid #2a2a2a;
+    padding-left: var(--s-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+  }
+  .cta-side .label { color: rgba(255,255,255,0.6); }
+  .btn--invert {
+    background: #fff;
+    color: #000;
+    border-color: #fff;
+  }
+  .btn--invert:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ============================ Footer ============================ */
+  footer.site {
+    background: var(--color-text);
+    color: #fff;
+  }
+  footer.site .grid { padding-block: var(--s-4); gap: var(--grid-gap); }
+  .foot-brand { grid-column: 1 / 5; }
+  .foot-brand p { font-size: var(--fs-small); color: rgba(255,255,255,0.6); margin-top: var(--s-2); max-width: 30ch; }
+  .foot-col { grid-column: span 2; display: flex; flex-direction: column; gap: var(--s-1); }
+  .foot-col a { font-size: var(--fs-small); color: rgba(255,255,255,0.8); padding-block: 3px; transition: color var(--dur-fast) var(--ease); }
+  .foot-col a:hover, .foot-col a:focus-visible { color: var(--accent); }
+  .foot-col .label { color: rgba(255,255,255,0.45); margin-bottom: var(--s-1); }
+  .foot-bottom {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+    padding-block: var(--s-3);
+    border-top: 1px solid #2a2a2a;
+    font-size: var(--fs-micro);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+  }
+
+  /* ============================ Responsive ============================ */
+  @media (max-width: 900px) {
+    .hero-head { grid-column: 1 / -1; padding-bottom: var(--s-3); }
+    .hero-side {
+      grid-column: 1 / -1;
+      border-left: 0;
+      border-top: 1px solid var(--color-line-soft);
+      padding-left: 0;
+      padding-top: var(--s-3);
+    }
+    .ed-quote, .ed-facts, .cta-main, .cta-side { grid-column: 1 / -1; }
+    .ed-facts { border-left: 0; border-top: 1px solid var(--color-line); padding-left: 0; padding-top: var(--s-3); }
+    .cta-side { border-left: 0; border-top: 1px solid #2a2a2a; padding-left: 0; padding-top: var(--s-3); }
+    .cta-main { padding-bottom: var(--s-3); }
+    .panel { grid-column: span 6; }
+    .panel:nth-child(3) { border-left: 0; }
+    .foot-brand { grid-column: 1 / -1; }
+    .foot-col { grid-column: span 4; }
+  }
+
+  @media (max-width: 640px) {
+    .nav-links { display: none; }
+    .nav-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--s-1);
+      padding-inline: var(--s-2);
+      border-left: 1px solid var(--color-line-soft);
+      font-size: var(--fs-small);
+      font-weight: 600;
+      background: none;
+      border-top: 0; border-bottom: 0; border-right: 0;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .nav-links.open {
+      display: flex;
+      flex-direction: column;
+      position: absolute;
+      left: 0; right: 0;
+      top: 64px;
+      background: var(--color-bg);
+      border-bottom: 1px solid var(--color-line);
+    }
+    .nav-links.open li { display: flex; }
+    .nav-links.open a {
+      border-left: 0;
+      border-top: 1px solid var(--color-line-soft);
+      padding: var(--s-2) var(--page-pad);
+      width: 100%;
+    }
+    .nav-links.open a::after { display: none; }
+    .hero-strip { grid-template-columns: 1fr 1fr; }
+    .hero-strip > div:nth-child(3) { display: none; }
+    .work-row {
+      grid-template-columns: 40px 1fr auto;
+      row-gap: var(--s-1);
+    }
+    .work-row .tag { grid-column: 2 / 4; }
+    .panel { grid-column: 1 / -1; border-left: 0; border-bottom: 1px solid var(--color-line-soft); }
+    .foot-col { grid-column: 1 / -1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+    .work-row:hover, .work-row:focus-within { padding-left: 0; }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site">
+  <div class="wrap">
+    <nav class="nav" aria-label="Primary">
+      <a class="brand" href="#" aria-label="Kontur home">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <rect x="0.5" y="0.5" width="21" height="21" stroke="#000"/>
+          <rect x="0.5" y="0.5" width="10.5" height="10.5" fill="#ff3b00" stroke="#ff3b00"/>
+          <line x1="11" y1="0" x2="11" y2="22" stroke="#000"/>
+          <line x1="0" y1="11" x2="22" y2="11" stroke="#000"/>
+        </svg>
+        Kontur
+      </a>
+      <ul class="nav-links" id="navlinks">
+        <li><a href="#work">Work</a></li>
+        <li><a href="#practice">Practice</a></li>
+        <li><a href="#journal">Journal</a></li>
+        <li><a class="nav-cta" href="#contact">
+          Start a project
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <path d="M2 10L10 2M10 2H4M10 2V8" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </a></li>
+      </ul>
+      <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navlinks">
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+          <line x1="0" y1="3" x2="16" y2="3" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="0" y1="8" x2="16" y2="8" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="0" y1="13" x2="16" y2="13" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+        Menu
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <!-- HERO -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap">
+      <div class="grid">
+        <div class="hero-meta">
+          <span class="label">International Practice · Est. 1998</span>
+          <span class="label">Zürich — New York — Singapore</span>
+          <span class="label">47.3769° N, 8.5417° E</span>
+        </div>
+
+        <div class="hero-head">
+          <h1 id="hero-title">Order in<br/><em>structure,</em><br/>clarity in form.</h1>
+        </div>
+
+        <div class="hero-side">
+          <p>Kontur designs buildings, systems, and identities on a rational grid. Every decision is measured, every margin intentional.</p>
+          <div class="hero-actions">
+            <a class="btn" href="#work">
+              View selected work
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M2 7H12M12 7L7 2M12 7L7 12" stroke="currentColor" stroke-width="1.5"/>
+              </svg>
+            </a>
+            <a class="btn btn--ghost" href="#practice">The practice</a>
+          </div>
+        </div>
+
+        <div class="hero-strip" aria-hidden="true">
+          <div class="cell-grid"><span class="cell-num">01 / GRID</span></div>
+          <div class="cell-dark cell-circle"><span class="cell-num">02 / FORM</span></div>
+          <div class="cell-accent"><span class="cell-num">03</span></div>
+          <div class="cell-grid"><span class="cell-num">04 / SYSTEM</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WORK INDEX -->
+  <section id="work" aria-labelledby="work-title">
+    <div class="wrap">
+      <div class="grid">
+        <div class="sec-head">
+          <h2 id="work-title">Selected Work</h2>
+          <span class="label">012 Projects · 2019—2025</span>
+        </div>
+        <ul class="work-list">
+          <li>
+            <a class="work-row" href="#">
+              <span class="idx">01</span>
+              <h3>Helvetia Archive Pavilion</h3>
+              <span class="tag">Cultural / Concrete &amp; glass</span>
+              <span class="yr">2025
+                <span class="arrow" aria-hidden="true">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 10L10 2M10 2H4M10 2V8" stroke="currentColor" stroke-width="1.5"/></svg>
+                </span>
+              </span>
+            </a>
+          </li>
+          <li>
+            <a class="work-row" href="#">
+              <span class="idx">02</span>
+              <h3>Meridian Type Foundry HQ</h3>
+              <span class="tag">Workplace / Modular system</span>
+              <span class="yr">2024
+                <span class="arrow" aria-hidden="true">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 10L10 2M10 2H4M10 2V8" stroke="currentColor" stroke-width="1.5"/></svg>
+                </span>
+              </span>
+            </a>
+          </li>
+          <li>
+            <a class="work-row" href="#">
+              <span class="idx">03</span>
+              <h3>Raster Civic Library</h3>
+              <span class="tag">Public / Asymmetric facade</span>
+              <span class="yr">2023
+                <span class="arrow" aria-hidden="true">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 10L10 2M10 2H4M10 2V8" stroke="currentColor" stroke-width="1.5"/></svg>
+                </span>
+              </span>
+            </a>
+          </li>
+          <li>
+            <a class="work-row" href="#">
+              <span class="idx">04</span>
+              <h3>Baseline Residences</h3>
+              <span class="tag">Housing / Repeating module</span>
+              <span class="yr">2022
+                <span class="arrow" aria-hidden="true">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 10L10 2M10 2H4M10 2V8" stroke="currentColor" stroke-width="1.5"/></svg>
+                </span>
+              </span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRINCIPLES / STATS -->
+  <section id="practice" aria-labelledby="practice-title">
+    <div class="wrap">
+      <div class="grid">
+        <div class="sec-head">
+          <h2 id="practice-title">The Practice</h2>
+          <span class="label">Method · Measure · Material</span>
+        </div>
+        <div class="panels">
+          <div class="grid">
+            <article class="panel">
+              <span class="label">Founded</span>
+              <span class="stat">1998</span>
+              <p>Built on the principles of the international typographic style — adapted for contemporary systems.</p>
+            </article>
+            <article class="panel panel--accent">
+              <span class="label">Completed</span>
+              <span class="stat">240<sup>+</sup></span>
+              <p>Projects delivered across cultural, civic, and commercial sectors on three continents.</p>
+            </article>
+            <article class="panel panel--dark">
+              <span class="label">Studio</span>
+              <span class="stat">38</span>
+              <p>Architects, designers, and engineers working from a single shared modular standard.</p>
+            </article>
+            <article class="panel">
+              <span class="label">Awards</span>
+              <span class="stat">17</span>
+              <p>International recognitions for clarity, restraint, and rigorous execution in built form.</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EDITORIAL SPLIT -->
+  <section class="editorial" id="journal" aria-labelledby="journal-title">
+    <div class="wrap">
+      <div class="grid">
+        <h2 id="journal-title" class="label" style="grid-column:1 / -1; padding-top: var(--s-4);">Statement</h2>
+        <div class="ed-quote">
+          <blockquote>Constraint is not a limitation. The grid is the <span>discipline</span> that makes freedom legible.</blockquote>
+          <div class="ed-cite">
+            <span class="avatar" aria-hidden="true">MK</span>
+            <div>
+              <div style="font-weight:600;font-size:var(--fs-small)">Mira Keller</div>
+              <div class="label" style="margin-top:2px">Founding Partner</div>
+            </div>
+          </div>
+        </div>
+        <dl class="ed-facts">
+          <div class="fact-row"><dt>Module base unit</dt><dd>8 px</dd></div>
+          <div class="fact-row"><dt>Column structure</dt><dd>12 / fluid</dd></div>
+          <div class="fact-row"><dt>Typeface</dt><dd>Inter</dd></div>
+          <div class="fact-row"><dt>Contrast ratio</dt><dd>AAA</dd></div>
+          <div class="fact-row"><dt>Accent</dt><dd>Single</dd></div>
+          <div class="fact-row"><dt>Decoration</dt><dd>None</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta" id="contact" aria-labelledby="cta-title">
+    <div class="wrap">
+      <div class="grid">
+        <div class="cta-main">
+          <h2 id="cta-title">Have a brief that deserves <em>precision?</em></h2>
+        </div>
+        <div class="cta-side">
+          <span class="label">New commissions</span>
+          <a class="btn btn--invert" href="#">
+            Start a project
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M2 12L12 2M12 2H5M12 2V9" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+          </a>
+          <a href="mailto:studio@kontur.example" style="font-size:var(--fs-small);color:rgba(255,255,255,0.85);border-bottom:1px solid #2a2a2a;padding-bottom:var(--s-1)">studio@kontur.example</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="grid">
+      <div class="foot-brand">
+        <span class="brand" style="color:#fff">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <rect x="0.5" y="0.5" width="21" height="21" stroke="#fff"/>
+            <rect x="0.5" y="0.5" width="10.5" height="10.5" fill="#ff3b00" stroke="#ff3b00"/>
+            <line x1="11" y1="0" x2="11" y2="22" stroke="#fff"/>
+            <line x1="0" y1="11" x2="22" y2="11" stroke="#fff"/>
+          </svg>
+          Kontur
+        </span>
+        <p>International practice for architecture, systems, and visual identity.</p>
+      </div>
+      <nav class="foot-col" aria-label="Studio">
+        <span class="label">Studio</span>
+        <a href="#work">Work</a>
+        <a href="#practice">Practice</a>
+        <a href="#journal">Journal</a>
+      </nav>
+      <nav class="foot-col" aria-label="Offices">
+        <span class="label">Offices</span>
+        <a href="#">Zürich</a>
+        <a href="#">New York</a>
+        <a href="#">Singapore</a>
+      </nav>
+      <nav class="foot-col" aria-label="Connect">
+        <span class="label">Connect</span>
+        <a href="#">LinkedIn</a>
+        <a href="#">Instagram</a>
+        <a href="#">Press kit</a>
+      </nav>
+      <div class="foot-bottom">
+        <span>© 2026 Kontur AG</span>
+        <span>Designed on a 12-column grid</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var toggle = document.getElementById("navToggle");
+    var links = document.getElementById("navlinks");
+    if (!toggle || !links) return;
+    toggle.addEventListener("click", function () {
+      var open = links.classList.toggle("open");
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+    links.addEventListener("click", function (e) {
+      if (e.target.closest("a")) {
+        links.classList.remove("open");
+        toggle.setAttribute("aria-expanded", "false");
+      }
+    });
+  })();
+</script>
+</body>
+</html>

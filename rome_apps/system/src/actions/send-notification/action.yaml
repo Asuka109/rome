@@ -1,0 +1,25 @@
+name: send_notification
+type: system
+description: >-
+  Send the user a push notification on their mobile device. USER-DIRECTED: call
+  this ONLY when the user has explicitly asked or authorized you to notify them.
+  Receiving, escalating, or handling a message or event does NOT authorize a
+  notification. Optional `body` sets the notification text: a concise attention
+  cue (what needs attention, what input or approval is needed, or what
+  completed), summarized within 500 Unicode code points (roughly 500
+  characters) before you call — write the summary yourself, do not paste raw
+  content; the broker silently truncates anything longer. The title is always "Rome"; omit
+  `body` to send the generic default alert. The body may appear on the device
+  lock screen, so it MUST NOT contain passwords, authentication codes, tokens,
+  or other secrets — say that approval is required, never include the secret
+  itself. A successful send means the push provider (APNs on iOS, FCM on
+  Android) accepted the request, NOT that the user saw it: report the
+  notification as sent, not as confirmed delivered. If the
+  result is notification_outcome_unknown, delivery may already have happened —
+  do NOT retry unless the user explicitly authorizes another attempt. Likewise,
+  if the action is cancelled after it has been dispatched, the notification may
+  still arrive; do not retry without explicit user authorization.
+complexity: simple
+speed: moderate
+reliability: high
+sideEffects: write

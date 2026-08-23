@@ -1,0 +1,155 @@
+{
+  "page": {
+    "title": "动态",
+    "liveUpdated": "实时 · 更新于 {{when}}",
+    "refresh": "刷新",
+    "loading": "加载中…",
+    "empty": {
+      "title": "暂无动态",
+      "hint": "审批、动作执行和 webhook 回调都会显示在这里"
+    },
+    "pendingCallout": {
+      "single": "{{count}} 个待审批",
+      "multiple": "{{count}} 个待审批",
+      "suffix": "需要处理",
+      "cta": "查看 ›"
+    },
+    "stats": {
+      "pending": "待处理",
+      "running": "运行中",
+      "errors": "错误",
+      "events": "事件"
+    },
+    "filters": {
+      "all": "全部",
+      "pending": "待处理",
+      "running": "运行中",
+      "success": "成功",
+      "error": "错误",
+      "approved": "已批准",
+      "rejected": "已拒绝",
+      "auto_approved": "自动",
+      "pending_approval": "待批准",
+      "cancelled": "已取消"
+    },
+    "pagination": {
+      "previous": "‹ 上一页",
+      "next": "下一页 ›",
+      "page": "第 {{n}} 页"
+    }
+  },
+  "status": {
+    "accepted": "已接收",
+    "approved": "已批准",
+    "rejected": "已拒绝",
+    "auto_approved": "自动批准",
+    "pending": "待处理",
+    "executed": "已执行",
+    "execution_failed": "执行失败",
+    "awaiting_execution": "等待执行",
+    "running": "运行中",
+    "success": "成功",
+    "error": "错误",
+    "pending_approval": "待批准",
+    "cancelled": "已取消"
+  },
+  "duration": {
+    "none": "—"
+  },
+  "timeAgo": {
+    "justNow": "刚刚",
+    "secondsAgo": "{{n}} 秒前",
+    "minutesAgo": "{{n}} 分钟前",
+    "hoursAgo": "{{n}} 小时前",
+    "daysAgo": "{{n}} 天前"
+  },
+  "approval": {
+    "requestedBy": "请求者",
+    "resolved": "已处理 {{when}}",
+    "by": "由",
+    "executed": "已执行 {{when}}",
+    "errorPrefix": "错误 · ",
+    "payload": "请求内容",
+    "actions": {
+      "reject": "拒绝",
+      "approve": "批准",
+      "retry": "重试",
+      "pending": "…"
+    }
+  },
+  "execution": {
+    "errorPrefix": "错误 · ",
+    "details": "详情",
+    "rootId": "根 ID",
+    "args": "参数",
+    "children": "子动作",
+    "childCountSingle": "{{count}} 个子动作",
+    "childCountMultiple": "{{count}} 个子动作",
+    "initiatedBy": "发起者",
+    "performedBy": "操作者",
+    "actorGuardian": "守护者",
+    "actorAnonymous": "匿名",
+    "cancellationRequested": "已请求取消 {{when}}",
+    "actions": {
+      "cancel": "取消",
+      "pending": "…"
+    }
+  },
+  "webhook": {
+    "received": "收到 webhook，目标动作",
+    "executionLabel": "执行",
+    "finished": "已完成 {{when}}",
+    "callbackLabel": "回调",
+    "callbackHttp": " · HTTP {{status}}",
+    "errorPrefix": "错误 · ",
+    "callbackErrorPrefix": "回调错误 · ",
+    "payload": "请求内容"
+  },
+  "trace": {
+    "loading": "正在加载追踪…",
+    "retry": "重试",
+    "failedWithReason": "错误: {{reason}}",
+    "stoppedByUser": "用户已停止",
+    "thinking": "思考中…",
+    "thoughtFor": "已思考 {{duration}}",
+    "subagents": {
+      "ariaLabel": "已委派的子智能体",
+      "openTrace": "打开 {{agent}} 的追踪",
+      "status": {
+        "running": "运行中",
+        "completed": "已完成",
+        "failed": "失败",
+        "cancelled": "已取消"
+      }
+    },
+    "summary": {
+      "appsUsedSingle": "使用了 {{count}} 个应用",
+      "appsUsedMultiple": "使用了 {{count}} 个应用",
+      "stepsSingle": "{{count}} 步",
+      "stepsMultiple": "{{count}} 步",
+      "joiner": " · ",
+      "stoppedSuffix": " · 已停止",
+      "failedSuffix": " · 错误",
+      "liveAppsSingle": "{{count}} 个应用",
+      "liveAppsMultiple": "{{count}} 个应用",
+      "liveStep": "第 {{count}} 步",
+      "activity": {
+        "usingApp": "使用 {{app}}",
+        "thinking": "思考中…",
+        "responding": "回复中…"
+      }
+    },
+    "drawer": {
+      "title": "追踪",
+      "live": "实时",
+      "ariaLabel": "智能体追踪",
+      "closeAriaLabel": "关闭追踪",
+      "loadFailedHttp": "加载追踪失败 (HTTP {{status}})",
+      "notAvailable": "追踪暂不可用",
+      "loadFailed": "加载追踪失败",
+      "loadFailedReason": "加载追踪失败: {{reason}}",
+      "dumpTitle": "下载原始 trace JSON",
+      "dumpAriaLabel": "下载原始 trace JSON"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "id": "tg-msg-002",
+  "channel": "telegram",
+  "channelUserId": "tg-user-456",
+  "displayName": "Group Member",
+  "threadId": "tg-thread-group-001",
+  "threadName": "Test Group",
+  "threadType": "group",
+  "timestamp": "2026-01-15T11:00:00Z",
+  "text": "Hello from Telegram group chat",
+  "attachments": [],
+  "rawEvent": {
+    "message": {
+      "message_id": 43,
+      "from": {
+        "id": 456789,
+        "first_name": "Group",
+        "last_name": "Member"
+      },
+      "chat": {
+        "id": -100123456,
+        "type": "group",
+        "title": "Test Group"
+      },
+      "text": "Hello from Telegram group chat"
+    }
+  }
+}

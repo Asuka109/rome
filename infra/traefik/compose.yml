@@ -1,0 +1,113 @@
+# Traefik singleton.
+#
+# Started by scripts/dev-up.sh as a separate Compose project (`rome-traefik`).
+# Idempotent to bring up repeatedly. Owns host port :3000 and the shared
+# `rome-edge` network; per-worktree compose projects attach to `rome-edge`
+# to be reachable at `<slug>.rome.localhost:3000`.
+
+name: rome-traefik
+
+services:
+  traefik:
+    image: traefik:v3.6.14
+    command:
+      - --configFile=/etc/traefik/traefik.yml
+    environment:
+      # OrbStack/Docker 29 refuses API 1.24 (Traefik's default). Pinning to
+      # 1.43 is the documented workaround until Traefik bumps its default.
+      DOCKER_API_VERSION: "1.43"
+      # Strip any inherited HTTP proxy. On hosts that ship Docker via Orbstack,
+      # the daemon injects http_proxy / https_proxy / all_proxy into every
+      # container. Go's net/http transport honors those for *outbound*
+      # connections, so Traefik ships every upstream request (e.g.
+      # rome-obs:4318 or a per-worktree Rome service) through the host proxy, which can't
+      # reach the rome-edge bridge — every route 500s after a 10s timeout.
+      # Traefik only ever talks to other rome-edge containers, so blanking
+      # the proxy vars is safe.
+      http_proxy: ""
+      https_proxy: ""
+      all_proxy: ""
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      ALL_PROXY: ""
+    ports:
+      # Loopback-only — prevents LAN exposure of no-auth HyperDX and the
+      # ClickHouse default (empty-password) user via `Host:` spoof on a
+      # shared network. Published on BOTH 127.0.0.1 and [::1]: dev workflows hit
+      # `http://<slug>.rome.localhost:3000`, and on macOS (Node 17+ verbatim DNS)
+      # `*.localhost` resolves to ::1 *before* 127.0.0.1. With an IPv4-only bind a
+      # stray host dev server squatting [::1]:3000 would silently hijack every
+      # request (serving 504s); owning both loopbacks lands traffic on Traefik
+      # regardless of family and makes such a collision fail loudly at bind time.
+      - "127.0.0.1:3000:3000"
+      - "[::1]:3000:3000"
+      - "127.0.0.1:80:80"      # landing index at http://rome.localhost/
+      - "[::1]:80:80"
+      - "127.0.0.1:8080:8080"  # traefik dashboard (loopback only)
+      - "[::1]:8080:8080"      # localhost:8080 is ::1-first on macOS — own it too
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+    networks:
+      - rome-edge
+    restart: unless-stopped
+
+  # rome-edge DNS singleton. Answers `*.rome.localhost` with Traefik's rome-edge
+  # IP so IN-CONTAINER lookups resolve the SAME name the browser uses, and both
+  # legs route by Host through Traefik. Every worktree service points its Docker
+  # resolver's upstream here via `dns: [${ROME_DNSMASQ_IP}]` (dev-up.sh inspects
+  # this container's rome-edge IP into that var). Non-rome.localhost queries are
+  # forwarded to the embedded Docker DNS so normal resolution is unaffected.
+  dnsmasq:
+    build:
+      context: ./dnsmasq
+    image: rome-dev-dnsmasq
+    # dnsmasq must bind :53 and manage its own reload; run as root.
+    cap_add:
+      - NET_ADMIN
+    environment:
+      # Same Orbstack-proxy strip as the services above (see traefik). dnsmasq
+      # only ever talks to rome-edge peers + the embedded resolver.
+      http_proxy: ""
+      https_proxy: ""
+      all_proxy: ""
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      ALL_PROXY: ""
+    networks:
+      - rome-edge
+    restart: unless-stopped
+
+  # Index page at http://rome.localhost/ — lists all running worktree
+  # instances by scraping Traefik's router state. Caddy serves the static
+  # HTML and proxies /_api/* to traefik:8080 so the page can read the API
+  # without CORS plumbing.
+  landing:
+    image: caddy:2-alpine
+    environment:
+      # Same reasoning as the traefik service above — caddy proxies /_api/*
+      # to traefik:8080 over rome-edge, which the inherited Orbstack proxy
+      # would route through the host and break.
+      http_proxy: ""
+      https_proxy: ""
+      all_proxy: ""
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      ALL_PROXY: ""
+    volumes:
+      - ./landing/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./landing/index.html:/srv/index.html:ro
+    networks:
+      - rome-edge
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=rome-edge"
+      - "traefik.http.routers.rome-landing.rule=Host(`rome.localhost`)"
+      - "traefik.http.routers.rome-landing.entrypoints=landing"
+      - "traefik.http.services.rome-landing.loadbalancer.server.port=80"
+
+networks:
+  rome-edge:
+    name: rome-edge
+    driver: bridge

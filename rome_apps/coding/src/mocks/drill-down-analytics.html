@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Northwind Sales Intelligence — Drill-Down Analytics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* ---- Palette (Analytics Dashboard: blue data + amber highlights) ---- */
+    --primary: #1E40AF;
+    --on-primary: #FFFFFF;
+    --secondary: #3B82F6;
+    --on-secondary: #FFFFFF;
+    --accent: #D97706;
+    --on-accent: #FFFFFF;
+    --bg: #F8FAFC;
+    --fg: #1E3A8A;
+    --card: #FFFFFF;
+    --card-fg: #1E3A8A;
+    --muted: #E9EEF6;
+    --muted-fg: #64748B;
+    --border: #DBEAFE;
+    --destructive: #DC2626;
+    --on-destructive: #FFFFFF;
+    --ring: #1E40AF;
+    --positive: #15803D;
+
+    /* ---- Hierarchy depth colors (drill-level indicators) ---- */
+    --level-0: #1E40AF;
+    --level-1: #3B82F6;
+    --level-2: #0EA5E9;
+    --level-3: #D97706;
+
+    /* ---- Typography ---- */
+    --font-sans: 'Fira Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-mono: 'Fira Code', ui-monospace, 'SF Mono', Menlo, monospace;
+    --fs-xs: 0.6875rem;
+    --fs-sm: 0.8125rem;
+    --fs-base: 0.9375rem;
+    --fs-lg: 1.125rem;
+    --fs-xl: 1.5rem;
+    --fs-2xl: 2rem;
+    --fs-3xl: 2.75rem;
+
+    /* ---- Radius / shadow / spacing ---- */
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 16px;
+    --r-pill: 999px;
+    --shadow-sm: 0 1px 2px rgba(30,64,175,0.06), 0 1px 3px rgba(30,64,175,0.08);
+    --shadow-md: 0 4px 14px rgba(30,64,175,0.10), 0 2px 6px rgba(30,64,175,0.06);
+    --shadow-lg: 0 18px 50px rgba(30,64,175,0.16);
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 24px;
+    --sp-6: 32px;
+    --sp-7: 48px;
+
+    /* ---- Drill-down design system variables ---- */
+    --breadcrumb-separator: '/';
+    --expand-duration: 300ms;
+    --level-indent: 24px;
+    --back-button-size: 40px;
+    --context-bar-height: 48px;
+    --drill-transition: 300ms ease;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-sans);
+    font-size: var(--fs-base);
+    color: var(--fg);
+    background:
+      radial-gradient(900px 500px at 100% -10%, rgba(59,130,246,0.10), transparent 60%),
+      radial-gradient(700px 400px at -10% 110%, rgba(217,119,6,0.07), transparent 60%),
+      var(--bg);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  .app {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: var(--sp-4);
+  }
+
+  /* ---------- Header ---------- */
+  header.topbar {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+    flex-wrap: wrap;
+    padding: var(--sp-3) var(--sp-4);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-sm);
+  }
+  .brand { display: flex; align-items: center; gap: var(--sp-3); min-width: 0; }
+  .brand .logo {
+    width: 38px; height: 38px; border-radius: var(--r-md);
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    display: grid; place-items: center; color: #fff; flex-shrink: 0;
+    box-shadow: var(--shadow-sm);
+  }
+  .brand .title { font-weight: 700; font-size: var(--fs-lg); letter-spacing: -0.01em; }
+  .brand .sub { font-size: var(--fs-xs); color: var(--muted-fg); font-family: var(--font-mono); }
+
+  nav.mainnav { display: flex; gap: var(--sp-1); margin-left: auto; flex-wrap: wrap; }
+  nav.mainnav a {
+    font-size: var(--fs-sm); color: var(--muted-fg); text-decoration: none;
+    padding: var(--sp-2) var(--sp-3); border-radius: var(--r-sm);
+    transition: background var(--drill-transition), color var(--drill-transition);
+  }
+  nav.mainnav a:hover { background: var(--muted); color: var(--primary); }
+  nav.mainnav a[aria-current="page"] { background: var(--primary); color: var(--on-primary); }
+  nav.mainnav a:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+  .user {
+    display: flex; align-items: center; gap: var(--sp-2);
+    padding: var(--sp-1) var(--sp-2) var(--sp-1) var(--sp-1);
+    border: 1px solid var(--border); border-radius: var(--r-pill);
+    font-size: var(--fs-sm); font-weight: 500;
+  }
+  .user .av {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #f59e0b);
+    color: #fff; display: grid; place-items: center;
+    font-size: var(--fs-xs); font-weight: 700; font-family: var(--font-mono);
+  }
+
+  /* ---------- Context bar (sticky breadcrumb) ---------- */
+  .contextbar {
+    position: sticky; top: var(--sp-2); z-index: 30;
+    margin-top: var(--sp-4);
+    min-height: var(--context-bar-height);
+    display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap;
+    padding: var(--sp-2) var(--sp-3);
+    background: rgba(255,255,255,0.86);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .backbtn {
+    width: var(--back-button-size); height: var(--back-button-size);
+    flex-shrink: 0; border: 1px solid var(--border); background: var(--card);
+    border-radius: var(--r-md); display: grid; place-items: center;
+    color: var(--primary); cursor: pointer;
+    transition: transform var(--drill-transition), background var(--drill-transition), box-shadow var(--drill-transition);
+  }
+  .backbtn:hover { background: var(--muted); box-shadow: var(--shadow-sm); }
+  .backbtn:active { transform: translateX(-2px); }
+  .backbtn:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .backbtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .breadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-1); min-width: 0; }
+  .breadcrumb ol { list-style: none; display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-1); }
+  .breadcrumb li { display: flex; align-items: center; gap: var(--sp-1); }
+  .breadcrumb a, .breadcrumb span.current {
+    font-size: var(--fs-sm); text-decoration: none; padding: var(--sp-1) var(--sp-2);
+    border-radius: var(--r-sm); font-weight: 500; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .breadcrumb a { color: var(--secondary); }
+  .breadcrumb a:hover { background: var(--muted); }
+  .breadcrumb a:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .breadcrumb .current { color: var(--accent); background: rgba(217,119,6,0.10); }
+  .breadcrumb .sep { color: var(--muted-fg); font-family: var(--font-mono); font-size: var(--fs-sm); }
+  .breadcrumb .sep::before { content: var(--breadcrumb-separator); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .ctx-meta { margin-left: auto; display: flex; align-items: center; gap: var(--sp-3); font-size: var(--fs-xs); color: var(--muted-fg); font-family: var(--font-mono); }
+  .ctx-meta .live { display: inline-flex; align-items: center; gap: 6px; }
+  .ctx-meta .live::before {
+    content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--positive);
+    box-shadow: 0 0 0 0 rgba(21,128,61,0.5); animation: pulse 2.4s infinite;
+  }
+
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(21,128,61,0.45); }
+    70% { box-shadow: 0 0 0 7px rgba(21,128,61,0); }
+    100% { box-shadow: 0 0 0 0 rgba(21,128,61,0); }
+  }
+
+  /* ---------- Headline row ---------- */
+  .headrow { margin-top: var(--sp-5); display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-4); flex-wrap: wrap; }
+  .headrow h1 { font-size: var(--fs-2xl); font-weight: 700; letter-spacing: -0.02em; }
+  .headrow .lvl-tag {
+    font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--muted-fg);
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 4px;
+  }
+  .controls { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+  .seg {
+    display: inline-flex; border: 1px solid var(--border); border-radius: var(--r-md);
+    overflow: hidden; background: var(--card); box-shadow: var(--shadow-sm);
+  }
+  .seg button {
+    border: 0; background: transparent; font-family: var(--font-sans); font-size: var(--fs-sm);
+    color: var(--muted-fg); padding: var(--sp-2) var(--sp-3); cursor: pointer;
+    transition: background var(--drill-transition), color var(--drill-transition);
+  }
+  .seg button:hover { background: var(--muted); color: var(--primary); }
+  .seg button[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); }
+  .seg button:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+
+  .btn-primary {
+    border: 0; background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: var(--on-primary); font-family: var(--font-sans); font-weight: 600; font-size: var(--fs-sm);
+    padding: var(--sp-2) var(--sp-4); border-radius: var(--r-md); cursor: pointer;
+    display: inline-flex; align-items: center; gap: var(--sp-2);
+    box-shadow: var(--shadow-md);
+    transition: transform var(--drill-transition), box-shadow var(--drill-transition), filter var(--drill-transition);
+  }
+  .btn-primary:hover { filter: brightness(1.06); box-shadow: var(--shadow-lg); }
+  .btn-primary:active { transform: translateY(1px); }
+  .btn-primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- KPI summary cards ---------- */
+  .kpis {
+    margin-top: var(--sp-5);
+    display: grid; gap: var(--sp-4);
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .kpi {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg);
+    padding: var(--sp-4); box-shadow: var(--shadow-sm);
+    position: relative; overflow: hidden;
+    transition: transform var(--drill-transition), box-shadow var(--drill-transition);
+  }
+  .kpi::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: var(--accent-bar, var(--secondary));
+  }
+  .kpi:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  .kpi .label { font-size: var(--fs-xs); color: var(--muted-fg); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+  .kpi .value { font-family: var(--font-mono); font-size: var(--fs-xl); font-weight: 700; margin-top: var(--sp-2); letter-spacing: -0.02em; }
+  .kpi .delta { font-size: var(--fs-sm); font-weight: 600; margin-top: var(--sp-1); display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); }
+  .delta.up { color: var(--positive); }
+  .delta.down { color: var(--destructive); }
+  .kpi .spark { margin-top: var(--sp-3); display: block; width: 100%; height: 34px; }
+
+  /* ---------- Main grid ---------- */
+  .grid {
+    margin-top: var(--sp-5);
+    display: grid; gap: var(--sp-4);
+    grid-template-columns: 1.6fr 1fr;
+    align-items: start;
+  }
+
+  .panel {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg);
+    box-shadow: var(--shadow-sm); overflow: hidden;
+  }
+  .panel > .phead {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3);
+    padding: var(--sp-4); border-bottom: 1px solid var(--border);
+  }
+  .phead h2 { font-size: var(--fs-lg); font-weight: 600; letter-spacing: -0.01em; }
+  .phead .hint { font-size: var(--fs-xs); color: var(--muted-fg); font-family: var(--font-mono); }
+
+  /* ---------- Drill-down hierarchy (details/summary) ---------- */
+  .tree { padding: var(--sp-2); }
+  .tree .colhead {
+    display: grid; grid-template-columns: 1fr 92px 92px 96px;
+    gap: var(--sp-3); padding: var(--sp-2) var(--sp-3);
+    font-size: var(--fs-xs); color: var(--muted-fg); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;
+  }
+  .tree .colhead span:nth-child(n+2) { text-align: right; }
+
+  details.node {
+    border-radius: var(--r-md);
+    margin-bottom: var(--sp-1);
+    border: 1px solid transparent;
+    transition: background var(--drill-transition), border-color var(--drill-transition);
+  }
+  details.node[open] { background: rgba(59,130,246,0.04); border-color: var(--border); }
+
+  summary.row {
+    list-style: none; cursor: pointer; user-select: none;
+    display: grid; grid-template-columns: 1fr 92px 92px 96px;
+    gap: var(--sp-3); align-items: center;
+    padding: var(--sp-3);
+    padding-left: calc(var(--sp-3) + var(--depth, 0) * var(--level-indent));
+    border-radius: var(--r-md);
+    transition: background var(--drill-transition);
+    position: relative;
+  }
+  summary.row::-webkit-details-marker { display: none; }
+  summary.row:hover { background: var(--muted); }
+  summary.row:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+  summary.row .name { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; font-weight: 500; }
+  summary.row .name .lvldot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  summary.row .name .txt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  summary.row .chev {
+    transition: transform var(--expand-duration) ease; flex-shrink: 0; color: var(--muted-fg);
+  }
+  details.node[open] > summary.row > .name > .chev { transform: rotate(90deg); color: var(--primary); }
+
+  summary.row .num { text-align: right; font-family: var(--font-mono); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+  summary.row .num.rev { font-weight: 600; }
+  summary.row .bar-cell { display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-2); }
+  summary.row .bar { height: 7px; border-radius: var(--r-pill); background: var(--muted); flex: 1; max-width: 64px; overflow: hidden; }
+  summary.row .bar > i { display: block; height: 100%; border-radius: var(--r-pill); background: linear-gradient(90deg, var(--secondary), var(--primary)); }
+  summary.row .pct { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--muted-fg); width: 34px; text-align: right; }
+
+  /* leaf (no children) row styling — appears inside details body */
+  .children {
+    overflow: hidden;
+    animation: reveal var(--expand-duration) ease;
+  }
+  @keyframes reveal {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .leaf {
+    display: grid; grid-template-columns: 1fr 92px 92px 96px;
+    gap: var(--sp-3); align-items: center;
+    padding: var(--sp-2) var(--sp-3);
+    padding-left: calc(var(--sp-3) + var(--depth, 0) * var(--level-indent));
+    border-radius: var(--r-sm);
+    transition: background var(--drill-transition);
+    font-size: var(--fs-sm);
+  }
+  .leaf:hover { background: var(--muted); }
+  .leaf .name { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
+  .leaf .name .lvldot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .leaf .name .txt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .leaf .num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .leaf .bar-cell { display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-2); }
+  .leaf .bar { height: 6px; border-radius: var(--r-pill); background: var(--muted); flex: 1; max-width: 64px; overflow: hidden; }
+  .leaf .bar > i { display: block; height: 100%; border-radius: var(--r-pill); background: var(--accent); }
+  .leaf .pct { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--muted-fg); width: 34px; text-align: right; }
+
+  /* ---------- Side panel: drill path + detail chart ---------- */
+  .side { display: grid; gap: var(--sp-4); }
+
+  .path-list { padding: var(--sp-3); display: grid; gap: var(--sp-1); }
+  .path-step {
+    display: flex; align-items: center; gap: var(--sp-3);
+    padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md);
+    position: relative;
+  }
+  .path-step .marker { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; border: 2px solid var(--card); box-shadow: 0 0 0 2px currentColor; }
+  .path-step .info { min-width: 0; }
+  .path-step .info .k { font-size: var(--fs-xs); color: var(--muted-fg); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; }
+  .path-step .info .v { font-weight: 600; font-size: var(--fs-sm); }
+  .path-step .info .v .txt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+  .path-step:not(:last-child)::after {
+    content: ""; position: absolute; left: calc(var(--sp-3) + 5px); top: 32px; bottom: -4px; width: 2px; background: var(--border);
+  }
+  .path-step.active { background: rgba(217,119,6,0.08); }
+
+  .chartwrap { padding: var(--sp-4); }
+  .chartwrap svg { width: 100%; height: auto; display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-top: var(--sp-3); font-size: var(--fs-xs); color: var(--muted-fg); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  footer.foot {
+    margin-top: var(--sp-6); padding: var(--sp-4);
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--sp-3);
+    font-size: var(--fs-xs); color: var(--muted-fg); font-family: var(--font-mono);
+    border-top: 1px solid var(--border);
+  }
+  footer.foot .tags { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+  footer.foot .tag { padding: 3px var(--sp-2); border: 1px solid var(--border); border-radius: var(--r-pill); background: var(--card); }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 1000px) {
+    .grid { grid-template-columns: 1fr; }
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .app { padding: var(--sp-3); }
+    nav.mainnav { order: 3; width: 100%; margin-left: 0; }
+    nav.mainnav a { flex: 1; text-align: center; }
+    .headrow h1 { font-size: var(--fs-xl); }
+    .tree .colhead, summary.row, .leaf { grid-template-columns: 1fr 78px 78px; }
+    .tree .colhead span.col-share, summary.row .bar-cell, .leaf .bar-cell { display: none; }
+    .ctx-meta { width: 100%; margin-left: 0; justify-content: space-between; }
+    :root { --level-indent: 16px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+    .children { animation: none; }
+    .ctx-meta .live::before { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===== Header ===== -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="7"/><rect x="12" y="7" width="3" height="11"/><rect x="17" y="13" width="3" height="5"/></svg>
+      </span>
+      <span>
+        <span class="title">Northwind Intelligence</span>
+        <span class="sub">sales · drill-down v4.2</span>
+      </span>
+    </div>
+    <nav class="mainnav" aria-label="Primary">
+      <a href="#" aria-current="page">Explore</a>
+      <a href="#">Funnels</a>
+      <a href="#">Cohorts</a>
+      <a href="#">Reports</a>
+    </nav>
+    <span class="user">
+      <span class="av" aria-hidden="true">EC</span>
+      <span>Evan C.</span>
+    </span>
+  </header>
+
+  <!-- ===== Sticky context / breadcrumb bar ===== -->
+  <div class="contextbar" role="region" aria-label="Drill-down context">
+    <button class="backbtn" type="button" aria-label="Go up one level">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="#"><span class="dot" style="background:var(--level-0)"></span>All Regions</a></li>
+        <li><span class="sep" aria-hidden="true"></span><a href="#"><span class="dot" style="background:var(--level-1)"></span>North America</a></li>
+        <li><span class="sep" aria-hidden="true"></span><a href="#"><span class="dot" style="background:var(--level-2)"></span>United States</a></li>
+        <li><span class="sep" aria-hidden="true"></span><span class="current" aria-current="location"><span class="dot" style="background:var(--level-3)"></span>West Coast</span></li>
+      </ol>
+    </nav>
+    <div class="ctx-meta">
+      <span class="live">live</span>
+      <span>FY2026 · Q2</span>
+    </div>
+  </div>
+
+  <!-- ===== Headline + controls ===== -->
+  <div class="headrow">
+    <div>
+      <h1>West Coast Revenue</h1>
+      <span class="lvl-tag">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        Level 4 of 5 · 312 segments · drill into products to continue
+      </span>
+    </div>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Time range">
+        <button type="button" aria-pressed="false">7d</button>
+        <button type="button" aria-pressed="true">30d</button>
+        <button type="button" aria-pressed="false">QTD</button>
+        <button type="button" aria-pressed="false">YTD</button>
+      </div>
+      <button class="btn-primary" type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+        Export view
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== KPI summary cards ===== -->
+  <section class="kpis" aria-label="Key metrics for West Coast">
+    <article class="kpi" style="--accent-bar:var(--level-0)">
+      <span class="label">Net Revenue</span>
+      <span class="value">$4.82M</span>
+      <span class="delta up"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>+12.4%</span>
+      <svg class="spark" viewBox="0 0 120 34" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,26 15,24 30,27 45,20 60,21 75,14 90,16 105,9 120,6" fill="none" stroke="var(--secondary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </article>
+    <article class="kpi" style="--accent-bar:var(--level-1)">
+      <span class="label">Orders</span>
+      <span class="value">18,402</span>
+      <span class="delta up"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>+5.1%</span>
+      <svg class="spark" viewBox="0 0 120 34" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,18 15,20 30,15 45,17 60,12 75,15 90,11 105,13 120,10" fill="none" stroke="var(--secondary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </article>
+    <article class="kpi" style="--accent-bar:var(--level-2)">
+      <span class="label">Avg Order</span>
+      <span class="value">$262</span>
+      <span class="delta up"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>+6.9%</span>
+      <svg class="spark" viewBox="0 0 120 34" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,22 15,21 30,23 45,18 60,19 75,16 90,18 105,12 120,11" fill="none" stroke="var(--secondary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </article>
+    <article class="kpi" style="--accent-bar:var(--accent)">
+      <span class="label">Refund Rate</span>
+      <span class="value">2.1%</span>
+      <span class="delta down"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>+0.4%</span>
+      <svg class="spark" viewBox="0 0 120 34" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,24 15,23 30,22 45,24 60,20 75,21 90,18 105,19 120,16" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </article>
+  </section>
+
+  <!-- ===== Main content grid ===== -->
+  <main class="grid">
+
+    <!-- Drill-down hierarchy panel -->
+    <section class="panel" aria-label="Revenue by segment, expandable hierarchy">
+      <div class="phead">
+        <h2>Revenue by Segment</h2>
+        <span class="hint">click a row to drill down</span>
+      </div>
+      <div class="tree">
+        <div class="colhead" aria-hidden="true">
+          <span>Segment</span>
+          <span>Revenue</span>
+          <span>Orders</span>
+          <span class="col-share">Share</span>
+        </div>
+
+        <!-- Node: Metro markets -->
+        <details class="node" open style="--depth:0">
+          <summary class="row">
+            <span class="name">
+              <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+              <span class="lvldot" style="background:var(--level-1)"></span>
+              <span class="txt">Metro Markets</span>
+            </span>
+            <span class="num rev">$2.61M</span>
+            <span class="num">9,840</span>
+            <span class="bar-cell"><span class="bar"><i style="width:91%"></i></span><span class="pct">54%</span></span>
+          </summary>
+          <div class="children">
+            <!-- Node: Los Angeles -->
+            <details class="node" open style="--depth:1">
+              <summary class="row">
+                <span class="name">
+                  <svg class="chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+                  <span class="lvldot" style="background:var(--level-2)"></span>
+                  <span class="txt">Los Angeles</span>
+                </span>
+                <span class="num rev">$1.18M</span>
+                <span class="num">4,210</span>
+                <span class="bar-cell"><span class="bar"><i style="width:82%"></i></span><span class="pct">24%</span></span>
+              </summary>
+              <div class="children">
+                <div class="leaf" style="--depth:2"><span class="name"><span class="lvldot" style="background:var(--level-3)"></span><span class="txt">Enterprise SaaS</span></span><span class="num">$612K</span><span class="num">980</span><span class="bar-cell"><span class="bar"><i style="width:74%"></i></span><span class="pct">13%</span></span></div>
+                <div class="leaf" style="--depth:2"><span class="name"><span class="lvldot" style="background:var(--level-3)"></span><span class="txt">Hardware Kits</span></span><span class="num">$348K</span><span class="num">1,640</span><span class="bar-cell"><span class="bar"><i style="width:42%"></i></span><span class="pct">7%</span></span></div>
+                <div class="leaf" style="--depth:2"><span class="name"><span class="lvldot" style="background:var(--level-3)"></span><span class="txt">Support Plans</span></span><span class="num">$220K</span><span class="num">1,590</span><span class="bar-cell"><span class="bar"><i style="width:27%"></i></span><span class="pct">5%</span></span></div>
+              </div>
+            </details>
+            <!-- Node: San Francisco -->
+            <details class="node" style="--depth:1">
+              <summary class="row">
+                <span class="name">
+                  <svg class="chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+                  <span class="lvldot" style="background:var(--level-2)"></span>
+                  <span class="txt">San Francisco</span>
+                </span>
+                <span class="num rev">$0.94M</span>
+                <span class="num">3,120</span>
+                <span class="bar-cell"><span class="bar"><i style="width:65%"></i></span><span class="pct">19%</span></span>
+              </summary>
+              <div class="children">
+                <div class="leaf" style="--depth:2"><span class="name"><span class="lvldot" style="background:var(--level-3)"></span><span class="txt">Enterprise SaaS</span></span><span class="num">$540K</span><span class="num">820</span><span class="bar-cell"><span class="bar"><i style="width:62%"></i></span><span class="pct">11%</span></span></div>
+                <div class="leaf" style="--depth:2"><span class="name"><span class="lvldot" style="background:var(--level-3)"></span><span class="txt">Hardware Kits</span></span><span class="num">$268K</span><span class="num">1,310</span><span class="bar-cell"><span class="bar"><i style="width:31%"></i></span><span class="pct">6%</span></span></div>
+                <div class="leaf" style="--depth:2"><span class="name"><span class="lvldot" style="background:var(--level-3)"></span><span class="txt">Support Plans</span></span><span class="num">$132K</span><span class="num">990</span><span class="bar-cell"><span class="bar"><i style="width:16%"></i></span><span class="pct">3%</span></span></div>
+              </div>
+            </details>
+            <!-- Node: Seattle -->
+            <details class="node" style="--depth:1">
+              <summary class="row">
+                <span class="name">
+                  <svg class="chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+                  <span class="lvldot" style="background:var(--level-2)"></span>
+                  <span class="txt">Seattle</span>
+                </span>
+                <span class="num rev">$0.49M</span>
+                <span class="num">2,510</span>
+                <span class="bar-cell"><span class="bar"><i style="width:34%"></i></span><span class="pct">10%</span></span>
+              </summary>
+              <div class="children">
+                <div class="leaf" style="--depth:2"><span class="name"><span class="lvldot" style="background:var(--level-3)"></span><span class="txt">Enterprise SaaS</span></span><span class="num">$240K</span><span class="num">410</span><span class="bar-cell"><span class="bar"><i style="width:28%"></i></span><span class="pct">5%</span></span></div>
+                <div class="leaf" style="--depth:2"><span class="name"><span class="lvldot" style="background:var(--level-3)"></span><span class="txt">Hardware Kits</span></span><span class="num">$158K</span><span class="num">1,280</span><span class="bar-cell"><span class="bar"><i style="width:18%"></i></span><span class="pct">3%</span></span></div>
+                <div class="leaf" style="--depth:2"><span class="name"><span class="lvldot" style="background:var(--level-3)"></span><span class="txt">Support Plans</span></span><span class="num">$92K</span><span class="num">820</span><span class="bar-cell"><span class="bar"><i style="width:11%"></i></span><span class="pct">2%</span></span></div>
+              </div>
+            </details>
+          </div>
+        </details>
+
+        <!-- Node: Suburban -->
+        <details class="node" style="--depth:0">
+          <summary class="row">
+            <span class="name">
+              <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+              <span class="lvldot" style="background:var(--level-1)"></span>
+              <span class="txt">Suburban Markets</span>
+            </span>
+            <span class="num rev">$1.46M</span>
+            <span class="num">6,120</span>
+            <span class="bar-cell"><span class="bar"><i style="width:51%"></i></span><span class="pct">30%</span></span>
+          </summary>
+          <div class="children">
+            <div class="leaf" style="--depth:1"><span class="name"><span class="lvldot" style="background:var(--level-2)"></span><span class="txt">Sacramento</span></span><span class="num">$0.62M</span><span class="num">2,480</span><span class="bar-cell"><span class="bar"><i style="width:43%"></i></span><span class="pct">13%</span></span></div>
+            <div class="leaf" style="--depth:1"><span class="name"><span class="lvldot" style="background:var(--level-2)"></span><span class="txt">Portland</span></span><span class="num">$0.51M</span><span class="num">2,010</span><span class="bar-cell"><span class="bar"><i style="width:35%"></i></span><span class="pct">11%</span></span></div>
+            <div class="leaf" style="--depth:1"><span class="name"><span class="lvldot" style="background:var(--level-2)"></span><span class="txt">San Diego</span></span><span class="num">$0.33M</span><span class="num">1,630</span><span class="bar-cell"><span class="bar"><i style="width:23%"></i></span><span class="pct">6%</span></span></div>
+          </div>
+        </details>
+
+        <!-- Node: Rural -->
+        <details class="node" style="--depth:0">
+          <summary class="row">
+            <span class="name">
+              <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+              <span class="lvldot" style="background:var(--level-1)"></span>
+              <span class="txt">Rural &amp; Remote</span>
+            </span>
+            <span class="num rev">$0.75M</span>
+            <span class="num">2,442</span>
+            <span class="bar-cell"><span class="bar"><i style="width:26%"></i></span><span class="pct">16%</span></span>
+          </summary>
+          <div class="children">
+            <div class="leaf" style="--depth:1"><span class="name"><span class="lvldot" style="background:var(--level-2)"></span><span class="txt">Inland Empire</span></span><span class="num">$0.41M</span><span class="num">1,320</span><span class="bar-cell"><span class="bar"><i style="width:28%"></i></span><span class="pct">9%</span></span></div>
+            <div class="leaf" style="--depth:1"><span class="name"><span class="lvldot" style="background:var(--level-2)"></span><span class="txt">Central Valley</span></span><span class="num">$0.34M</span><span class="num">1,122</span><span class="bar-cell"><span class="bar"><i style="width:23%"></i></span><span class="pct">7%</span></span></div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- Side: drill path + detail composition -->
+    <aside class="side">
+      <section class="panel" aria-label="Current drill path">
+        <div class="phead">
+          <h2>Drill Path</h2>
+          <span class="hint">context preserved</span>
+        </div>
+        <div class="path-list">
+          <div class="path-step" style="color:var(--level-0)">
+            <span class="marker" style="background:var(--level-0)"></span>
+            <span class="info"><span class="k">Region</span><span class="v" style="color:var(--fg)"><span class="txt">All Regions</span></span></span>
+          </div>
+          <div class="path-step" style="color:var(--level-1)">
+            <span class="marker" style="background:var(--level-1)"></span>
+            <span class="info"><span class="k">Continent</span><span class="v" style="color:var(--fg)"><span class="txt">North America</span></span></span>
+          </div>
+          <div class="path-step" style="color:var(--level-2)">
+            <span class="marker" style="background:var(--level-2)"></span>
+            <span class="info"><span class="k">Country</span><span class="v" style="color:var(--fg)"><span class="txt">United States</span></span></span>
+          </div>
+          <div class="path-step active" style="color:var(--level-3)">
+            <span class="marker" style="background:var(--level-3)"></span>
+            <span class="info"><span class="k">Territory · current</span><span class="v" style="color:var(--accent)"><span class="txt">West Coast</span></span></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" aria-label="Segment composition for West Coast">
+        <div class="phead">
+          <h2>Composition</h2>
+          <span class="hint">share of $4.82M</span>
+        </div>
+        <div class="chartwrap">
+          <svg viewBox="0 0 200 200" role="img" aria-label="Donut chart: Metro 54 percent, Suburban 30 percent, Rural 16 percent">
+            <!-- track -->
+            <circle cx="100" cy="100" r="72" fill="none" stroke="var(--muted)" stroke-width="26"/>
+            <!-- segments: circumference 2*pi*72 = 452.4 -->
+            <g transform="rotate(-90 100 100)" fill="none" stroke-width="26" stroke-linecap="butt">
+              <circle cx="100" cy="100" r="72" stroke="var(--level-1)" stroke-dasharray="244.3 208.1" stroke-dashoffset="0"/>
+              <circle cx="100" cy="100" r="72" stroke="var(--level-2)" stroke-dasharray="135.7 316.7" stroke-dashoffset="-244.3"/>
+              <circle cx="100" cy="100" r="72" stroke="var(--accent)" stroke-dasharray="72.4 380" stroke-dashoffset="-380"/>
+            </g>
+            <text x="100" y="94" text-anchor="middle" font-family="'Fira Code', ui-monospace, monospace" font-size="26" font-weight="700" fill="var(--primary)">$4.82M</text>
+            <text x="100" y="116" text-anchor="middle" font-family="'Fira Sans', system-ui, sans-serif" font-size="11" fill="var(--muted-fg)">net revenue</text>
+          </svg>
+          <div class="legend">
+            <span><i style="background:var(--level-1)"></i>Metro 54%</span>
+            <span><i style="background:var(--level-2)"></i>Suburban 30%</span>
+            <span><i style="background:var(--accent)"></i>Rural 16%</span>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="foot">
+    <span>Last sync 12:42 PT · 312 segments · 5 hierarchy levels</span>
+    <div class="tags">
+      <span class="tag">breadcrumb-nav</span>
+      <span class="tag">summary→detail</span>
+      <span class="tag">context-preserved</span>
+      <span class="tag">deep-linkable</span>
+    </div>
+  </footer>
+</div>
+
+<script>
+  // Enhance the back button to collapse the deepest open node, preserving context.
+  (function () {
+    var back = document.querySelector('.backbtn');
+    if (!back) return;
+    function deepestOpen() {
+      var open = Array.prototype.slice.call(document.querySelectorAll('details.node[open]'));
+      if (!open.length) return null;
+      return open.reduce(function (a, b) {
+        var da = parseInt((a.style.getPropertyValue('--depth') || '0'), 10);
+        var db = parseInt((b.style.getPropertyValue('--depth') || '0'), 10);
+        return db >= da ? b : a;
+      });
+    }
+    function sync() { back.disabled = !document.querySelector('details.node[open]'); }
+    back.addEventListener('click', function () {
+      var node = deepestOpen();
+      if (node) { node.open = false; node.querySelector('summary').focus(); }
+      sync();
+    });
+    document.querySelectorAll('details.node').forEach(function (d) {
+      d.addEventListener('toggle', sync);
+    });
+    sync();
+  })();
+</script>
+</body>
+</html>

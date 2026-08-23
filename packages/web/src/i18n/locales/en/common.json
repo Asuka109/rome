@@ -1,0 +1,191 @@
+{
+  "appName": "Rome",
+  "nav": {
+    "chat": "Chat",
+    "activity": "Activity",
+    "people": "People",
+    "memory": "Memory",
+    "projects": "Projects",
+    "sessions": "Sessions",
+    "routines": "Routines",
+    "apps": "Apps",
+    "store": "App Store",
+    "desktop": "Browser",
+    "settings": "Settings",
+    "openSidebar": "Open sidebar",
+    "closeSidebar": "Close sidebar",
+    "collapseSidebar": "Collapse sidebar",
+    "collapseSidebarShortcut": "Collapse sidebar ({{shortcut}})",
+    "expandSidebar": "Expand sidebar",
+    "expandSidebarShortcut": "Expand sidebar ({{shortcut}})",
+    "more": "More actions"
+  },
+  "sidebar": {
+    "aiApps": "AI Apps",
+    "edit": "Edit",
+    "done": "Done",
+    "addSection": "Add",
+    "remove": "Remove",
+    "add": "Add",
+    "newApps": "New apps available",
+    "new": "New",
+    "appDisabled": "Disabled"
+  },
+  "recentChats": {
+    "title": "Chats",
+    "newChat": "New chat",
+    "empty": "No chats yet",
+    "unread": "Unread",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this chat permanently? This can't be undone.",
+    "archive": "Archive",
+    "unarchive": "Unarchive chat",
+    "rename": "Rename",
+    "renameLabel": "Chat name",
+    "chatActions": "Chat actions",
+    "newChatInProject": "New chat in this project",
+    "loadMore": "Load {{count}} more",
+    "settings": "List settings",
+    "search": "Search chats",
+    "searchShortcut": "Search chats ({{shortcut}})",
+    "searchDescription": "Find a chat by its title, project, or message content.",
+    "searchPlaceholder": "Search chats and messages",
+    "searchClear": "Clear search",
+    "searchLoading": "Loading chats…",
+    "searchLoadError": "Chats couldn't be loaded",
+    "searchRetry": "Try again",
+    "searchNoResults": "No chats found",
+    "searchNoResultsDescription": "Try another chat title, project, or message text.",
+    "searchingMessages": "Searching messages…",
+    "searchMatchUser": "You",
+    "searchMatchAssistant": "Assistant",
+    "searchRecent": "Recent chats",
+    "searchResultsCount_one": "{{count}} result",
+    "searchResultsCount_other": "{{count}} results",
+    "searchResultsLabel": "Chat search results",
+    "searchCurrent": "Current",
+    "searchNavigateHint": "Navigate",
+    "searchOpenHint": "Open",
+    "searchCloseHint": "Close",
+    "projectActions": "Project actions",
+    "pinned": "Pinned",
+    "sectionProjects": "Projects",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "pinChat": "Pin chat",
+    "unpinChat": "Unpin chat",
+    "groupBy": "Group by",
+    "groupByDate": "Date",
+    "groupByProjects": "Project",
+    "status": "Status",
+    "statusAll": "All",
+    "statusActive": "Active",
+    "statusArchived": "Archived",
+    "groups": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "previous7Days": "Previous 7 days",
+      "previous30Days": "Previous 30 days",
+      "older": "Older"
+    }
+  },
+  "language": {
+    "label": "Language"
+  },
+  "profile": {
+    "menuLabel": "Account",
+    "guardian": "Guardian",
+    "visitor": "Visitor",
+    "signOut": "Log out",
+    "signOutError": "Couldn't log out. Please try again."
+  },
+  "terminal": {
+    "title": "Terminal",
+    "close": "Close (Esc)",
+    "reconnect": "Reconnect",
+    "status": {
+      "connecting": "Connecting",
+      "connected": "Connected",
+      "complete": "Complete",
+      "exited": "Exited ({{code}})",
+      "error": "Error"
+    },
+    "errors": {
+      "connectTimeout": "Terminal connection timed out",
+      "websocketFailed": "WebSocket connection failed",
+      "closedUnexpectedly": "Connection closed unexpectedly",
+      "connectionLostInline": "[Connection lost — click Reconnect to try again]",
+      "prepareTimeout": "Sign-in is taking longer than expected."
+    },
+    "claudeLogin": {
+      "title": "Sign in to your Claude account",
+      "preparing": "Preparing sign-in…",
+      "step1": "Open the sign-in page and approve access to your Claude account.",
+      "step2": "Copy the callback link or code shown in your browser.",
+      "step3": "Paste it below to finish.",
+      "openButton": "Open sign-in page",
+      "codeLabel": "Paste the callback link or code from your browser",
+      "codePlaceholder": "Paste link or code here",
+      "submit": "Submit",
+      "preparingUrl": "Preparing Claude sign-in URL",
+      "submittingCode": "Submitting Claude login code"
+    }
+  },
+  "upgradeBanner": {
+    "countdownTitle": "Update to Rome {{version}} is ready",
+    "countdownBody": "Updating in {{remaining}} unless you defer.",
+    "updateNow": "Update now",
+    "applying": "Applying…",
+    "verbFailed": "That didn't go through — try again.",
+    "remindLater": "Remind me later",
+    "updatingTitle": "Updating Rome…",
+    "updatingBody": "Rome is restarting to finish the update. This takes a moment.",
+    "stalledTitle": "The update is taking longer than expected",
+    "stalledBody": "Rome hasn't come back since the update started. It may still finish on its own — try reloading this page in a minute.",
+    "dismiss": "Dismiss"
+  },
+  "theme": {
+    "switchToLight": "Switch to light theme",
+    "switchToDark": "Switch to dark theme"
+  },
+  "backendUnreachable": {
+    "title": "Rome is unreachable",
+    "description": "The dashboard can't reach the Rome service right now. The page will retry automatically — if this persists, check that Rome is running.",
+    "retrying": "Retrying every {{seconds}}s…"
+  },
+  "desktop": {
+    "iframeTitle": "Rome Desktop"
+  },
+  "chat": {
+    "add": "Add widget",
+    "addChat": "Chat",
+    "addDesktop": "Browser",
+    "addProjects": "Projects",
+    "addApp": "App",
+    "back": "Back",
+    "noApps": "No apps available",
+    "newChat": "New chat",
+    "orPickSession": "or pick an existing session"
+  },
+  "connectChatApp": {
+    "title": "Connect your chat app",
+    "description": "Talk to your agent from Telegram, WhatsApp, Discord, or WeChat.",
+    "dismiss": "Dismiss"
+  },
+  "visitAppStore": {
+    "title": "Visit the app store",
+    "description": "Discover AI-native apps built for Rome.",
+    "dismiss": "Dismiss"
+  },
+  "feedback": {
+    "open": "Feedback",
+    "title": "Share feedback",
+    "description": "Tell us what's working, what's broken, or what you'd like to see.",
+    "placeholder": "What's on your mind?",
+    "submit": "Send",
+    "sending": "Sending…",
+    "cancel": "Cancel",
+    "sent": "Thanks for the feedback!",
+    "error": "Couldn't send feedback. Please try again."
+  }
+}

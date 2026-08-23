@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Meridian Capital — Financial Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Color tokens — from colors.csv (Financial Dashboard, dark) + styles.csv design vars */
+    --bg: #020617;
+    --bg-elev: #0E1223;
+    --bg-elev-2: #11162a;
+    --secondary: #1E293B;
+    --muted: #1A1E2F;
+    --muted-fg: #94A3B8;
+    --fg: #F8FAFC;
+    --border: #334155;
+    --border-soft: #1f2a40;
+    --primary: #0F172A;
+    --trust: #003366;
+
+    /* Financial semantics */
+    --profit: #22C55E;
+    --profit-soft: rgba(34, 197, 94, 0.14);
+    --loss: #EF4444;
+    --loss-soft: rgba(239, 68, 68, 0.14);
+    --warn: #F59E0B;
+    --warn-soft: rgba(245, 158, 11, 0.14);
+    --info: #38BDF8;
+    --table-header-bg: #161b2e;
+
+    /* Design system vars from CSV */
+    --currency-symbol: "$";
+    --variance-threshold: 10%;
+
+    /* Radius */
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 16px;
+    --r-pill: 999px;
+
+    /* Spacing scale */
+    --s-1: 4px;
+    --s-2: 8px;
+    --s-3: 12px;
+    --s-4: 16px;
+    --s-5: 24px;
+    --s-6: 32px;
+    --s-7: 48px;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+    --shadow-md: 0 8px 24px rgba(0,0,0,0.45);
+    --shadow-glow-profit: 0 0 0 1px rgba(34,197,94,0.25), 0 6px 20px rgba(34,197,94,0.12);
+
+    /* Type scale */
+    --font-sans: "Fira Sans", system-ui, -apple-system, sans-serif;
+    --font-mono: "Fira Code", ui-monospace, "SF Mono", Menlo, monospace;
+    --t-xs: 11px;
+    --t-sm: 13px;
+    --t-base: 14px;
+    --t-md: 16px;
+    --t-lg: 20px;
+    --t-xl: 28px;
+    --t-2xl: 38px;
+
+    /* Motion */
+    --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --dur-fast: 120ms;
+    --dur: 240ms;
+    --dur-slow: 600ms;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(0,51,102,0.35), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(34,197,94,0.06), transparent 55%),
+      var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-size: var(--t-base);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  a { color: inherit; text-decoration: none; }
+  .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+  :focus-visible {
+    outline: 2px solid var(--info);
+    outline-offset: 2px;
+    border-radius: var(--r-sm);
+  }
+
+  /* ---------- Layout shell ---------- */
+  .app {
+    display: grid;
+    grid-template-columns: 248px 1fr;
+    min-height: 100vh;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    background: linear-gradient(180deg, var(--bg-elev) 0%, #0a0e1d 100%);
+    border-right: 1px solid var(--border-soft);
+    padding: var(--s-5) var(--s-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-6);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .brand { display: flex; align-items: center; gap: var(--s-3); }
+  .brand-mark {
+    width: 38px; height: 38px;
+    border-radius: var(--r-md);
+    background: linear-gradient(135deg, var(--profit), #16a34a);
+    display: grid; place-items: center;
+    box-shadow: var(--shadow-glow-profit);
+    flex-shrink: 0;
+  }
+  .brand-name { font-weight: 600; font-size: var(--t-md); letter-spacing: -0.01em; }
+  .brand-sub { font-size: var(--t-xs); color: var(--muted-fg); letter-spacing: 0.04em; text-transform: uppercase; }
+
+  .nav-group { display: flex; flex-direction: column; gap: 2px; }
+  .nav-label {
+    font-size: var(--t-xs); color: var(--muted-fg);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    margin: 0 0 var(--s-2) var(--s-2); font-weight: 600;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: var(--s-3);
+    padding: var(--s-2) var(--s-3);
+    border-radius: var(--r-sm);
+    color: var(--muted-fg);
+    font-size: var(--t-sm);
+    transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+    cursor: pointer;
+  }
+  .nav-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .nav-item:hover { background: var(--secondary); color: var(--fg); }
+  .nav-item:active { background: var(--muted); }
+  .nav-item.active { background: var(--secondary); color: var(--fg); }
+  .nav-item.active svg { color: var(--profit); }
+
+  .sidebar-footer { margin-top: auto; }
+  .balance-card {
+    background: var(--bg-elev-2);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--r-md);
+    padding: var(--s-4);
+  }
+  .balance-card .lbl { font-size: var(--t-xs); color: var(--muted-fg); text-transform: uppercase; letter-spacing: 0.08em; }
+  .balance-card .val { font-size: var(--t-lg); font-weight: 600; margin-top: var(--s-1); }
+
+  /* ---------- Main ---------- */
+  .main { display: flex; flex-direction: column; min-width: 0; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--s-4);
+    padding: var(--s-5) var(--s-6);
+    border-bottom: 1px solid var(--border-soft);
+    background: rgba(2,6,23,0.6);
+    backdrop-filter: blur(8px);
+    position: sticky; top: 0; z-index: 5;
+  }
+  .topbar h1 { font-size: var(--t-xl); font-weight: 600; margin: 0; letter-spacing: -0.02em; }
+  .topbar .crumb { font-size: var(--t-xs); color: var(--muted-fg); letter-spacing: 0.04em; }
+  .top-actions { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
+
+  .seg {
+    display: inline-flex; background: var(--bg-elev); border: 1px solid var(--border-soft);
+    border-radius: var(--r-pill); padding: 3px;
+  }
+  .seg button {
+    appearance: none; border: 0; background: transparent; color: var(--muted-fg);
+    font: inherit; font-size: var(--t-sm); padding: 6px 14px; border-radius: var(--r-pill);
+    cursor: pointer; transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  }
+  .seg button[aria-pressed="true"] { background: var(--secondary); color: var(--fg); }
+  .seg button:hover { color: var(--fg); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: var(--s-2);
+    border-radius: var(--r-sm); font: inherit; font-size: var(--t-sm); font-weight: 500;
+    padding: 9px 16px; cursor: pointer; border: 1px solid transparent;
+    transition: transform var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+  }
+  .btn svg { width: 16px; height: 16px; }
+  .btn-primary { background: var(--profit); color: var(--primary); font-weight: 600; box-shadow: var(--shadow-glow-profit); }
+  .btn-primary:hover { background: #2ee06a; }
+  .btn-primary:active { transform: translateY(1px); }
+  .btn-ghost { background: var(--bg-elev); border-color: var(--border-soft); color: var(--fg); }
+  .btn-ghost:hover { background: var(--secondary); }
+  .btn-ghost:active { transform: translateY(1px); }
+
+  .content { padding: var(--s-6); display: flex; flex-direction: column; gap: var(--s-5); }
+
+  /* ---------- KPI grid ---------- */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--s-4);
+  }
+  .kpi {
+    background: var(--bg-elev);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--r-lg);
+    padding: var(--s-5);
+    position: relative;
+    overflow: hidden;
+    transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  .kpi:hover { border-color: var(--border); transform: translateY(-2px); }
+  .kpi::after {
+    content: ""; position: absolute; inset: 0 0 auto 0; height: 3px;
+    background: linear-gradient(90deg, var(--profit), transparent);
+    opacity: 0.7;
+  }
+  .kpi.is-loss::after { background: linear-gradient(90deg, var(--loss), transparent); }
+  .kpi.is-warn::after { background: linear-gradient(90deg, var(--warn), transparent); }
+  .kpi .k-label { font-size: var(--t-xs); color: var(--muted-fg); text-transform: uppercase; letter-spacing: 0.08em; }
+  .kpi .k-val { font-size: var(--t-2xl); font-weight: 600; margin: var(--s-3) 0 var(--s-2); letter-spacing: -0.02em; }
+  .k-val small { font-size: var(--t-md); color: var(--muted-fg); font-weight: 400; }
+  .delta {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: var(--t-sm); font-weight: 600; font-family: var(--font-mono);
+    padding: 3px 8px; border-radius: var(--r-pill);
+  }
+  .delta svg { width: 13px; height: 13px; }
+  .delta.up { color: var(--profit); background: var(--profit-soft); }
+  .delta.down { color: var(--loss); background: var(--loss-soft); }
+  .k-meta { font-size: var(--t-xs); color: var(--muted-fg); margin-top: var(--s-3); }
+
+  .kpi-spark { margin-top: var(--s-3); display: block; width: 100%; height: 34px; }
+
+  /* ---------- Panels ---------- */
+  .panel-row {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: var(--s-4);
+  }
+  .panel {
+    background: var(--bg-elev);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--r-lg);
+    padding: var(--s-5);
+    min-width: 0;
+  }
+  .panel-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: var(--s-3); margin-bottom: var(--s-5);
+  }
+  .panel-head h2 { font-size: var(--t-md); font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .panel-head p { font-size: var(--t-xs); color: var(--muted-fg); margin: 4px 0 0; }
+
+  .legend { display: flex; gap: var(--s-4); flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; font-size: var(--t-xs); color: var(--muted-fg); }
+  .dot { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
+
+  /* Waterfall / chart wrapper */
+  .chart-wrap { width: 100%; }
+  .chart-wrap svg { width: 100%; height: auto; display: block; }
+
+  /* ---------- Ratios ---------- */
+  .ratio { display: flex; flex-direction: column; gap: var(--s-4); }
+  .ratio-item { }
+  .ratio-top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); }
+  .ratio-top .name { font-size: var(--t-sm); color: var(--fg); }
+  .ratio-top .figure { font-family: var(--font-mono); font-size: var(--t-md); font-weight: 600; }
+  .bar-track { height: 8px; border-radius: var(--r-pill); background: var(--muted); overflow: hidden; margin-top: var(--s-2); }
+  .bar-fill { height: 100%; border-radius: var(--r-pill); transition: width var(--dur-slow) var(--ease); }
+  .bar-fill.good { background: linear-gradient(90deg, var(--profit), #16a34a); }
+  .bar-fill.mid { background: linear-gradient(90deg, var(--warn), #d97706); }
+  .bar-fill.bad { background: linear-gradient(90deg, var(--loss), #dc2626); }
+  .ratio-foot { font-size: var(--t-xs); color: var(--muted-fg); margin-top: 4px; }
+
+  /* ---------- Table ---------- */
+  .table-scroll { overflow-x: auto; border-radius: var(--r-md); border: 1px solid var(--border-soft); }
+  table { width: 100%; border-collapse: collapse; font-size: var(--t-sm); min-width: 640px; }
+  thead th {
+    position: sticky; top: 0;
+    background: var(--table-header-bg);
+    text-align: left; font-weight: 600; color: var(--muted-fg);
+    font-size: var(--t-xs); text-transform: uppercase; letter-spacing: 0.06em;
+    padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--border-soft);
+    white-space: nowrap;
+  }
+  th.r, td.r { text-align: right; }
+  tbody td { padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--border-soft); white-space: nowrap; }
+  tbody tr { transition: background var(--dur-fast) var(--ease); }
+  tbody tr:hover { background: var(--bg-elev-2); }
+  tbody tr:last-child td { border-bottom: 0; }
+  td .num { font-size: var(--t-sm); }
+  .pos { color: var(--profit); }
+  .neg { color: var(--loss); }
+  .acct { display: flex; align-items: center; gap: var(--s-3); }
+  .acct .ic { width: 28px; height: 28px; border-radius: var(--r-sm); background: var(--secondary); display: grid; place-items: center; flex-shrink: 0; }
+  .acct .ic svg { width: 15px; height: 15px; color: var(--muted-fg); }
+  .acct .sub { font-size: var(--t-xs); color: var(--muted-fg); }
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px; font-size: var(--t-xs); font-weight: 600;
+    padding: 3px 9px; border-radius: var(--r-pill); font-family: var(--font-mono);
+  }
+  .badge.ok { color: var(--profit); background: var(--profit-soft); }
+  .badge.flag { color: var(--warn); background: var(--warn-soft); }
+  .badge.over { color: var(--loss); background: var(--loss-soft); }
+  tfoot td {
+    padding: var(--s-3) var(--s-4); font-weight: 600;
+    background: var(--table-header-bg); border-top: 2px solid var(--border);
+  }
+  tfoot .num { font-size: var(--t-base); }
+
+  .mini-spark { width: 64px; height: 20px; vertical-align: middle; }
+
+  /* ---------- Audit trail ---------- */
+  .audit { display: flex; flex-direction: column; gap: 0; }
+  .audit-item {
+    display: grid; grid-template-columns: 14px 1fr auto; gap: var(--s-3);
+    padding: var(--s-3) 0; border-bottom: 1px solid var(--border-soft); align-items: start;
+  }
+  .audit-item:last-child { border-bottom: 0; }
+  .audit-dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; }
+  .audit-main .a-title { font-size: var(--t-sm); }
+  .audit-main .a-sub { font-size: var(--t-xs); color: var(--muted-fg); margin-top: 2px; }
+  .audit-time { font-size: var(--t-xs); color: var(--muted-fg); font-family: var(--font-mono); white-space: nowrap; }
+
+  /* ---------- Responsive ---------- */
+  .menu-btn { display: none; }
+  @media (max-width: 1080px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .panel-row { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 820px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .menu-btn { display: inline-flex; }
+    .topbar { padding: var(--s-4); }
+    .content { padding: var(--s-4); }
+    .topbar h1 { font-size: var(--t-lg); }
+  }
+  @media (max-width: 560px) {
+    .kpi-grid { grid-template-columns: 1fr; }
+    .top-actions .seg { order: 3; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+    .count[data-animate] { /* values rendered statically */ }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ===== Sidebar ===== -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#031b0c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M3 17l5-6 4 4 8-9"/><path d="M16 6h4v4"/></svg>
+      </div>
+      <div>
+        <div class="brand-name">Meridian Capital</div>
+        <div class="brand-sub">Treasury OS</div>
+      </div>
+    </div>
+
+    <nav class="nav-group" aria-label="Primary">
+      <p class="nav-label">Overview</p>
+      <a class="nav-item active" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+        Dashboard
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
+        P&amp;L Statement
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Cash Flow
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        Budget vs Actual
+      </a>
+    </nav>
+
+    <nav class="nav-group" aria-label="Accounts">
+      <p class="nav-label">Portfolio</p>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18"/><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 14h4"/></svg>
+        Accounts
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v6h-6"/></svg>
+        Reconciliation
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/></svg>
+        Audit Trail
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="balance-card">
+        <div class="lbl">Net Liquidity</div>
+        <div class="val num">$48,920,114<small style="font-size:var(--t-sm);color:var(--muted-fg)">.62</small></div>
+        <div class="delta up" style="margin-top:var(--s-2)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 14l5-5 5 5"/></svg>
+          +3.18% MTD
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===== Main ===== -->
+  <div class="main">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:var(--s-3);min-width:0">
+        <button class="btn btn-ghost menu-btn" aria-label="Open navigation menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+        <div style="min-width:0">
+          <div class="crumb">Treasury OS / Reporting</div>
+          <h1>Financial Overview</h1>
+        </div>
+      </div>
+      <div class="top-actions">
+        <div class="seg" role="group" aria-label="Reporting period">
+          <button type="button" aria-pressed="false">MTD</button>
+          <button type="button" aria-pressed="true">QTD</button>
+          <button type="button" aria-pressed="false">YTD</button>
+        </div>
+        <button class="btn btn-ghost" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+          Export to Excel
+        </button>
+        <button class="btn btn-primary" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          New Report
+        </button>
+      </div>
+    </header>
+
+    <main class="content">
+      <!-- KPI row -->
+      <section class="kpi-grid" aria-label="Key financial metrics">
+        <article class="kpi">
+          <div class="k-label">Revenue · QTD</div>
+          <div class="k-val num"><span class="count" data-target="14820600" data-prefix="$" data-decimals="0">$14,820,600</span></div>
+          <div class="delta up">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 14l5-5 5 5"/></svg>
+            +12.4%
+          </div>
+          <svg class="kpi-spark" viewBox="0 0 200 36" preserveAspectRatio="none" aria-hidden="true">
+            <polyline fill="none" stroke="var(--profit)" stroke-width="2" points="0,28 25,26 50,22 75,24 100,18 125,14 150,15 175,8 200,6"/>
+            <polygon fill="var(--profit-soft)" points="0,28 25,26 50,22 75,24 100,18 125,14 150,15 175,8 200,6 200,36 0,36"/>
+          </svg>
+          <div class="k-meta">vs $13.18M prior quarter</div>
+        </article>
+
+        <article class="kpi is-loss">
+          <div class="k-label">Operating Expenses</div>
+          <div class="k-val num"><span class="count" data-target="9214380" data-prefix="$" data-decimals="0">$9,214,380</span></div>
+          <div class="delta down">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg>
+            +6.1%
+          </div>
+          <svg class="kpi-spark" viewBox="0 0 200 36" preserveAspectRatio="none" aria-hidden="true">
+            <polyline fill="none" stroke="var(--loss)" stroke-width="2" points="0,20 25,22 50,18 75,24 100,21 125,26 150,23 175,28 200,27"/>
+            <polygon fill="var(--loss-soft)" points="0,20 25,22 50,18 75,24 100,21 125,26 150,23 175,28 200,27 200,36 0,36"/>
+          </svg>
+          <div class="k-meta">62.2% of revenue · target &lt; 60%</div>
+        </article>
+
+        <article class="kpi">
+          <div class="k-label">Net Profit</div>
+          <div class="k-val num"><span class="count" data-target="5606220" data-prefix="$" data-decimals="0">$5,606,220</span></div>
+          <div class="delta up">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 14l5-5 5 5"/></svg>
+            +24.9%
+          </div>
+          <svg class="kpi-spark" viewBox="0 0 200 36" preserveAspectRatio="none" aria-hidden="true">
+            <polyline fill="none" stroke="var(--profit)" stroke-width="2" points="0,30 25,27 50,28 75,20 100,22 125,14 150,12 175,10 200,5"/>
+            <polygon fill="var(--profit-soft)" points="0,30 25,27 50,28 75,20 100,22 125,14 150,12 175,10 200,5 200,36 0,36"/>
+          </svg>
+          <div class="k-meta">37.8% net margin</div>
+        </article>
+
+        <article class="kpi is-warn">
+          <div class="k-label">Budget Variance</div>
+          <div class="k-val num"><span class="count" data-target="-412900" data-prefix="$" data-decimals="0">-$412,900</span></div>
+          <div class="delta down">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+            -2.8%
+          </div>
+          <svg class="kpi-spark" viewBox="0 0 200 36" preserveAspectRatio="none" aria-hidden="true">
+            <polyline fill="none" stroke="var(--warn)" stroke-width="2" points="0,14 25,16 50,20 75,18 100,24 125,22 150,26 175,25 200,29"/>
+            <polygon fill="var(--warn-soft)" points="0,14 25,16 50,20 75,18 100,24 125,22 150,26 175,25 200,29 200,36 0,36"/>
+          </svg>
+          <div class="k-meta">3 categories exceed 10% threshold</div>
+        </article>
+      </section>
+
+      <!-- Waterfall + Ratios -->
+      <section class="panel-row" aria-label="Cash flow and financial ratios">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Cash Flow Waterfall</h2>
+              <p>Q2 2026 · opening to closing balance, USD thousands</p>
+            </div>
+            <div class="legend" aria-hidden="true">
+              <span><i class="dot" style="background:var(--info)"></i>Balance</span>
+              <span><i class="dot" style="background:var(--profit)"></i>Inflow</span>
+              <span><i class="dot" style="background:var(--loss)"></i>Outflow</span>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <!-- Waterfall: positive/negative bars, variance coloring -->
+            <svg viewBox="0 0 720 280" role="img" aria-label="Cash flow waterfall from opening balance of 38.6M to closing balance of 48.9M">
+              <!-- gridlines -->
+              <g stroke="var(--border-soft)" stroke-width="1">
+                <line x1="56" y1="40" x2="712" y2="40"/>
+                <line x1="56" y1="95" x2="712" y2="95"/>
+                <line x1="56" y1="150" x2="712" y2="150"/>
+                <line x1="56" y1="205" x2="712" y2="205"/>
+                <line x1="56" y1="240" x2="712" y2="240"/>
+              </g>
+              <g font-family="Fira Code, monospace" font-size="10" fill="#94A3B8" text-anchor="end">
+                <text x="48" y="44">$60M</text>
+                <text x="48" y="99">$52M</text>
+                <text x="48" y="154">$44M</text>
+                <text x="48" y="209">$36M</text>
+                <text x="48" y="244">$28M</text>
+              </g>
+              <!-- connectors -->
+              <g stroke="#475569" stroke-width="1" stroke-dasharray="3 3">
+                <line x1="118" y1="178" x2="166" y2="178"/>
+                <line x1="228" y1="120" x2="276" y2="120"/>
+                <line x1="338" y1="150" x2="386" y2="150"/>
+                <line x1="448" y1="185" x2="496" y2="185"/>
+                <line x1="558" y1="118" x2="606" y2="118"/>
+              </g>
+              <!-- bars -->
+              <g>
+                <!-- opening balance -->
+                <rect x="72" y="178" width="46" height="62" rx="3" fill="var(--info)"/>
+                <!-- operating inflow + -->
+                <rect x="182" y="120" width="46" height="58" rx="3" fill="var(--profit)"/>
+                <!-- investing outflow - -->
+                <rect x="292" y="120" width="46" height="30" rx="3" fill="var(--loss)"/>
+                <!-- financing inflow + -->
+                <rect x="402" y="150" width="46" height="35" rx="3" fill="var(--profit)"/>
+                <!-- tax outflow - -->
+                <rect x="512" y="118" width="46" height="67" rx="3" fill="var(--loss)"/>
+                <!-- closing balance -->
+                <rect x="622" y="118" width="46" height="122" rx="3" fill="var(--info)"/>
+              </g>
+              <g font-family="Fira Code, monospace" font-size="10" fill="#94A3B8" text-anchor="middle">
+                <text x="95" y="258">Open</text>
+                <text x="205" y="258">Operating</text>
+                <text x="315" y="258">Investing</text>
+                <text x="425" y="258">Financing</text>
+                <text x="535" y="258">Tax</text>
+                <text x="645" y="258">Close</text>
+              </g>
+              <g font-family="Fira Code, monospace" font-size="10.5" font-weight="600" text-anchor="middle">
+                <text x="95" y="170" fill="#38BDF8">38.6</text>
+                <text x="205" y="112" fill="#22C55E">+8.4</text>
+                <text x="315" y="112" fill="#EF4444">-4.3</text>
+                <text x="425" y="142" fill="#22C55E">+5.1</text>
+                <text x="535" y="110" fill="#EF4444">-2.7</text>
+                <text x="645" y="110" fill="#38BDF8">48.9</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Financial Ratios</h2>
+              <p>Liquidity &amp; solvency · vs covenant targets</p>
+            </div>
+          </div>
+          <div class="ratio">
+            <div class="ratio-item">
+              <div class="ratio-top"><span class="name">Current Ratio</span><span class="figure">2.41</span></div>
+              <div class="bar-track"><div class="bar-fill good" style="width:80%"></div></div>
+              <div class="ratio-foot">Target &gt; 2.00 · healthy</div>
+            </div>
+            <div class="ratio-item">
+              <div class="ratio-top"><span class="name">Quick Ratio</span><span class="figure">1.62</span></div>
+              <div class="bar-track"><div class="bar-fill good" style="width:65%"></div></div>
+              <div class="ratio-foot">Target &gt; 1.00 · healthy</div>
+            </div>
+            <div class="ratio-item">
+              <div class="ratio-top"><span class="name">Debt-to-Equity</span><span class="figure">1.18</span></div>
+              <div class="bar-track"><div class="bar-fill mid" style="width:59%"></div></div>
+              <div class="ratio-foot">Target &lt; 1.00 · watch</div>
+            </div>
+            <div class="ratio-item">
+              <div class="ratio-top"><span class="name">Interest Coverage</span><span class="figure">0.86</span></div>
+              <div class="bar-track"><div class="bar-fill bad" style="width:29%"></div></div>
+              <div class="ratio-foot">Covenant breach risk · &lt; 1.50</div>
+            </div>
+            <div class="ratio-item">
+              <div class="ratio-top"><span class="name">Gross Margin</span><span class="figure">54.2%</span></div>
+              <div class="bar-track"><div class="bar-fill good" style="width:74%"></div></div>
+              <div class="ratio-foot">Target &gt; 50% · healthy</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Budget vs Actual table + audit -->
+      <section class="panel-row" aria-label="Budget detail and audit trail">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Budget vs Actual</h2>
+              <p>Cost centers · Q2 2026 · variance threshold 10%</p>
+            </div>
+            <button class="btn btn-ghost" type="button" style="padding:7px 12px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+              Filter
+            </button>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <caption class="visually-hidden" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Budget versus actual spend by cost center</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Cost Center</th>
+                  <th scope="col" class="r">Budget</th>
+                  <th scope="col" class="r">Actual</th>
+                  <th scope="col" class="r">Variance</th>
+                  <th scope="col">Trend</th>
+                  <th scope="col" class="r">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <div class="acct">
+                      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M9 19v-7M14 19V9M19 19v-4"/></svg></span>
+                      <div><div>Sales &amp; Marketing</div><div class="sub">CC-1042</div></div>
+                    </div>
+                  </td>
+                  <td class="r num">$2,400,000</td>
+                  <td class="r num">$2,238,400</td>
+                  <td class="r num pos">-6.7%</td>
+                  <td><svg class="mini-spark" viewBox="0 0 64 20" preserveAspectRatio="none" aria-label="trend down"><polyline fill="none" stroke="var(--profit)" stroke-width="1.6" points="0,6 16,8 32,7 48,12 64,15"/></svg></td>
+                  <td class="r"><span class="badge ok">On budget</span></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="acct">
+                      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></span>
+                      <div><div>R&amp;D / Engineering</div><div class="sub">CC-2210</div></div>
+                    </div>
+                  </td>
+                  <td class="r num">$3,150,000</td>
+                  <td class="r num">$3,602,950</td>
+                  <td class="r num neg">+14.4%</td>
+                  <td><svg class="mini-spark" viewBox="0 0 64 20" preserveAspectRatio="none" aria-label="trend up"><polyline fill="none" stroke="var(--loss)" stroke-width="1.6" points="0,15 16,12 32,10 48,6 64,3"/></svg></td>
+                  <td class="r"><span class="badge over">Over &gt;10%</span></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="acct">
+                      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M8 4v16"/></svg></span>
+                      <div><div>G&amp;A / Operations</div><div class="sub">CC-3301</div></div>
+                    </div>
+                  </td>
+                  <td class="r num">$1,820,000</td>
+                  <td class="r num">$1,798,200</td>
+                  <td class="r num pos">-1.2%</td>
+                  <td><svg class="mini-spark" viewBox="0 0 64 20" preserveAspectRatio="none" aria-label="trend flat"><polyline fill="none" stroke="var(--muted-fg)" stroke-width="1.6" points="0,10 16,11 32,9 48,10 64,10"/></svg></td>
+                  <td class="r"><span class="badge ok">On budget</span></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="acct">
+                      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+                      <div><div>Finance &amp; Treasury</div><div class="sub">CC-4115</div></div>
+                    </div>
+                  </td>
+                  <td class="r num">$960,000</td>
+                  <td class="r num">$1,071,840</td>
+                  <td class="r num neg">+11.6%</td>
+                  <td><svg class="mini-spark" viewBox="0 0 64 20" preserveAspectRatio="none" aria-label="trend up"><polyline fill="none" stroke="var(--warn)" stroke-width="1.6" points="0,13 16,11 32,12 48,8 64,5"/></svg></td>
+                  <td class="r"><span class="badge flag">Flagged</span></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="acct">
+                      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg></span>
+                      <div><div>Customer Success</div><div class="sub">CC-5008</div></div>
+                    </div>
+                  </td>
+                  <td class="r num">$1,280,000</td>
+                  <td class="r num">$1,194,400</td>
+                  <td class="r num pos">-6.7%</td>
+                  <td><svg class="mini-spark" viewBox="0 0 64 20" preserveAspectRatio="none" aria-label="trend down"><polyline fill="none" stroke="var(--profit)" stroke-width="1.6" points="0,5 16,8 32,9 48,11 64,14"/></svg></td>
+                  <td class="r"><span class="badge ok">On budget</span></td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td>Total</td>
+                  <td class="r num">$9,610,000</td>
+                  <td class="r num">$9,905,790</td>
+                  <td class="r num neg">+3.1%</td>
+                  <td></td>
+                  <td class="r"><span class="badge flag">Review</span></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Audit Trail</h2>
+              <p>Ledger activity · last 24 hours</p>
+            </div>
+          </div>
+          <div class="audit">
+            <div class="audit-item">
+              <span class="audit-dot" style="background:var(--profit)"></span>
+              <div class="audit-main">
+                <div class="a-title">Journal entry JE-88241 posted</div>
+                <div class="a-sub">Revenue accrual <span class="num pos">+$184,200.00</span> · by m.okafor</div>
+              </div>
+              <div class="audit-time">09:42</div>
+            </div>
+            <div class="audit-item">
+              <span class="audit-dot" style="background:var(--warn)"></span>
+              <div class="audit-main">
+                <div class="a-title">Variance flag raised · CC-4115</div>
+                <div class="a-sub">Exceeds 10% threshold · pending approval</div>
+              </div>
+              <div class="audit-time">08:17</div>
+            </div>
+            <div class="audit-item">
+              <span class="audit-dot" style="background:var(--info)"></span>
+              <div class="audit-main">
+                <div class="a-title">Bank reconciliation completed</div>
+                <div class="a-sub">2,418 lines matched · 0 unresolved</div>
+              </div>
+              <div class="audit-time">07:55</div>
+            </div>
+            <div class="audit-item">
+              <span class="audit-dot" style="background:var(--loss)"></span>
+              <div class="audit-main">
+                <div class="a-title">Wire reversal WR-0093</div>
+                <div class="a-sub">Vendor payout <span class="num neg">-$42,750.00</span> · by system</div>
+              </div>
+              <div class="audit-time">06:30</div>
+            </div>
+            <div class="audit-item">
+              <span class="audit-dot" style="background:var(--profit)"></span>
+              <div class="audit-main">
+                <div class="a-title">Quarter-end close locked</div>
+                <div class="a-sub">Period 2026-Q1 · signed off by controller</div>
+              </div>
+              <div class="audit-time">Yesterday</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+  // Count-up number animation (financial KPIs). Respects reduced-motion.
+  (function () {
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var fmt = function (val, decimals) {
+      var sign = val < 0 ? '-' : '';
+      var abs = Math.abs(val);
+      return sign + '$' + abs.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    };
+    var els = document.querySelectorAll('.count');
+    if (reduce) { return; } // static text already in DOM
+    els.forEach(function (el) {
+      var target = parseFloat(el.getAttribute('data-target'));
+      var decimals = parseInt(el.getAttribute('data-decimals') || '0', 10);
+      var dur = 900, start = null;
+      function step(ts) {
+        if (start === null) start = ts;
+        var p = Math.min((ts - start) / dur, 1);
+        var eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = fmt(target * eased, decimals);
+        if (p < 1) requestAnimationFrame(step);
+        else el.textContent = fmt(target, decimals);
+      }
+      requestAnimationFrame(step);
+    });
+
+    // Segmented period toggle
+    document.querySelectorAll('.seg').forEach(function (group) {
+      group.addEventListener('click', function (e) {
+        var btn = e.target.closest('button');
+        if (!btn) return;
+        group.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', 'false'); });
+        btn.setAttribute('aria-pressed', 'true');
+      });
+    });
+  })();
+</script>
+</body>
+</html>

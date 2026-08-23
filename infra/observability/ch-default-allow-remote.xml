@@ -1,0 +1,25 @@
+<!--
+  Dev-only override for the rome-obs ClickHouse.
+
+  HyperDX's hyperdx-local:2 ships a users.d/default-user.xml that restricts
+  the `default` user to localhost (::1, 127.0.0.1). That breaks the dev
+  story: every non-localhost client — host-side curl via Traefik, Rome's
+  coding-agent query helper on the rome-edge network — needs the default
+  user reachable.
+
+  This file goes into /etc/clickhouse-server/users.d/ alongside the shipped
+  override, and `replace="true"` on <networks> wipes the inherited
+  whitelist and replaces it with ::/0 (any IP).
+
+  Prod is expected to use bearer-token auth against the central stack,
+  not basic auth — so this override is strictly a dev convenience.
+-->
+<clickhouse>
+  <users>
+    <default>
+      <networks replace="true">
+        <ip>::/0</ip>
+      </networks>
+    </default>
+  </users>
+</clickhouse>

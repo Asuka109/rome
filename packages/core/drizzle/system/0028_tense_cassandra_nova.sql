@@ -1,0 +1,1 @@
+ALTER TABLE `webchat_sessions` ADD `handoff_spec` text;

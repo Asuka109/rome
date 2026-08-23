@@ -1,0 +1,9 @@
+name: chatgpt_chat
+type: custom
+description: Send a prompt to ChatGPT via browser automation and return the markdown response
+entry: ./index.ts
+complexity: moderate
+speed: slow
+reliability: medium
+sideEffects: write
+webhook: true

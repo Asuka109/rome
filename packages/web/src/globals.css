@@ -1,0 +1,596 @@
+@import "tailwindcss";
+@import "@rome-os/rome-web-components/news-item/styles.css";
+/* The design-system CSS canon — semantic token vocabulary (`@theme inline`),
+   the `@custom-variant` set (dark + Radix `data-*` shorthands), and base-layer
+   element defaults. This file supplies the host-owned theme values through
+   `src/lib/themes.ts` and the dashboard-specific shell CSS. */
+@import "@rome-os/ui/styles.css";
+/* The kit's Markdown stylesheet (Streamdown + KaTeX + the Shiki/Mermaid
+   overrides). Kept out of the canon above so app bundles that render no prose
+   don't carry it — the dashboard does, so it opts in here. */
+@import "@rome-os/ui/markdown.css";
+@plugin "@tailwindcss/typography";
+
+/* ════════════════════════ THEME CONTRACT ════════════════════════
+   The token *vocabulary* — the `@theme inline` block that turns each semantic
+   token into a Tailwind utility (`--color-primary` → `bg-primary`) — lives in
+   `@rome-os/ui/styles.css` (imported above). `src/lib/themes.ts` owns the
+   theme-specific *values*.
+
+   A theme is a palette plus a mapping. It supplies a literal for EVERY
+   primitive on the canonical scale (`--neutral-500`, `--red-400`,
+   `--orange-300` — the same set of names under every theme), and it says which
+   primitive each semantic token reads, in two halves: a light mapping and a
+   dark one. Those blocks are NOT written here — `buildThemeCss` resolves each
+   mapping to the selected palette literal, then injects the generated blocks
+   into a `<style id="rome-theme-tokens">` at runtime (see `injectThemeCss` in
+   `src/lib/theme.ts`).
+
+   Components read only the semantic names (via the kit's utilities or
+   var(--token)); switching the `data-theme` attribute swaps both the palette
+   and resolved semantic values. The mode axis is the orthogonal `.dark` class,
+   whose source mapping points at the deep end of the same ramps.
+   Within a theme, the dark block (specificity 0,2,0) always beats its light
+   block (0,1,0); blocks for different themes are mutually exclusive, so order is
+   irrelevant.
+
+   index.html seeds data-theme + .dark before first paint and replays the active
+   theme's cached CSS for a flash-free load; lib/theme.ts → applyThemeName /
+   applyTheme set them at runtime. To add a theme: append a ThemeDefinition in
+   `src/lib/themes.ts`. No CSS and no component changes — third-party app shadow
+   roots inherit the tokens automatically. */
+
+/* Wire @tailwindcss/typography's color variables to Rome's semantic tokens so
+   prose elements with their own color rules (blockquotes, borders, bullets,
+   captions, links, table borders) follow the active theme + mode instead of
+   leaking the plugin's slate defaults. Every token below is mode-aware, so
+   prose needs no `dark:prose-invert` — light/dark flips with the tokens. */
+.prose {
+  --tw-prose-body: var(--foreground);
+  --tw-prose-headings: var(--foreground);
+  --tw-prose-lead: var(--muted-foreground);
+  --tw-prose-links: var(--primary);
+  --tw-prose-bold: var(--foreground);
+  --tw-prose-counters: var(--muted-foreground);
+  --tw-prose-bullets: var(--muted-foreground);
+  --tw-prose-hr: var(--border);
+  --tw-prose-quotes: var(--muted-foreground);
+  --tw-prose-quote-borders: var(--border);
+  --tw-prose-captions: var(--muted-foreground);
+  --tw-prose-code: var(--foreground);
+  --tw-prose-pre-code: var(--foreground);
+  --tw-prose-pre-bg: var(--surface-muted);
+  --tw-prose-th-borders: var(--border);
+  --tw-prose-td-borders: var(--border);
+}
+
+@keyframes rome-activity-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(1.4);
+  }
+}
+
+@keyframes rome-activity-breathe {
+
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes rome-activity-rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes rome-empty-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+    filter: blur(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.rome-empty-rise {
+  animation: rome-empty-rise 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rome-empty-rise {
+    animation: none;
+  }
+}
+
+
+@keyframes rome-sidebar-apps-hover {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+
+  45% {
+    transform: rotate(-7deg) scale(1.12);
+  }
+
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+.rome-sidebar-icon {
+  transform-origin: center;
+  will-change: transform;
+}
+
+.rome-sidebar-icon[data-motion="chat"] {
+  transition: transform 150ms ease-out;
+}
+
+.rome-sidebar-link:is(:hover, :focus-visible) .rome-sidebar-icon[data-motion="apps"] {
+  animation: rome-sidebar-apps-hover 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rome-sidebar-link:is(:hover, :focus-visible) .rome-sidebar-icon[data-motion="chat"] {
+  transform: rotate(-8deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rome-sidebar-icon {
+    will-change: auto;
+  }
+
+  .rome-sidebar-link:is(:hover, :focus-visible) .rome-sidebar-icon[data-motion] {
+    animation: none;
+    transform: none;
+  }
+}
+
+/* Live caret: pulsing dot riding the tail of the streaming assistant bubble
+   (chat MessageList). A pseudo-element because markdown owns the real DOM —
+   the dot must sit inline after the last rendered character. Lists get the
+   dot on their last item; after the list box it would drop to its own line.
+   Targets `.rome-markdown` (the Markdown root) — the message body no longer
+   uses @tailwindcss/typography's `.prose` wrapper since the Streamdown swap. */
+.rome-live-caret .rome-markdown > :last-child:not(ul, ol)::after,
+.rome-live-caret .rome-markdown > :is(ul, ol):last-child > li:last-child::after {
+  content: "";
+  display: inline-block;
+  width: 0.45em;
+  height: 0.45em;
+  margin-left: 0.35em;
+  border-radius: var(--rome-radius-full);
+  background: var(--info);
+  animation: rome-activity-breathe 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .rome-live-caret .rome-markdown > :last-child:not(ul, ol)::after,
+  .rome-live-caret .rome-markdown > :is(ul, ol):last-child > li:last-child::after {
+    animation: none;
+  }
+}
+
+/* Standalone live-activity dot: the same breathing dot as the caret, but a real
+   element instead of a tail pseudo-element. Shown when the turn is streaming yet
+   has no text to ride on — between text blocks, during a tool call, or before
+   the first token — so "the turn is still working" never goes dark. */
+.rome-live-activity-dot {
+  display: inline-block;
+  width: 0.45em;
+  height: 0.45em;
+  border-radius: var(--rome-radius-full);
+  background: var(--info);
+  animation: rome-activity-breathe 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rome-live-activity-dot {
+    animation: none;
+  }
+}
+
+@keyframes rome-sheet-rise {
+  from {
+    transform: translateY(100%);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes rome-backdrop-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.rome-sheet-rise {
+  animation: rome-sheet-rise 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rome-backdrop-fade {
+  animation: rome-backdrop-fade 200ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .rome-sheet-rise,
+  .rome-backdrop-fade {
+    animation: none;
+  }
+}
+
+@keyframes rome-advanced-easter-egg-backdrop {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rome-advanced-easter-egg-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+    filter: blur(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes rome-advanced-easter-egg-sheen {
+  0% {
+    background-position: -150% 0;
+  }
+
+  100% {
+    background-position: 250% 0;
+  }
+}
+
+@keyframes rome-advanced-easter-egg-pulse {
+
+  0%,
+  100% {
+    opacity: 0.55;
+    box-shadow: 0 0 0 0 rgba(252, 211, 77, 0.45);
+  }
+
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 0 4px rgba(252, 211, 77, 0);
+  }
+}
+
+.rome-advanced-easter-egg-backdrop {
+  animation: rome-advanced-easter-egg-backdrop 320ms ease-out;
+}
+
+.rome-advanced-easter-egg {
+  animation: rome-advanced-easter-egg-enter 520ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rome-advanced-easter-egg-art {
+  background: linear-gradient(100deg,
+      rgb(228 228 231 / 0.92) 0%,
+      rgb(228 228 231 / 0.92) 38%,
+      rgb(252 211 77 / 0.95) 50%,
+      rgb(228 228 231 / 0.92) 62%,
+      rgb(228 228 231 / 0.92) 100%);
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: rome-advanced-easter-egg-sheen 7s linear infinite;
+}
+
+.rome-advanced-easter-egg-dot {
+  animation: rome-advanced-easter-egg-pulse 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .rome-advanced-easter-egg-backdrop,
+  .rome-advanced-easter-egg,
+  .rome-advanced-easter-egg-art,
+  .rome-advanced-easter-egg-dot {
+    animation: none;
+  }
+
+  .rome-advanced-easter-egg-art {
+    background: none;
+    -webkit-text-fill-color: rgb(228 228 231 / 0.92);
+    color: rgb(228 228 231 / 0.92);
+  }
+}
+
+/* Element defaults shared with every kit consumer (border color, body paint,
+   cursor affordances, touch behavior) come from `@rome-os/ui/styles.css`; only
+   dashboard-specific base rules live here. */
+@layer base {
+  :root {
+    /* Mobile shell geometry when the page is rendered edge-to-edge (for
+       example inside the Expo WKWebView). Indirect the system env() values so
+       layout tests can exercise real, non-zero safe-area geometry. */
+    --rome-safe-area-top: env(safe-area-inset-top);
+    --rome-safe-area-bottom: env(safe-area-inset-bottom);
+    --rome-mobile-header-height: calc(3rem + var(--rome-safe-area-top));
+    --rome-mobile-content-height: calc(100dvh - var(--rome-mobile-header-height));
+  }
+
+  html,
+  body {
+    /* Stop the document from rubber-banding past its own ends. Inner scrollers
+       already set `overscroll-contain`, and the native shell passes
+       `bounces={false}`, but the page's own viewport scroller still bounced on
+       iOS because nothing constrained it. Both elements carry the rule: which
+       one defines the viewport scroller depends on the route's overflow.
+
+       Deliberately ungated. The Expo shell sets no marker on the document the
+       way Electron sets `.is-electron`, so there is nothing to scope this to —
+       and scoping it there would leave mobile Safari, which has the same bug,
+       still bouncing. The cost is that ordinary mobile browsers lose native
+       pull-to-refresh and desktop loses its rubber-band. Both are the app-like
+       tradeoff we want: the dashboard refetches on its own, so a gesture whose
+       only effect is reloading the bundle is not worth preserving. */
+    overscroll-behavior-y: none;
+  }
+
+  html {
+    font-family: var(--font-sans);
+    /* Reserve the document scrollbar's track even on pages short enough not to
+       need one. Without it a tall route and a short route offer different
+       usable widths, so navigating between them shifts the content column. */
+    scrollbar-gutter: stable;
+  }
+
+  /* Default routes use normal document flow and document scrolling. */
+  body {
+    min-height: 100dvh;
+  }
+}
+
+@utility pb-safe {
+  padding-bottom: var(--rome-safe-area-bottom);
+}
+
+@utility pt-safe {
+  padding-top: var(--rome-safe-area-top);
+}
+
+/* Opt-in utilities for dashboard list rows on touch devices: reveal an action
+   whose visual style depends on group-hover, and hold a row tall enough to tap.
+   Pair `touch-show` with the `group-hover:...` classes on the same element.
+
+   The control-level counterpart, `touch-target`, lives in `@rome-os/ui/styles.css`
+   instead — a published component documents it, so app bundles need it too. */
+@media (hover: none) {
+  .touch-show {
+    opacity: 1 !important;
+  }
+
+  .touch-row,
+  .touch-action-item {
+    min-height: 44px;
+  }
+}
+
+@keyframes widget-in {
+  from {
+    opacity: 0;
+    scale: 0.95;
+  }
+}
+
+@utility animate-widget-in {
+  animation: widget-in 0.25s ease-out;
+}
+
+/* shadcn shimmer utility for live status text. */
+@property --shimmer-angle {
+  syntax: "<angle>";
+  inherits: true;
+  initial-value: 20deg;
+}
+
+@property --shimmer-image {
+  syntax: "*";
+  inherits: false;
+}
+
+@property --shimmer-text-fill {
+  syntax: "*";
+  inherits: false;
+}
+
+@theme inline {
+  @keyframes tw-shimmer {
+    from {
+      background-position: 100% 0;
+    }
+
+    to {
+      background-position: 0 0;
+    }
+  }
+}
+
+@utility shimmer {
+  --_spread: var(--shimmer-spread, calc(3ch + 40px));
+  --_base: currentColor;
+  --_highlight: var(
+    --shimmer-color,
+    oklch(from currentColor l c h / calc(alpha * 0.2))
+  );
+
+  background-image: var(
+    --shimmer-image,
+    linear-gradient(
+      calc(90deg + var(--shimmer-angle)),
+      var(--_base) calc(50% - var(--_spread)),
+      color-mix(in oklch, var(--_highlight), var(--_base) 50%)
+        calc(50% - var(--_spread) * 0.5),
+      var(--_highlight) 50%,
+      color-mix(in oklch, var(--_highlight), var(--_base) 50%)
+        calc(50% + var(--_spread) * 0.5),
+      var(--_base) calc(50% + var(--_spread))
+    )
+  );
+  background-repeat: no-repeat;
+  background-size: calc(200% + var(--_spread) * 2) 100%;
+  background-position: 0 0;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: var(--shimmer-text-fill, transparent);
+  animation: tw-shimmer var(--shimmer-duration, 2s) linear infinite;
+
+  @variant dark {
+    --_highlight: var(
+      --shimmer-color,
+      oklch(from currentColor max(0.8, calc(l + 0.4)) c h / calc(alpha + 0.4))
+    );
+  }
+
+  &:where([dir="rtl"], [dir="rtl"] *) {
+    animation-direction: reverse;
+  }
+}
+
+@keyframes rome-trace-ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+.rome-trace-icon-ripple {
+  position: relative;
+}
+
+.rome-trace-icon-ripple::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1.5px solid var(--color-border-strong);
+  animation: rome-trace-ripple 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer {
+    animation: none;
+    background-image: none;
+    -webkit-text-fill-color: currentColor;
+  }
+
+  .rome-trace-icon-ripple::before {
+    display: none;
+  }
+}
+
+/* Electron desktop shell — class added by packages/desktop preload.
+   Pure-web users never see `.is-electron`, so these rules are a no-op
+   in the browser build (functions like a media query for "running inside
+   the Mac app").
+
+   Drag-region model: `-webkit-app-region` resolves to a flat geometric
+   mask (drag minus no-drag), independent of z-index / paint order. So
+   any interactive element that lives *underneath* a drag region (e.g.
+   the absolute-positioned top strip below) would otherwise be eaten by
+   window-drag. We pre-emptively mark every interactive primitive
+   `no-drag` site-wide; the titlebar rule below then re-adds the
+   background of titlebar containers as drag, which leaves clickable
+   children punched out. `[data-no-drag]` is an escape hatch for
+   non-semantic clickable wrappers (e.g. Radix `asChild` rendering a
+   `<div>`). */
+html.is-electron
+  :where(
+    button,
+    a,
+    input,
+    textarea,
+    select,
+    label,
+    [role="button"],
+    [role="link"],
+    [role="tab"],
+    [role="menuitem"],
+    [role="switch"],
+    [role="checkbox"],
+    [role="combobox"],
+    [contenteditable="true"],
+    [data-no-drag]
+  ) {
+  -webkit-app-region: no-drag;
+}
+html.is-electron [data-app-titlebar] {
+  -webkit-app-region: drag;
+}
+/* Header band (sidebar / mobile) sits at the very top-left, where the inset
+   traffic lights live — pad the top to keep their hitbox clear. */
+html.is-electron.platform-darwin [data-app-titlebar="header"] {
+  padding-top: 2.5rem;
+}
+/* Thin drag strip rendered at the top edge of the viewport, so the user
+   can grab the window from anywhere along the top — not just the
+   sidebar corner. Fixed-positioned (vs. taking flex flow space) so pages
+   using `min-h-dvh` don't end up 32px taller than the viewport and gain
+   a phantom scroll. Spanning the sidebar's 256px overlaps the sidebar
+   header's drag region, which is fine — drag ∪ drag is still drag.
+   Underlying buttons stay clickable via the global no-drag rule above.
+   Hidden in pure web. */
+[data-app-titlebar="strip"] {
+  display: none;
+}
+html.is-electron [data-app-titlebar="strip"] {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2rem;
+  z-index: 1;
+}
