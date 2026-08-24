@@ -209,6 +209,17 @@
     "stop": "Stop",
     "stopGenerating": "Stop generating"
   },
+  "questionCard": {
+    "optional": "optional",
+    "addOwn": "Add your own…",
+    "typeOwn": "Or type your own…",
+    "typeAnswer": "Type your answer…",
+    "dismissed": "Dismissed",
+    "answered": "Answered",
+    "askedByRome": "Asked by Rome",
+    "dismiss": "Dismiss",
+    "send": "Send"
+  },
   "modelSelector": {
     "label": "Model",
     "saveFailed": "Failed to save model selection.",
