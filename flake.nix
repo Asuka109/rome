@@ -24,6 +24,7 @@
           packages = [
             pkgs.nodejs_24
             pkgs.pnpm
+            pkgs.git
             # node-gyp drives the build with python3 + make + a compiler. make
             # comes from stdenv and cc from mkShell; python3 has to be asked
             # for by name, and node-gyp checks for it first, so a missing

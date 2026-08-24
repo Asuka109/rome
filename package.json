@@ -34,6 +34,7 @@
     "test": "pnpm --filter @rome-os/libs test && pnpm --filter @rome/discord-cli test && pnpm --filter @rome/core test && pnpm --filter rome-web test && pnpm --filter @rome-os/ui test && pnpm test:ui:padding && pnpm test:ui:tokens && pnpm test:ui:contract && pnpm test:ui:radius",
     "test:watch": "pnpm --filter @rome/core test:watch",
     "test:unit": "pnpm test:unit:rest && pnpm test:unit:core && pnpm test:unit:web",
+    "test:welcome": "pnpm --filter @rome/core exec vitest run --config vitest.config.ts ../../rome_apps/welcome-to-rome/src/locale.test.ts ../../rome_apps/welcome-to-rome/src/api/index.test.ts ../../rome_apps/welcome-to-rome/src/hooks/turn-middleware/script.test.ts && pnpm --filter rome-web exec vitest run src/components/chat/blocks/QuestionCard.test.tsx",
     "test:unit:core": "pnpm --filter @rome/core test:unit",
     "test:unit:web": "pnpm --filter rome-web test && pnpm --filter @rome-os/ui test",
     "test:unit:rest": "pnpm --filter @rome-os/libs test && pnpm --filter @rome/discord-cli test && pnpm --filter rome-desktop test && pnpm test:ci:areas && pnpm test:obs:dashboards && pnpm test:ui:padding && pnpm test:ui:tokens && pnpm test:ui:contract && pnpm test:ui:radius",
