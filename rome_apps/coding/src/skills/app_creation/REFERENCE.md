@@ -299,18 +299,21 @@ decide whether to load the skill.
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
-    // ⚠️ Pin every published Rome package to a concrete semver range
-    //    (e.g. "^0.5.3").
+    // Step 3 of the scaffold flow runs `pnpm add <pkg>@latest` for each of
+    // these, so a new app opens on the current release. Read the range from
+    // your own package.json — never copy one out of a doc.
+    //
+    // ⚠️ Editing one by hand: keep it a concrete caret range.
     //   - NEVER "workspace:*" — apps install from npm on user machines;
     //     the workspace protocol does not resolve outside a monorepo.
     //   - NEVER "latest" — it silently pulls whatever the registry returns
     //     at install time, which breaks reproducibility and can ship a
     //     breaking SDK change to users without warning.
-    "@rome-os/app-runtime": "^0.5.3",
-    "@rome-os/app-web-sdk": "^0.2.4",
+    "@rome-os/app-runtime": "<the release pnpm resolved>",
+    "@rome-os/app-web-sdk": "<the release pnpm resolved>",
     // The component kit, when the app has a web UI. `pnpm up @rome-os/ui`
     // is how an app takes component fixes ("--latest" to cross a 0.x minor).
-    "@rome-os/ui": "^0.1.3"
+    "@rome-os/ui": "<the release pnpm resolved>"
   }
 }
 ```
