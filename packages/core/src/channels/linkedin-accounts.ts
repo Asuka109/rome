@@ -107,7 +107,11 @@ function memberIdFrom(identifier: string): string | null {
 function toAccount(row: LinkedInParticipantContactRow): Account {
   return {
     id: row.participantId as AccountId,
-    label: row.name || row.headline || row.participantId,
+    // A headline is not a name, but it is text LinkedIn holds about the member
+    // rather than an identifier of theirs, so it stands as one here: a caller
+    // that falls through to the member id has nothing better to show than
+    // `ACoAA…`.
+    name: row.name || row.headline || null,
     identifiers: { "linkedin:member_id": row.participantId },
   };
 }

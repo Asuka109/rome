@@ -27,8 +27,15 @@ export type AccountId = string & { readonly __brand: "AccountId" };
 
 export interface Account {
   id: AccountId;
-  /** Human-readable, for display and search. Never an identity key. */
-  label: string;
+  /**
+   * What the platform calls the account, or null when it holds no name for it.
+   *
+   * Never an identifier standing in for a name. A caller that has to render
+   * something falls back on its own terms — to a name the account's sender put
+   * on a message, or to an identifier written for a human — and it cannot
+   * choose if a name and a rendered identifier arrive as one value.
+   */
+  name: string | null;
   /**
    * Searchable facts. Never used to address the account.
    *
@@ -43,7 +50,7 @@ export interface Account {
 export interface TalkAccounts {
   /**
    * One page of the channel's accounts, in a stable order. `query` matches the
-   * label and the identifier values. `cursor` is opaque and comes from a prior
+   * name and the identifier values. `cursor` is opaque and comes from a prior
    * page. A missing `nextCursor` means the listing is exhausted.
    *
    * The order is stable, the listing underneath it is not. A channel may order

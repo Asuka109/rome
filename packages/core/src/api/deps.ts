@@ -6,6 +6,7 @@ import type { LinkedInStoreRepository } from "../db/repositories/linkedin-store.
 import type { WhatsAppStoreRepository } from "../db/repositories/whatsapp-store.js";
 import type { LinkedInAccounts } from "../channels/linkedin-accounts.js";
 import type { WhatsAppAccounts } from "../channels/whatsapp-accounts.js";
+import type { AccountNames } from "../channels/account-names.js";
 import type { WebChatRepository } from "../db/repositories/webchat.js";
 import type { WebhookInvocationsRepository } from "../db/repositories/webhook-invocations.js";
 import type { ApprovalsRepository } from "../db/repositories/approvals.js";
@@ -80,6 +81,10 @@ export interface ApiDeps {
   linkedInStoreRepo: LinkedInStoreRepository;
   /** The account plane over that mirror. */
   linkedInAccounts: LinkedInAccounts;
+  /** What each platform calls an account, over every address book Rome mirrors
+   *  and the names senders put on their own messages — the display name a
+   *  person or account serializer puts on the wire. */
+  accountNames: AccountNames;
   webchatRepo: WebChatRepository;
   webhookInvocationsRepo: WebhookInvocationsRepository;
   approvalsRepo: ApprovalsRepository;

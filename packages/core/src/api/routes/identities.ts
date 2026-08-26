@@ -51,7 +51,8 @@ interface MirrorIdentity {
   channelUserId: string;
   /** Every address the account answers to, `channelUserId` included. */
   aliases: string[];
-  displayName: string;
+  /** What the channel calls the account, or null when it holds no name. */
+  name: string | null;
   latest: IdentityDynamic | null;
   messageCount: number;
 }
@@ -185,7 +186,7 @@ async function readMirrors(deps: ApiDeps, stored: StoredIdentifiers): Promise<Mi
         channel,
         channelUserId: account.id,
         aliases: (aliasesOf.get(account.id) ?? [account.id]).sort(compareCodePoints),
-        displayName: account.label,
+        name: account.name,
         latest:
           seen == null
             ? null
@@ -347,8 +348,9 @@ async function buildIdentityUnion(deps: ApiDeps): Promise<IdentityRow[]> {
     return out;
   };
 
-  /** Best name on record for an identity with no person row: the mirror's name,
-   *  then what the sender called themselves, then the raw identifier. */
+  /** Best name on record for an identity with no person row: the channel's own
+   *  name for it, then what the sender called themselves, then the raw
+   *  identifier. */
   const displayNameFor = (channel: string, channelUserId: string): string => {
     const key = identityKey(channel, channelUserId);
     const fromSentinel = (sentinel.get(key) ?? []).reduce<SentinelActivity | null>(
@@ -357,7 +359,7 @@ async function buildIdentityUnion(deps: ApiDeps): Promise<IdentityRow[]> {
       null,
     );
     return (
-      mirrorByAddress.get(key)?.displayName ??
+      mirrorByAddress.get(key)?.name ??
       fromSentinel?.displayName ??
       canonicalId(channel, channelUserId)
     );
@@ -459,7 +461,7 @@ async function buildIdentityUnion(deps: ApiDeps): Promise<IdentityRow[]> {
     const activity = activityFor(identity.channel, identity.channelUserId);
     rows.push({
       id: channelIdentityId(identity.channel, identity.channelUserId),
-      displayName: identity.displayName,
+      displayName: displayNameFor(identity.channel, identity.channelUserId),
       level: "unknown",
       channels: identity.aliases.map((alias) => ({
         channel: identity.channel,
