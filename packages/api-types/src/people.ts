@@ -6,6 +6,17 @@
 //   GET /api/people/:id/messages -> TimelinePage
 //   GET /api/accounts            -> AccountDirectory
 //
+// The write half — no core route serves these yet; the request types lead and
+// the backend follows (issues #62–#65):
+//
+//   POST   /api/people               -> PersonResource (201; atomic create-and-link)
+//   PATCH  /api/people/:id           -> PersonResource
+//   POST   /api/people/:id/accounts  -> PersonResource | LinkConflict (409)
+//   DELETE /api/people/:id/accounts/:channel/:channelUserId -> PersonResource
+//   POST   /api/people/:id/merge     -> PersonResource
+//   POST   /api/accounts/:channel/:channelUserId/dismiss  -> DirectoryAccount
+//   POST   /api/accounts/:channel/:channelUserId/restore  -> DirectoryAccount
+//
 // The vocabulary is docs/concepts/identity.md's. Rome never mints an account:
 // an account is platform-owned, named by the pair (channel, channelUserId),
 // and the only identity fact Rome contributes is which person it belongs to.
@@ -28,6 +39,7 @@ import {
   parseIdentityCursor,
   TIMELINE_PAGE_DEFAULT_LIMIT,
   TIMELINE_PAGE_MAX_LIMIT,
+  type AssignableBondLevel,
   type IdentityCursor,
   type IdentityDynamic,
   type PlacedBondLevel,
@@ -495,4 +507,60 @@ export function personMatchesQuery(person: PersonResource, query: string): boole
  */
 export function comparePeople(a: PersonResource, b: PersonResource): number {
   return compareIdentityCursors(identityCursorOf(a), identityCursorOf(b));
+}
+
+/**
+ * `POST /api/people` — create, with optional atomic linking.
+ *
+ * Atomic means both-or-neither: if any named account is linked to a real
+ * person, the whole request refuses with a {@link LinkConflict} and no person
+ * is created. Accounts the dismissal machinery holds link silently, same as
+ * {@link LinkAccountRequest}.
+ */
+export interface CreatePersonRequest {
+  displayName: string;
+  /** Defaults to "other". */
+  bondLevel?: AssignableBondLevel;
+  accounts?: { channel: string; channelUserId: string }[];
+}
+
+/** `PATCH /api/people/:id`. The guardian's bond level refuses to change. */
+export interface UpdatePersonRequest {
+  displayName?: string;
+  bondLevel?: AssignableBondLevel;
+}
+
+/**
+ * `POST /api/people/:id/accounts` — the link verb.
+ *
+ * Compare-and-swap on the account's current owner: linking an unlinked or
+ * dismissed account needs no `transferFrom`, re-linking to the same person is
+ * an idempotent no-op, and taking an account from another person requires
+ * `transferFrom` naming that person exactly. Anything else answers 409 with a
+ * {@link LinkConflict}. The explicitness is the point — a transfer
+ * re-attributes the account's whole message history, so it never happens as
+ * the side effect of an optimistic retry.
+ */
+export interface LinkAccountRequest {
+  channel: string;
+  channelUserId: string;
+  transferFrom?: string;
+}
+
+/** The 409 body for a refused link or dismissal: names the current owner so
+ *  the caller can render the conflict and offer an explicit transfer. Never
+ *  the stranger sentinel — a dismissal-held account never conflicts. */
+export interface LinkConflict {
+  error: string;
+  channel: string;
+  channelUserId: string;
+  linkedPersonId: string;
+  linkedPersonName: string;
+}
+
+/** `POST /api/people/:id/merge` — :id absorbs `from`: every link transfers
+ *  atomically, then `from` is deleted. First-class rather than N transfers
+ *  and a delete, because history re-attribution must not half-happen. */
+export interface MergeRequest {
+  from: string;
 }
