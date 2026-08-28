@@ -16,7 +16,7 @@ A pnpm monorepo. All code lives under `packages/*` and `rome_apps/*`. Runtime de
 - Before explaining a concept or asserting how a surface behaves, check [`docs/`](docs/README.md) and link instead of re-deriving.
 - Before building or editing an app, read [`rome_apps/CLAUDE.md`](rome_apps/CLAUDE.md).
 - When writing prose (docs, PR text), follow [`docs/authoring/WRITING.md`](docs/authoring/WRITING.md). When writing comments, follow [`docs/authoring/comments.md`](docs/authoring/comments.md).
-- When a PR touches `@rome-os/app-runtime`, `@rome-os/app-web-sdk`, or `@rome-os/ui`, use `feat:` / `fix:` / `feat!:` (or `BREAKING CHANGE:` in the body). release-please publishes them to npm from Conventional Commits, with no per-PR changeset file. Full flow in [`docs/releases.md`](docs/releases.md).
+- When a PR touches `@rome-os/app-runtime`, `@rome-os/app-web-sdk`, or `@rome-os/ui`, choose the Conventional Commit type by consumer impact. Test-only changes use `test:` and do not bump the package; releasable changes use `feat:` / `fix:` / `feat!:` (or `BREAKING CHANGE:` in the body). release-please publishes them to npm from Conventional Commits, with no per-PR changeset file. Full flow in [`docs/releases.md`](docs/releases.md).
 - When running the fullstack local loop, use `pnpm dev:all` — containerized Rome with `tsx --watch`, plus rome-obs, Traefik, and the Rsbuild dev server. `pnpm start` and `pnpm start:web` skip the production-shaped wiring, so reach for them only to debug the host process.
 - When changing a file the container does not watch (`package.json`, container env), run `docker compose restart <service>`.
 - When doing frontend-only work in `packages/web`, use `pnpm start:web:mock`.
