@@ -14,22 +14,20 @@
 
 import {
   accountPresentation,
+  latestDynamic,
   type DirectoryAccount,
   type StreamAccount,
+  type TimelineEntry,
 } from "@rome/api-types/people";
 import { compareCodePoints } from "@rome/api-types/identities";
 import { STRANGER_PERSON_ID } from "../constants.js";
 import type { AccountNames } from "../channels/account-names.js";
-import {
-  foldAccountRecords,
-  foldAccounts,
-  mirrorRegistry,
-  type AccountFold,
-  type AccountRecords,
-  type MirrorPlane,
-} from "../channels/account-fold.js";
+import { foldAccounts, mirrorRegistry, type MirrorPlane } from "../channels/account-fold.js";
+import type { DrizzleDb } from "../db/index.js";
 import type { PersonMappingRepository } from "../db/repositories/person-mapping.js";
 import type { SentinelLogRepository } from "../db/repositories/sentinel-log.js";
+import { assignAccountHeads } from "./timeline.js";
+import { personMessageStores } from "./timeline-sources.js";
 
 export interface AccountDirectoryDeps {
   whatsAppAccounts: MirrorPlane;
@@ -37,6 +35,9 @@ export interface AccountDirectoryDeps {
   personMappingRepo: Pick<PersonMappingRepository, "findAllWithMappings">;
   sentinelLogRepo: Pick<SentinelLogRepository, "listSenderActivity">;
   accountNames: Pick<AccountNames, "displayNames">;
+  /** Where the message stores live. Read by the stream alone — the contacts
+   *  list never reaches a history. */
+  db: DrizzleDb;
 }
 
 /** The link an account carries, before {@link accountPresentation} decides how
@@ -64,7 +65,7 @@ interface AccountLink {
 export async function readAccountDirectory(
   deps: AccountDirectoryDeps,
 ): Promise<DirectoryAccount[]> {
-  return (await observeAccounts(deps, { activity: false })).accounts;
+  return observeAccounts(deps);
 }
 
 /**
@@ -76,41 +77,92 @@ export async function readAccountDirectory(
  * and without the accounts that have none. An address-book contact nobody has
  * ever heard from has no position in an order made of timestamps, so it is
  * absent rather than listed last.
+ *
+ * The dynamic is the entry that claims the account, through the same
+ * `assignAccountHeads` the person's own page and the people listing settle
+ * ownership with, over the same `personMessageStores` precedence. So a row
+ * previews exactly what the page beneath it opens on, and being on the stream
+ * at all means some store answered a `latest`: silence is that answering
+ * nothing rather than a flag any producer sets.
+ *
+ * Read in rounds rather than all at once — see {@link ADDRESSES_PER_ROUND}.
  */
 export async function readAccountStream(deps: AccountDirectoryDeps): Promise<StreamAccount[]> {
-  const { accounts, fold } = await observeAccounts(deps, { activity: true });
+  const accounts = await observeAccounts(deps);
+  const stores = personMessageStores(deps);
+
+  const heads = new Map<DirectoryAccount, TimelineEntry>();
+  for (const round of rounds(accounts)) {
+    for (const [account, owned] of await assignAccountHeads(stores, round)) {
+      heads.set(account, owned.head);
+    }
+  }
+
   return accounts.flatMap((account) => {
-    const record = fold.recordFor(account.channel, account.channelUserId);
-    return record.latest == null
-      ? []
-      : [{ ...account, latest: record.latest, messageCount: record.messageCount }];
+    const head = heads.get(account);
+    const dynamic = latestDynamic(head ? [head] : []);
+    return dynamic === null ? [] : [{ ...account, latest: dynamic }];
   });
+}
+
+/**
+ * How many addresses one round of ownership reads covers.
+ *
+ * A SQL store answers a whole round in one statement, binding a bounded handful
+ * of variables per address in it, and SQLite refuses any statement carrying
+ * more than 32,766 of them. This is the one read that asks about a whole
+ * address book at once, and an address book is thousands of contacts — so
+ * asking about all of them in a single round is a stream that fails outright on
+ * an ordinary WhatsApp directory rather than one that pages it.
+ *
+ * A thousand addresses leaves that ceiling more than an order of magnitude of
+ * headroom while keeping the rounds few, and so the passes over each store few:
+ * the grouping that makes a directory cost one pass instead of one per row
+ * still holds, just per round rather than once.
+ *
+ * Bounded here rather than inside the stores: the ceiling is a property of the
+ * statement a store builds, but only a caller knows it is about to ask about
+ * every account there is, and a store cannot chunk work it is handed a call at
+ * a time.
+ */
+const ADDRESSES_PER_ROUND = 1000;
+
+/**
+ * The accounts split into rounds no wider than {@link ADDRESSES_PER_ROUND}.
+ *
+ * By addresses rather than by accounts because that is what the stores are
+ * scoped by: an account reachable three ways costs three times what one
+ * reachable a single way does. An account wider than a whole round still gets
+ * one of its own rather than being dropped.
+ */
+function* rounds(accounts: readonly DirectoryAccount[]): Generator<DirectoryAccount[]> {
+  let round: DirectoryAccount[] = [];
+  let addresses = 0;
+  for (const account of accounts) {
+    if (round.length > 0 && addresses + account.addresses.length > ADDRESSES_PER_ROUND) {
+      yield round;
+      round = [];
+      addresses = 0;
+    }
+    round.push(account);
+    addresses += account.addresses.length;
+  }
+  if (round.length > 0) yield round;
 }
 
 /**
  * Which accounts there are, what each is called, and who holds it — the join
  * both reads share, so the two can never disagree about which accounts exist.
  *
- * `activity` decides how much is read, not what is answered: with it the fold
- * carries each account's history and the caller can ask, without it no message
- * store is touched at all.
+ * No history is read here, for either caller. What each account last did is the
+ * stream's own second read, over the message stores.
  */
-async function observeAccounts(
-  deps: AccountDirectoryDeps,
-  options: { activity: true },
-): Promise<{ accounts: DirectoryAccount[]; fold: AccountRecords }>;
-async function observeAccounts(
-  deps: AccountDirectoryDeps,
-  options: { activity: false },
-): Promise<{ accounts: DirectoryAccount[]; fold: AccountFold }>;
-async function observeAccounts(
-  deps: AccountDirectoryDeps,
-  options: { activity: boolean },
-): Promise<{ accounts: DirectoryAccount[]; fold: AccountFold }> {
+async function observeAccounts(deps: AccountDirectoryDeps): Promise<DirectoryAccount[]> {
   const [senders, persons] = await Promise.all([
     // The triage record, for the senders it is the only source of: a channel
     // Rome mirrors no address book for has no other row saying the account
-    // exists. What each of them said is read off this only by the stream.
+    // exists. Only that it saw them is read here; what they said is a message
+    // store's answer.
     deps.sentinelLogRepo.listSenderActivity(),
     // One statement, so an account moving between two people mid-read cannot
     // land under both of them.
@@ -120,10 +172,7 @@ async function observeAccounts(
   const mappings = persons.flatMap((person) =>
     person.channelMappings.map((mapping) => ({ ...mapping, person })),
   );
-  const stored = [...senders, ...mappings];
-  const fold = options.activity
-    ? await foldAccountRecords(mirrorRegistry(deps), { senders, stored })
-    : await foldAccounts(mirrorRegistry(deps), { stored });
+  const fold = await foldAccounts(mirrorRegistry(deps), { stored: [...senders, ...mappings] });
 
   /** Who holds each account, decided once before any row is built. */
   const linkOf = new Map<string, AccountLink>();
@@ -166,14 +215,11 @@ async function observeAccounts(
   // and only where a mirror left a name unanswered.
   const names = await deps.accountNames.displayNames(rows.map(([, account]) => account));
 
-  return {
-    fold,
-    accounts: rows.map(([key, account], i) => ({
-      ...account,
-      displayName: names[i],
-      ...accountPresentation(linkOf.get(key)),
-    })),
-  };
+  return rows.map(([key, account], i) => ({
+    ...account,
+    displayName: names[i],
+    ...accountPresentation(linkOf.get(key)),
+  }));
 }
 
 /**
