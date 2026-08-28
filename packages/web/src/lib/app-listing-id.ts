@@ -1,6 +1,6 @@
 /**
- * Core App Store listing-id grammar. Keep in sync with
- * packages/web/src/lib/app-listing-id.ts.
+ * Web copy of the App Store listing-id grammar. Keep in sync with
+ * packages/core/src/apps/packaging/listing-id.ts.
  *
  * A listing id names a listing in the Rome Cloud App Store. Two shapes:
  *
