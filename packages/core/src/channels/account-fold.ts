@@ -12,8 +12,7 @@
 // reads them and joins the histories. A caller that only needs to know who is
 // one account therefore never touches a message store.
 
-import type { AccountDynamic } from "@rome/api-types/people";
-import { compareCodePoints } from "@rome/api-types/identities";
+import { compareCodePoints, type AccountDynamic } from "@rome/api-types/people";
 import type { SentinelSenderActivity } from "../db/repositories/sentinel-log.js";
 import type { TalkAccountActivity } from "./account-activity.js";
 import type { TalkAccounts } from "./accounts.js";

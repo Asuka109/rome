@@ -14,12 +14,12 @@
 
 import {
   accountPresentation,
+  compareCodePoints,
   latestDynamic,
   type DirectoryAccount,
   type StreamAccount,
   type TimelineEntry,
 } from "@rome/api-types/people";
-import { compareCodePoints } from "@rome/api-types/identities";
 import { STRANGER_PERSON_ID } from "../constants.js";
 import type { AccountNames } from "../channels/account-names.js";
 import { foldAccounts, mirrorRegistry, type MirrorPlane } from "../channels/account-fold.js";

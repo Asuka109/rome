@@ -11,7 +11,7 @@
 import {
   compareTimelineEntries,
   latestDynamic,
-  type IdentityDynamic,
+  type AccountDynamic,
   type TimelineEntry,
 } from "@rome/api-types/people";
 import type { MessageAccount, Messages } from "../channels/messages.js";
@@ -20,7 +20,7 @@ import { assignAccounts } from "./timeline.js";
 /** A person's history at a glance. `latest` is null exactly when
  *  `messageCount` is zero — a person nobody has ever written to. */
 export interface PersonActivity {
-  latest: IdentityDynamic | null;
+  latest: AccountDynamic | null;
   messageCount: number;
 }
 

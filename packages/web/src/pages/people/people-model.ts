@@ -1,16 +1,14 @@
 import {
+  accountRef,
   BOND_LADDER,
-  compareIdentityCursors,
+  compareAccountCursors,
+  compareStreamCursors,
   formatWhatsAppPhone,
   matchesQuery,
   normalizeBondLevel,
-  type BondLadderLevel,
-  type IdentityDynamic,
-} from "@rome/api-types/identities";
-import {
-  accountRef,
-  compareAccountCursors,
   type AccountCounts,
+  type AccountDynamic,
+  type BondLadderLevel,
   type DirectoryAccount,
   type PersonCounts,
   type PersonResource,
@@ -91,7 +89,7 @@ export interface PeopleRow {
    * account row the directory read produced, which carries no activity at all.
    * Only the stream renders it.
    */
-  latest: IdentityDynamic | null;
+  latest: AccountDynamic | null;
   /**
    * How much is on record for the row. Zero on every account row: a person's
    * count is the length of the timeline their dossier pages, and neither
@@ -196,10 +194,10 @@ export function searchRows(rows: readonly PeopleRow[], query: string): PeopleRow
 }
 
 /** The stream's order: newest first, rows that have never done anything last,
- *  ties broken by name and then id so the sequence is total. The identity
+ *  ties broken by name and then id so the sequence is total. The account
  *  stream's order rather than a second one that happens to agree. */
 export function compareRows(a: PeopleRow, b: PeopleRow): number {
-  return compareIdentityCursors(
+  return compareStreamCursors(
     { timestamp: a.latest?.timestamp ?? null, displayName: a.displayName, id: a.id },
     { timestamp: b.latest?.timestamp ?? null, displayName: b.displayName, id: b.id },
   );
