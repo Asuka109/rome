@@ -164,7 +164,7 @@ const LINKED_ACCOUNT: WorldAccount = {
 
 /** A LinkedIn sender nobody has placed. LinkedIn had a section of its own on
  *  this page while its threads reached no account read; it has an accounts
- *  plane now, so it arrives here as a sender like any other and is placed by
+ *  address book now, so it arrives here as a sender like any other and is placed by
  *  the same gesture. */
 const LINKEDIN_SENDER: WorldAccount = {
   channel: "linkedin",
@@ -771,7 +771,7 @@ describe("PeoplePage placement", () => {
     await waitFor(() => expect(screen.queryByText("Rachel Lim")).toBeNull());
     expect(within(chip(/^Unknown/)).queryByText(/^\d+$/)).toBeNull();
     const dismiss = calls.find((c) => c.url.includes("/dismiss"))!;
-    // Named by the pair the contract says is the account's identity, so every
+    // Named by the pair the contract names the account with, so every
     // address it answers to travels with it.
     expect(dismiss.url).toBe("/api/accounts/whatsapp/6591234472%40s.whatsapp.net/dismiss");
   });
