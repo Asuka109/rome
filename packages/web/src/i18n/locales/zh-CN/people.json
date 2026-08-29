@@ -141,6 +141,10 @@
     "label": "关联到已有人物",
     "selectPlaceholder": "选择一位人物…"
   },
+  "placeMenu": {
+    "create": "创建资料…",
+    "link": "关联到人物…"
+  },
   "linkPicker": {
     "columns": {
       "channel": "渠道",
