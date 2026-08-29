@@ -596,6 +596,24 @@ describe("RecentChats", () => {
     expect(screen.getByText("Renamed chat")).toBeTruthy();
   });
 
+  it("leaves focus in the rename input once the menu has closed", async () => {
+    // The actions trigger is display:none while the row renames, so Radix's
+    // focus restore would land on <body>, blur the input, and commit the
+    // rename before a key is typed.
+    mockSessions([activeSession()]);
+    const user = userEvent.setup();
+
+    renderRecentChats();
+    await screen.findByText("Active chat");
+
+    await user.click(screen.getByRole("button", { name: "Chat actions" }));
+    await user.click(screen.getByRole("menuitem", { name: "Rename" }));
+
+    const input = await screen.findByRole("textbox", { name: "Chat name" });
+    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
+    expect(document.activeElement).toBe(input);
+  });
+
   it("cancels a rename on Escape without PATCHing", async () => {
     const spy = mockSessions([activeSession()]);
     const user = userEvent.setup();
@@ -819,5 +837,55 @@ describe("RecentChats row menu shortcuts", () => {
 
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(spy.mock.calls.some(([, init]) => init?.method === "DELETE")).toBe(false);
+  });
+});
+
+describe("RecentChats chat name tooltip", () => {
+  const longNameSession = (name: string) => ({
+    id: "long-1",
+    name,
+    createdAt: "2026-07-01T00:00:00.000Z",
+    activityAt: "2026-07-09T10:00:00.000Z",
+    lastSeenActivityAt: null,
+    unread: false,
+    projectName: "alpha",
+    projectPath: "alpha",
+  });
+
+  // jsdom performs no layout, so scrollWidth/clientWidth are both 0 and the
+  // row's "is the name clipped?" probe reads false. Fake the geometry of a
+  // clipped name on the label span to exercise the tooltip path.
+  function fakeClippedName(el: HTMLElement) {
+    Object.defineProperty(el, "scrollWidth", { configurable: true, value: 320 });
+    Object.defineProperty(el, "clientWidth", { configurable: true, value: 140 });
+  }
+
+  it("reveals the full chat name in a tooltip when hovering a row whose name is truncated", async () => {
+    const name = "Rewrite the session archive migration end to end";
+    mockSessions([longNameSession(name)]);
+    const user = userEvent.setup();
+
+    renderRecentChats();
+
+    const label = await screen.findByText(name);
+    fakeClippedName(label);
+    await user.hover(label);
+
+    const tooltip = await screen.findByRole("tooltip");
+    expect(tooltip.textContent).toBe(name);
+  });
+
+  it("shows no tooltip when the chat name fits in the row", async () => {
+    mockSessions([longNameSession("Short chat")]);
+    const user = userEvent.setup();
+
+    renderRecentChats();
+
+    // Untouched jsdom geometry (0/0) is exactly a name that fits.
+    await user.hover(await screen.findByText("Short chat"));
+
+    // Outwait the tooltip open delay before concluding nothing appeared.
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    expect(screen.queryByRole("tooltip")).toBeNull();
   });
 });
