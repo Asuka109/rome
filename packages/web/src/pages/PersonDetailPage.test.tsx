@@ -2,7 +2,7 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { TimelineEntry } from "@rome/api-types/people";
 import {
@@ -13,7 +13,7 @@ import {
   type PersonResource,
 } from "@rome/api-types/people";
 import i18n from "@/i18n";
-import PersonDetailPage from "./PersonDetailPage";
+import PersonDetailPage, { PersonLegacyRedirect } from "./PersonDetailPage";
 
 // The person page: who they are on top, the merged timeline below. What is under
 // test is that the page reads the two routes that own it — `GET /api/people/:id`
@@ -207,19 +207,47 @@ function mockApi(
   return calls;
 }
 
-function renderPage(id = "wei-chen") {
+/** The dossier under the People routes `App.tsx` declares, so where its back
+ *  link lands is decided by the same history the app gives it. `before` is what
+ *  the guardian was looking at when they opened the person — nothing, when the
+ *  dossier is the address they arrived on. */
+function renderPage(id = "wei-chen", before?: string) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const entries = before
+    ? [before, { pathname: `/people/person/${id}`, state: { from: before } }]
+    : [`/people/person/${id}`];
   const view = render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[`/people/${id}`]}>
+      <MemoryRouter initialEntries={entries} initialIndex={entries.length - 1}>
         <Routes>
-          <Route path="/people" element={<div>people page</div>} />
-          <Route path="/people/:personId" element={<PersonDetailPage />} />
+          <Route path="/people/latest" element={<div>the stream</div>} />
+          <Route path="/people/directory" element={<div>the directory</div>} />
+          <Route path="/people/person/:personId" element={<PersonDetailPage />} />
+          <Route path="/people/:personId" element={<PersonLegacyRedirect />} />
         </Routes>
+        <Address />
+        <BrowserBack />
       </MemoryRouter>
     </QueryClientProvider>,
   );
   return { ...view, queryClient };
+}
+
+/** The address the dossier's back link left the guardian on. */
+function Address() {
+  const location = useLocation();
+  return <div data-testid="address">{`${location.pathname}${location.search}`}</div>;
+}
+
+/** The browser's Back button. What it reaches after the back link is what says
+ *  whether that link consumed the dossier's history entry or stacked another. */
+function BrowserBack() {
+  const navigate = useNavigate();
+  return (
+    <button type="button" data-testid="browser-back" onClick={() => navigate(-1)}>
+      browser back
+    </button>
+  );
 }
 
 describe("PersonDetailPage", () => {
@@ -422,7 +450,7 @@ describe("PersonDetailPage", () => {
     expect(await screen.findByText("Nothing has happened on any channel yet.")).toBeTruthy();
   });
 
-  it("goes back to the roster", async () => {
+  it("goes back to the stream when the dossier is the address the guardian arrived on", async () => {
     const user = userEvent.setup();
     mockApi();
     renderPage();
@@ -430,7 +458,19 @@ describe("PersonDetailPage", () => {
     await screen.findByRole("heading", { name: "Wei Chen" });
     await user.click(screen.getByRole("button", { name: "People" }));
 
-    expect(await screen.findByText("people page")).toBeTruthy();
+    expect(await screen.findByText("the stream")).toBeTruthy();
+  });
+
+  it("returns to the view the person was opened from, on the chip it was on", async () => {
+    const user = userEvent.setup();
+    mockApi();
+    renderPage("wei-chen", "/people/directory?level=inner-circle");
+
+    await screen.findByRole("heading", { name: "Wei Chen" });
+    await user.click(screen.getByRole("button", { name: "People" }));
+
+    expect(await screen.findByText("the directory")).toBeTruthy();
+    expect(screen.getByTestId("address").textContent).toBe("/people/directory?level=inner-circle");
   });
 });
 
@@ -539,5 +579,92 @@ describe("PersonDetailPage management", () => {
     await user.click(await screen.findByRole("option", { name: "Inner circle" }));
 
     expect(await screen.findByRole("alert")).toBeTruthy();
+  });
+});
+
+// A person id is a slug of the guardian's own display name, so `latest` and
+// `directory` are ids a guardian can mint. The dossier answers under its own
+// segment for that reason, and the address a person was reached by keeps
+// working.
+describe("PersonDetailPage is reachable whatever the guardian named the person", () => {
+  it("opens a person whose id collides with a view name", async () => {
+    mockApi({ person: { ...PERSON, id: "latest", displayName: "Latest" } });
+    renderPage("latest");
+
+    expect(await screen.findByRole("heading", { name: "Latest" })).toBeTruthy();
+  });
+
+  it("forwards the address a person used to be reached by", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    mockApi();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/people/wei-chen"]}>
+          <Routes>
+            <Route path="/people/latest" element={<div>the stream</div>} />
+            <Route path="/people/person/:personId" element={<PersonDetailPage />} />
+            <Route path="/people/:personId" element={<PersonLegacyRedirect />} />
+          </Routes>
+          <Address />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Wei Chen" })).toBeTruthy();
+    expect(screen.getByTestId("address").textContent).toBe("/people/person/wei-chen");
+  });
+});
+
+describe("PersonDetailPage back link survives a merge", () => {
+  it("returns to the view it was opened from, not to the person the merge deleted", async () => {
+    const user = userEvent.setup();
+    mockApi({ people: [DUPLICATE] });
+    renderPage("wei-chen", "/people/directory?level=inner-circle");
+
+    await screen.findByRole("heading", { name: "Wei Chen" });
+    await user.click(screen.getByRole("button", { name: "Merge into another person…" }));
+    await user.click(await screen.findByRole("button", { name: /W\. Chen/ }));
+    await screen.findByRole("heading", { name: "W. Chen" });
+
+    // The merge deleted Wei Chen, so stepping back through history would land
+    // on a dossier that 404s. The survivor carries the origin instead.
+    await user.click(screen.getByRole("button", { name: "People" }));
+
+    expect(await screen.findByText("the directory")).toBeTruthy();
+    expect(screen.getByTestId("address").textContent).toBe("/people/directory?level=inner-circle");
+  });
+});
+
+// The back link is an arrow, and an arrow that stacks a third entry lets the
+// browser's own Back undo the click that was meant to leave.
+describe("PersonDetailPage back link consumes the dossier's history entry", () => {
+  it("does not leave the dossier reachable by pressing Back after it", async () => {
+    const user = userEvent.setup();
+    mockApi();
+    renderPage("wei-chen", "/people/directory?level=inner-circle");
+
+    await screen.findByRole("heading", { name: "Wei Chen" });
+    await user.click(screen.getByRole("button", { name: "People" }));
+    expect(await screen.findByText("the directory")).toBeTruthy();
+
+    await user.click(screen.getByTestId("browser-back"));
+
+    expect(screen.queryByRole("heading", { name: "Wei Chen" })).toBeNull();
+    expect(screen.getByTestId("address").textContent).toBe("/people/directory?level=inner-circle");
+  });
+
+  it("does not leave a pasted dossier reachable by pressing Back after it", async () => {
+    const user = userEvent.setup();
+    mockApi();
+    renderPage();
+
+    await screen.findByRole("heading", { name: "Wei Chen" });
+    await user.click(screen.getByRole("button", { name: "People" }));
+    expect(await screen.findByText("the stream")).toBeTruthy();
+
+    await user.click(screen.getByTestId("browser-back"));
+
+    expect(screen.queryByRole("heading", { name: "Wei Chen" })).toBeNull();
+    expect(screen.getByTestId("address").textContent).toBe("/people/latest");
   });
 });

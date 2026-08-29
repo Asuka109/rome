@@ -19,7 +19,15 @@ const CallbackPage = lazy(() => import("./pages/CallbackPage"));
 const SharePage = lazy(() => import("./pages/share/SharePage"));
 const ActivityPage = lazy(() => import("./pages/ActivityPage"));
 const PeoplePage = lazy(() => import("./pages/PeoplePage"));
+// The /people redirect lives with the views it forwards to, so the paths are
+// written once; it rides their chunk, which is the one about to render anyway.
+const PeopleIndexRedirect = lazy(() =>
+  import("./pages/PeoplePage").then((m) => ({ default: m.PeopleIndexRedirect })),
+);
 const PersonDetailPage = lazy(() => import("./pages/PersonDetailPage"));
+const PersonLegacyRedirect = lazy(() =>
+  import("./pages/PersonDetailPage").then((m) => ({ default: m.PersonLegacyRedirect })),
+);
 const MemoryPage = lazy(() => import("./pages/MemoryPage"));
 const ProjectsPage = lazy(() => import("./pages/ProjectsPage"));
 const RoutinesPage = lazy(() => import("./pages/RoutinesPage"));
@@ -132,8 +140,18 @@ export default function App() {
             <Route path="/" element={<Navigate to="/chat" replace />} />
             <Route path="/chat/*" element={<FreePage />} />
             <Route path="/activity" element={<ActivityPage />} />
-            <Route path="/people" element={<PeoplePage />} />
-            <Route path="/people/:personId" element={<PersonDetailPage />} />
+            {/* The two People views are routes, so each is linkable and back
+                steps between them. The dossier takes its own segment rather
+                than sharing theirs: a person id is a slug of the display name
+                the guardian gave them, so `latest` and `directory` are ids they
+                can mint, and a static view route would leave such a person
+                unreachable. The bare `/people/:personId` forwards, so an
+                address a person was already reached by keeps working. */}
+            <Route path="/people" element={<PeopleIndexRedirect />} />
+            <Route path="/people/latest" element={<PeoplePage view="latest" />} />
+            <Route path="/people/directory" element={<PeoplePage view="directory" />} />
+            <Route path="/people/person/:personId" element={<PersonDetailPage />} />
+            <Route path="/people/:personId" element={<PersonLegacyRedirect />} />
             <Route path="/memory/*" element={<MemoryPage />} />
             <Route path="/projects/*" element={<ProjectsPage />} />
             <Route path="/sessions/*" element={<SessionsPage />} />

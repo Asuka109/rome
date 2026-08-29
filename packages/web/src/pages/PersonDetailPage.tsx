@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, CircleAlert } from "lucide-react";
 import { formatWhatsAppPhone, type TimelineEntry } from "@rome/api-types/people";
@@ -10,6 +10,7 @@ import { Avatar } from "./people/avatar";
 import { ChannelPill } from "./people/channel-meta";
 import { clockTime, dayLabel, navigatorLocale, startOfDay } from "./people/format";
 import { PersonManagement } from "./people/manage";
+import { PEOPLE_VIEW_PATH, personPath } from "./people/people-model";
 import { usePerson, usePersonTimeline } from "./people/use-roster";
 
 /**
@@ -48,6 +49,19 @@ export default function PersonDetailPageRoute() {
 function PersonDetailPage({ personId }: { personId: string | undefined }) {
   const { t } = useTranslation("people");
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Where the dossier was opened from, carried on the navigation that opened
+  // it. An origin says a view sits behind this dossier, so the arrow spends the
+  // dossier's own history entry rather than stacking a third — otherwise the
+  // browser's Back undoes the click that was meant to leave.
+  //
+  // A merge is why the origin is carried rather than inferred: it deletes this
+  // person and puts the survivor in their entry, so the address is what keeps
+  // the arrow honest about which view it owes. A dossier reached by pasted link
+  // has no view behind it and replaces itself with the one `/people` is.
+  const origin = (location.state as { from?: string } | null)?.from;
+  const back = () => (origin ? navigate(-1) : navigate(PEOPLE_VIEW_PATH.latest, { replace: true }));
 
   const personQuery = usePerson(personId);
   const timeline = usePersonTimeline(personId);
@@ -74,7 +88,7 @@ function PersonDetailPage({ personId }: { personId: string | undefined }) {
     return (
       <PageShell>
         <PageBody>
-          <BackLink onClick={() => navigate("/people")} />
+          <BackLink onClick={back} />
           <Alert variant="destructive">
             <CircleAlert aria-hidden="true" />
             <AlertTitle>
@@ -103,7 +117,7 @@ function PersonDetailPage({ personId }: { personId: string | undefined }) {
   return (
     <PageShell>
       <PageBody>
-        <BackLink onClick={() => navigate("/people")} />
+        <BackLink onClick={back} />
 
         <div className="flex flex-wrap items-start gap-4 rounded-14 border border-border bg-surface p-5 shadow-1">
           <Avatar name={person.displayName} tone="bg-surface-muted text-muted-foreground" />
@@ -133,10 +147,14 @@ function PersonDetailPage({ personId }: { personId: string | undefined }) {
           </div>
           {/* A merge ends with this person gone, so the page that had them open
               follows the account history to the survivor rather than sitting on
-              a route that now 404s. */}
+              a route that now 404s. It replaces rather than pushes, and hands
+              the survivor the same origin: the entry this dossier occupies
+              names a person the merge just deleted. */}
           <PersonManagement
             person={person}
-            onMerged={(survivorId) => navigate(`/people/${encodeURIComponent(survivorId)}`)}
+            onMerged={(survivorId) =>
+              navigate(personPath(survivorId), { replace: true, state: { from: origin } })
+            }
           />
         </div>
 
@@ -218,6 +236,19 @@ function PersonDetailPage({ personId }: { personId: string | undefined }) {
       </PageBody>
     </PageShell>
   );
+}
+
+/**
+ * The address a person was reached by before the dossier took its own segment.
+ *
+ * A person id never named a view, so forwarding is unambiguous: `/people/wei-chen`
+ * meant that dossier and still reaches it. The two view segments are matched by
+ * their own routes ahead of this one and never arrive here.
+ */
+export function PersonLegacyRedirect() {
+  const params = useParams<{ personId: string }>();
+  const location = useLocation();
+  return <Navigate to={personPath(params.personId ?? "")} state={location.state} replace />;
 }
 
 function BackLink({ onClick }: { onClick: () => void }) {
