@@ -821,7 +821,24 @@ export interface PlanUpdateMessage {
   plan: AgentPlan;
 }
 
+export type AgentInputState =
+  | "queued"
+  | "submitted"
+  | "accepted"
+  | "consumed"
+  | "unknown"
+  | "cancelled"
+  | "failed";
+
+export interface InputStatusMessage {
+  type: "input_status";
+  inputId: string;
+  state: AgentInputState;
+  turnId?: string;
+}
+
 export type AgentMessage =
+  | InputStatusMessage
   | TurnStartMessage
   | TurnEndMessage
   | TextMessage
@@ -1151,6 +1168,11 @@ export type MessagePart =
        *  (Anthropic `stop_reason`; Codex app-server `phase`). Absent on legacy
        *  rows (and channels that don't split turns) → treated as `final`. */
       turnPhase?: "commentary" | "final";
+      /** Zero-based identity of this WebChat assistant text block within its turn.
+       *  Assigned by the WebChat projection and persisted so the live SSE
+       *  block and transcript block share the same `(turnId, blockIx)` key.
+       *  Absent on legacy rows and channels that do not stream text blocks. */
+      blockIx?: number;
     }
   | {
       type: "turn_recap";
