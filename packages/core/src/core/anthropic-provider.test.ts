@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { AbortError } from "@anthropic-ai/claude-agent-sdk";
 import { AnthropicProvider } from "./anthropic-provider.js";
 import type { AgentMessage } from "../types.js";
 import type {
@@ -34,7 +35,8 @@ const {
   clearAnthropicAuthRevokedMock: vi.fn(),
 }));
 
-vi.mock("@anthropic-ai/claude-agent-sdk", () => ({
+vi.mock("@anthropic-ai/claude-agent-sdk", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@anthropic-ai/claude-agent-sdk")>()),
   query: queryMock,
   createSdkMcpServer: createSdkMcpServerMock,
   tool: sdkToolMock,
@@ -210,6 +212,159 @@ describe("AnthropicProvider", () => {
     const provider = new AnthropicProvider();
 
     expect(provider.builtinTools.has("TodoWrite")).toBe(true);
+  });
+
+  it.each([
+    "startup",
+    "partial",
+    "completed-block",
+  ])("aborts the Query during %s and preserves received output", async (phase) => {
+    let controller!: AbortController;
+    let begin!: () => void;
+    const begun = new Promise<void>((resolve) => {
+      begin = resolve;
+    });
+    const q = {
+      interrupt: vi.fn(),
+      close: vi.fn(),
+      async *[Symbol.asyncIterator]() {
+        if (phase === "partial") {
+          yield {
+            type: "stream_event",
+            parent_tool_use_id: null,
+            event: {
+              type: "content_block_delta",
+              delta: { type: "text_delta", text: "Saved work" },
+            },
+          };
+        }
+        if (phase === "completed-block") {
+          yield {
+            type: "assistant",
+            uuid: "assistant-before-stop",
+            session_id: "persisted-thread",
+            parent_tool_use_id: null,
+            message: { content: [{ type: "text", text: "Saved work" }] },
+          };
+        }
+        begin();
+        if (!controller.signal.aborted) {
+          await new Promise<void>((resolve) =>
+            controller.signal.addEventListener("abort", () => resolve(), { once: true }),
+          );
+        }
+        if (phase === "completed-block") return;
+        throw new AbortError("Cancelled");
+      },
+    };
+    queryMock.mockImplementation(({ options }) => {
+      controller = options.abortController;
+      return q;
+    });
+    const session = await new AnthropicProvider().openSession(buildParams());
+    await session.sendUserInput({ text: "work" });
+    const collected = collectEvents(session);
+    await begun;
+    await session.interrupt("user-stop");
+    const messages = await collected;
+    expect(q.interrupt).not.toHaveBeenCalled();
+    expect(q.close).not.toHaveBeenCalled();
+    expect(controller.signal.aborted).toBe(true);
+    expect(session.isClosed).toBe(true);
+    expect(messages.filter((message) => message.type === "result")).toEqual([
+      { type: "result", content: phase === "startup" ? "" : "Saved work" },
+    ]);
+    if (phase !== "startup") {
+      expect(messages).toContainEqual({ type: "text", content: "Saved work", turnPhase: "final" });
+    }
+    expect(session.lastCompletedTurnCheckpoint).toBeUndefined();
+    await expect(session.sendUserInput({ text: "next" })).rejects.toThrow("closed");
+    await session.close();
+  });
+
+  it.each([
+    { label: "the current assistant checkpoint", interruptedCheckpoint: "assistant-current" },
+    { label: "no checkpoint", interruptedCheckpoint: undefined },
+  ])("does not publish $label when interrupted after a successful turn", async ({
+    interruptedCheckpoint,
+  }) => {
+    let controller!: AbortController;
+    let beginInterruptibleTurn!: () => void;
+    const interruptibleTurnBegun = new Promise<void>((resolve) => {
+      beginInterruptibleTurn = resolve;
+    });
+    queryMock.mockImplementation(({ prompt, options }) => {
+      controller = options.abortController;
+      return {
+        async *[Symbol.asyncIterator]() {
+          const inputs = prompt[Symbol.asyncIterator]();
+          await inputs.next();
+          yield {
+            type: "assistant",
+            uuid: "assistant-previous",
+            session_id: "persisted-thread",
+            parent_tool_use_id: null,
+            message: { content: [{ type: "text", text: "Previous turn" }] },
+          };
+          yield {
+            type: "result",
+            subtype: "success",
+            result: "Previous turn",
+            num_turns: 1,
+            stop_reason: "end_turn",
+            total_cost_usd: 0,
+            duration_ms: 1,
+          };
+
+          await inputs.next();
+          if (interruptedCheckpoint) {
+            yield {
+              type: "assistant",
+              uuid: interruptedCheckpoint,
+              session_id: "persisted-thread",
+              parent_tool_use_id: null,
+              message: { content: [{ type: "text", text: "Current turn" }] },
+            };
+          }
+          beginInterruptibleTurn();
+          if (!controller.signal.aborted) {
+            await new Promise<void>((resolve) =>
+              controller.signal.addEventListener("abort", () => resolve(), { once: true }),
+            );
+          }
+          throw new AbortError("Cancelled");
+        },
+        close: vi.fn(),
+      };
+    });
+
+    const session = await new AnthropicProvider().openSession(buildParams());
+    const events = session.events[Symbol.asyncIterator]();
+    await session.sendUserInput({ text: "first" });
+    expect((await events.next()).value).toMatchObject({
+      type: "text",
+      content: "Previous turn",
+    });
+    expect((await events.next()).value).toMatchObject({ type: "result", content: "Previous turn" });
+    expect(session.lastCompletedTurnCheckpoint).toBe("assistant-previous");
+
+    await session.sendUserInput({ text: "second" });
+    const remaining = (async () => {
+      const messages: AgentMessage[] = [];
+      for (;;) {
+        const next = await events.next();
+        if (next.done) return messages;
+        messages.push(next.value);
+      }
+    })();
+    await interruptibleTurnBegun;
+    await session.interrupt("user-stop");
+    expect(await remaining).toContainEqual({
+      type: "result",
+      content: interruptedCheckpoint ? "Current turn" : "",
+    });
+    expect(session.lastCompletedTurnCheckpoint).toBeUndefined();
+    await session.close();
   });
 
   it("projects top-level TodoWrite snapshots while preserving generic tool events", async () => {
@@ -403,7 +558,7 @@ describe("AnthropicProvider", () => {
       await session.close();
     });
 
-    it("does not resume a reused session that never wrote a transcript", async () => {
+    it("uses a fresh SDK id when a reused session has no resumable transcript", async () => {
       // A stored session row with no captured provider thread id — e.g. a turn
       // that short-circuited (the not-logged-in notice) before opening an SDK
       // conversation. Resuming it would fail with "No conversation found".
@@ -416,7 +571,8 @@ describe("AnthropicProvider", () => {
         }),
       );
 
-      expect(queryMock.mock.calls[0]![0].options).toMatchObject({ sessionId: "reused-session" });
+      expect(queryMock.mock.calls[0]![0].options.sessionId).toMatch(/^[0-9a-f-]{36}$/);
+      expect(queryMock.mock.calls[0]![0].options.sessionId).not.toBe("reused-session");
       expect(queryMock.mock.calls[0]![0].options.resume).toBeUndefined();
 
       await session.close();

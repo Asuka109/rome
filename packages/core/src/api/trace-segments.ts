@@ -113,11 +113,8 @@ export function createSegmentBuilder(args: SegmentBuilderArgs): SegmentBuilder {
   const subagents: TraceSummary["subagents"] = [];
   const subagentByUseId = new Map<string, NonNullable<TraceSummary["subagents"]>[number]>();
   let totalDurationMs: number | undefined;
-  // Mirrors `turn_end.status === "interrupted"` — the AgentSession classifies
-  // a user stop (Stop button → `q.interrupt()` → terminal accounting
-  // `stopReason: "interrupted"`) when it emits the bracket, so the builder
-  // reads the outcome off the lifecycle block instead of re-deriving it from
-  // the terminal's accounting.
+  let turnStatus: TraceSummary["turnStatus"];
+  // Turn outcome comes from turn_end, not provider transport completion.
   let stoppedByUser = false;
   let terminalError: string | undefined;
   let latestPlan: TraceSummary["plan"];
@@ -194,6 +191,7 @@ export function createSegmentBuilder(args: SegmentBuilderArgs): SegmentBuilder {
         // keep reporting the previous turn's error/stopped pill (or its
         // duration) while it is still running.
         totalDurationMs = undefined;
+        turnStatus = undefined;
         stoppedByUser = false;
         terminalError = undefined;
         latestPlan = undefined;
@@ -203,6 +201,7 @@ export function createSegmentBuilder(args: SegmentBuilderArgs): SegmentBuilder {
       if (block.type === "turn_end") {
         activeRunSegId = null;
         totalDurationMs = block.durationMs;
+        turnStatus = block.status;
         // `turn_end.status` is the authoritative turn outcome; the bracketed
         // terminal (most recent same-agent result/error — sub-agent terminals
         // relay tagged with their own agent name) only supplies the error
@@ -345,6 +344,7 @@ export function createSegmentBuilder(args: SegmentBuilderArgs): SegmentBuilder {
             ? { subagents: subagents.map((subagent) => ({ ...subagent })) }
             : {}),
           totalDurationMs,
+          turnStatus,
           invocationCounts: { ...invocationCounts },
           ...(stoppedByUser ? { stoppedByUser: true } : {}),
           ...(terminalError ? { terminalError } : {}),

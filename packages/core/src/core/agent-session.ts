@@ -256,6 +256,8 @@ export type AgentSessionStatus = "idle" | "running" | "closed";
 export interface AgentTurnHandle {
   turnId: string;
   events: AsyncIterable<StreamAgentMessage>;
+  /** Cancel only this turn, including before provider dispatch. */
+  interrupt?(reason?: string): Promise<void>;
   /**
    * OTel context carrying the per-turn `agent:*` span. Callers doing
    * post-turn work outside `runOneTurn` can wrap it in
@@ -1985,6 +1987,7 @@ class AgentSessionImpl implements AgentSession {
     );
     if (
       this.modelSessionAvailable &&
+      !this.modelSession.isClosed &&
       resolution.modelProvider.id === this.modelSession.providerId &&
       resolution.model === this.modelSession.model
     ) {
@@ -2019,6 +2022,7 @@ class AgentSessionImpl implements AgentSession {
   }
 
   private async runEventsLoop(session: ModelSession): Promise<void> {
+    let streamError: unknown;
     try {
       enterSession(this.sessionId);
       for await (const msg of session.events) {
@@ -2150,7 +2154,9 @@ class AgentSessionImpl implements AgentSession {
           // Persist the provider-native anchor first so an immediate click can
           // never fall back to (or race with) a later provider-thread head.
           if (outbound.type === "result") {
-            await this.maybePersistTurnCheckpoint(session, sink.turnId);
+            const interrupted =
+              sink.lifecycleInterrupted || outbound.accounting?.stopReason === "interrupted";
+            if (!interrupted) await this.maybePersistTurnCheckpoint(session, sink.turnId);
             await this.maybePersistProviderInfo();
           }
           // Use `outbound` (not `msg`) so error-replacement (when an
@@ -2162,6 +2168,7 @@ class AgentSessionImpl implements AgentSession {
         }
       }
     } catch (err) {
+      streamError = err;
       log.warn("agent session events loop ended", {
         sessionId: this.sessionId,
         provider: session.providerId,
@@ -2169,8 +2176,22 @@ class AgentSessionImpl implements AgentSession {
       });
     } finally {
       if (this.replacingModelSession === session || this.modelSession !== session) return;
-      this.inputs.close();
       const sink = this.currentSink;
+      if (session.isClosed) {
+        this.modelSessionAvailable = false;
+        if (sink && !sink.done) {
+          if (sink.lifecycleInterrupted && !streamError) {
+            this.finalizeTurn(sink, { type: "result", content: "" });
+          } else {
+            this.failTurn(
+              sink,
+              streamError instanceof Error ? streamError.message : "session closed mid-turn",
+            );
+          }
+        }
+        return;
+      }
+      this.inputs.close();
       if (sink && !sink.done) {
         this.failTurn(sink, "session closed mid-turn");
       }
@@ -2636,45 +2657,58 @@ class AgentSessionImpl implements AgentSession {
         agent: this.key.agentName,
       };
       try {
-        if (input.sourceCheckpoint) {
-          if (input.sourceCheckpoint.providerId !== this.modelSession.providerId) {
-            throw new Error(
-              `Fork checkpoint provider ${input.sourceCheckpoint.providerId} does not match live provider ${this.modelSession.providerId}`,
-            );
+        // An interrupt may close the provider query while leaving the Rome
+        // session reusable. Ordinary turns reopen that provider at their mutex
+        // boundary; forks need the same gate before touching the source. Keep
+        // the lock only through descriptor creation so the independent fork
+        // does not block later source turns.
+        const { fork, forkOpen, outbound } = await this.turnMutex.runExclusive(async () => {
+          if (this.status === "closed") {
+            throw new Error(`AgentSession ${this.sessionId} is closed`);
           }
-          const liveProviderThreadId = this.modelSession.providerThreadId;
-          if (
-            liveProviderThreadId &&
-            input.sourceCheckpoint.providerThreadId !== liveProviderThreadId
-          ) {
-            throw new Error("Fork checkpoint belongs to a different provider thread");
+          await this.ensureModelSessionForTurn();
+          const sourceModelSession = this.modelSession;
+          if (input.sourceCheckpoint) {
+            if (input.sourceCheckpoint.providerId !== sourceModelSession.providerId) {
+              throw new Error(
+                `Fork checkpoint provider ${input.sourceCheckpoint.providerId} does not match live provider ${sourceModelSession.providerId}`,
+              );
+            }
+            const liveProviderThreadId = sourceModelSession.providerThreadId;
+            if (
+              liveProviderThreadId &&
+              input.sourceCheckpoint.providerThreadId !== liveProviderThreadId
+            ) {
+              throw new Error("Fork checkpoint belongs to a different provider thread");
+            }
           }
-        }
-        const forkModel = input.tier
-          ? await this.deps.modelResolver.getModelProvider({
-              tier: input.tier,
-              providerId: this.modelSession.providerId,
-            })
-          : undefined;
-        const fork = await this.modelSession.fork({
-          sessionId: forkSessionId,
-          mode: "ephemeral",
-          configurationMode: mode,
-          sourceCheckpoint: input.sourceCheckpoint?.checkpointId,
-        });
-        // One serialized outbound stream for the whole forked turn: the
-        // provider-event pump below and out-of-band emitters (exact-mode
-        // subagent relays, structured_output) push concurrently; the drain
-        // loop yields in arrival order. A provider stream failure becomes the
-        // turn's terminal error block, preserving the bracketing invariant.
-        const outbound = new ForkStreamQueue();
-        const forkOpen = this.buildForkOpenParams({
-          mode,
-          forkSessionId,
-          forkTurnId: turnId,
-          model: forkModel?.model ?? this.modelSession.model,
-          threadContext: input.threadContext,
-          emit: (msg) => outbound.push(msg),
+          const forkModel = input.tier
+            ? await this.deps.modelResolver.getModelProvider({
+                tier: input.tier,
+                providerId: sourceModelSession.providerId,
+              })
+            : undefined;
+          const fork = await sourceModelSession.fork({
+            sessionId: forkSessionId,
+            mode: "ephemeral",
+            configurationMode: mode,
+            sourceCheckpoint: input.sourceCheckpoint?.checkpointId,
+          });
+          // One serialized outbound stream for the whole forked turn: the
+          // provider-event pump below and out-of-band emitters (exact-mode
+          // subagent relays, structured_output) push concurrently; the drain
+          // loop yields in arrival order. A provider stream failure becomes the
+          // turn's terminal error block, preserving the bracketing invariant.
+          const outbound = new ForkStreamQueue();
+          const forkOpen = this.buildForkOpenParams({
+            mode,
+            forkSessionId,
+            forkTurnId: turnId,
+            model: forkModel?.model ?? sourceModelSession.model,
+            threadContext: input.threadContext,
+            emit: (msg) => outbound.push(msg),
+          });
+          return { fork, forkOpen, outbound };
         });
         disposeForkResources = forkOpen.dispose;
         forkSession = await fork.open(forkOpen.params);
@@ -2958,6 +2992,11 @@ class AgentSessionImpl implements AgentSession {
     return {
       turnId,
       events,
+      interrupt: async (reason) => {
+        if (sink.done) return;
+        sink.lifecycleInterrupted = true;
+        if (this.currentSink === sink) await this.interrupt(reason);
+      },
       turnContext: turnCtx,
       getSubmittedOutput: () => this.submittedOutputs.get(turnId),
     };
@@ -2981,7 +3020,14 @@ class AgentSessionImpl implements AgentSession {
     // Turns are FIFO-serialized by turnMutex. Resolve exactly once at this
     // boundary, before the sink is attached, so a backend replacement cannot
     // leak close events into the new turn.
-    await this.ensureModelSessionForTurn();
+    if (!sink.lifecycleInterrupted) await this.ensureModelSessionForTurn();
+    if (sink.lifecycleInterrupted) {
+      await this.modelSession.interrupt("user-stop");
+      this.ensureTurnStart(sink);
+      this.finalizeTurn(sink, { type: "result", content: "" });
+      span.end();
+      return;
+    }
     this.currentSink = sink;
     this.currentTurnId = turnId;
     this.status = "running";
@@ -3107,6 +3153,12 @@ class AgentSessionImpl implements AgentSession {
       };
 
       const runModelTerminal = async (): Promise<void> => {
+        if (sink.done) return;
+        if (sink.lifecycleInterrupted) {
+          await this.modelSession.interrupt("user-stop");
+          this.finalizeTurn(sink, { type: "result", content: "" });
+          return;
+        }
         modelRan = true;
         try {
           await context.with(turnCtx, async () => {
@@ -3272,11 +3324,13 @@ class AgentSessionImpl implements AgentSession {
     const sink = this.currentSink;
     if (!sink || sink.done || (expectedTurnId && sink.turnId !== expectedTurnId)) return;
     sink.lifecycleInterrupted = true;
-    // Capture the provider target before awaiting child interruption: the
-    // current turn may finish and another turn may start during that await.
-    await Promise.allSettled([
+    // Cancel the provider before awaiting child cleanup. A slow child must
+    // not keep its parent generating after the user presses Stop.
+    await Promise.all([
       this.modelSession.interrupt(reason),
-      ...[...sink.subagentExecutions.values()].map(({ execution }) => execution.interrupt(reason)),
+      Promise.allSettled(
+        [...sink.subagentExecutions.values()].map(({ execution }) => execution.interrupt(reason)),
+      ),
     ]);
   }
 
