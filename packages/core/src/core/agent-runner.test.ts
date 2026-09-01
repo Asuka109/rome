@@ -3761,7 +3761,7 @@ describe("AgentRunner", () => {
   });
 
   describe("session model pin resolution", () => {
-    const FABLE_MODEL = "claude-fable-5[1m]";
+    const FABLE_MODEL = "claude-fable-5-1[1m]";
 
     // Records every open and echoes the resolved model back as the turn result,
     // so a test can assert which concrete model actually ran.
