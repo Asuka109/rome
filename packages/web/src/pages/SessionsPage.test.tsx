@@ -5,11 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, rs } from "@rstest/core";
 import * as chatApiModule from "@/lib/chat-api" with { rstest: "importActual" };
 import {
   getRomeSession,
+  getSession,
   getSessionMetrics,
   listRomeSessionMessages,
   listRomeSessions,
   listSessionTurns,
   openTurnStream,
+  postSessionTurn,
 } from "@/lib/chat-api";
 import SessionsPage, { sessionsViewportClass } from "./SessionsPage";
 import { SESSION_OVERVIEW_GROUPS } from "./SessionsOverview";
@@ -24,6 +26,26 @@ rs.mock("@/components/chat/blocks", () => ({
   renderSingleBlock: () => null,
 }));
 
+rs.mock("@/components/chat/ChatComposer", () => ({
+  ChatComposer: ({ onSend, disabled }: { onSend: (s: unknown) => void; disabled?: boolean }) => (
+    <button
+      type="button"
+      data-testid="side-chat-composer"
+      disabled={disabled}
+      onClick={() =>
+        onSend({
+          text: "And the failure case?",
+          uploads: [],
+          reasoningEffort: "medium",
+          projectPath: "default",
+        })
+      }
+    >
+      send
+    </button>
+  ),
+}));
+
 rs.mock("@/components/chat/MessageList", () => ({
   MessageList: ({ live }: { live: { isStreaming: boolean; text: string } }) => (
     <div data-testid="session-messages" data-streaming={String(live.isStreaming)}>
@@ -36,11 +58,13 @@ rs.mock("@/lib/chat-api", () => {
   return {
     ...chatApiModule,
     getRomeSession: rs.fn(),
+    getSession: rs.fn(),
     getSessionMetrics: rs.fn(),
     listRomeSessionMessages: rs.fn(),
     listRomeSessions: rs.fn(),
     listSessionTurns: rs.fn(),
     openTurnStream: rs.fn(),
+    postSessionTurn: rs.fn(),
   };
 });
 
@@ -140,6 +164,11 @@ beforeEach(() => {
       status: "running",
     },
   ]);
+  rs.mocked(getSession).mockResolvedValue(null);
+  rs.mocked(postSessionTurn).mockResolvedValue({
+    ok: true,
+    data: { turnId: "follow-up-turn", sessionId: "feedback-fork-session", startedAt: "" },
+  });
 });
 
 afterEach(() => {
@@ -257,6 +286,164 @@ describe("SessionsPage live fork details", () => {
     expect(details?.hasAttribute("open")).toBe(true);
     expect(screen.getByText("feedback-fork-session")).toBeTruthy();
     expect(screen.getAllByText("original-chat").length).toBeGreaterThan(0);
+  });
+
+  // The default openTurnStream mock resolves to undefined, so the live-turn
+  // effect bails before its completion branch. Anything that needs the turn to
+  // *finish* has to hand it a real stream.
+  function mockFinishableTurnStream() {
+    let controller: ReadableStreamDefaultController<Uint8Array> | undefined;
+    rs.mocked(openTurnStream).mockImplementation(async () => {
+      const body = new ReadableStream<Uint8Array>({
+        start(c) {
+          controller = c;
+        },
+      });
+      return new Response(body);
+    });
+    return () =>
+      act(() => {
+        controller?.enqueue(new TextEncoder().encode('event: done\ndata: {"success":true}\n\n'));
+        controller?.close();
+      });
+  }
+
+  it("shows no composer on a fork the backend will not continue", async () => {
+    rs.mocked(listSessionTurns).mockResolvedValue([]);
+
+    renderDetail();
+
+    await screen.findByTestId("session-messages");
+    expect(screen.queryByTestId("side-chat-composer")).toBeNull();
+  });
+
+  it("re-probes continuability once the first branch answer lands", async () => {
+    // The view opens while the fork is still running, so the first probe
+    // legitimately 404s. The composer must appear when the turn ends.
+    rs.mocked(getSession)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValue({ id: "feedback-fork-session" } as never);
+    const finish = mockFinishableTurnStream();
+
+    renderDetail();
+    await screen.findByTestId("session-messages");
+    expect(screen.queryByTestId("side-chat-composer")).toBeNull();
+
+    await waitFor(() => expect(openTurnStream).toHaveBeenCalled());
+    finish();
+
+    expect(await screen.findByTestId("side-chat-composer")).toBeTruthy();
+  });
+
+  it("sends a follow-up, refreshes the transcript, and re-attaches the live turn", async () => {
+    rs.mocked(getSession).mockResolvedValue({ id: "feedback-fork-session" } as never);
+    rs.mocked(listSessionTurns).mockResolvedValue([]);
+
+    renderDetail();
+
+    const composer = await screen.findByTestId("side-chat-composer");
+    const reloads = rs.mocked(listRomeSessionMessages).mock.calls.length;
+    const turnLookups = rs.mocked(listSessionTurns).mock.calls.length;
+    await act(async () => {
+      fireEvent.click(composer);
+    });
+
+    await waitFor(() => {
+      expect(postSessionTurn).toHaveBeenCalledWith("feedback-fork-session", expect.any(FormData));
+    });
+    const form = rs.mocked(postSessionTurn).mock.calls[0][1];
+    expect(form.get("text")).toBe("And the failure case?");
+    // The guardian's own message shows before the reply does.
+    await waitFor(() => {
+      expect(rs.mocked(listRomeSessionMessages).mock.calls.length).toBeGreaterThan(reloads);
+    });
+    await waitFor(() => {
+      expect(rs.mocked(listSessionTurns).mock.calls.length).toBeGreaterThan(turnLookups);
+    });
+  });
+
+  it("attaches to an accepted follow-up that is still queued", async () => {
+    // The turns endpoint reports a turn as `queued` until it becomes the
+    // session's current turn. Skipping those loses the reply: the turn runs
+    // server-side and nothing ever opens its stream.
+    rs.mocked(getSession).mockResolvedValue({ id: "feedback-fork-session" } as never);
+    rs.mocked(listSessionTurns).mockResolvedValue([
+      {
+        turnId: "queued-follow-up",
+        streamId: "queued-follow-up",
+        startedAt: "2026-09-01T00:00:00.000Z",
+        status: "queued",
+      },
+    ]);
+    mockFinishableTurnStream();
+
+    renderDetail();
+
+    await waitFor(() => {
+      expect(openTurnStream).toHaveBeenCalledWith("queued-follow-up", expect.any(AbortSignal));
+    });
+  });
+
+  it("keeps the composer through a transient probe failure", async () => {
+    // `getSession` returns null only on 404. Anything else — a 500, a network
+    // blip — throws, and treating that as "not continuable" would drop the
+    // composer off a live branch until the next probe.
+    rs.mocked(listSessionTurns).mockResolvedValue([]);
+    rs.mocked(getSession)
+      .mockResolvedValueOnce({ id: "feedback-fork-session" } as never)
+      .mockRejectedValue(new Error("boom"));
+
+    renderDetail();
+
+    const composer = await screen.findByTestId("side-chat-composer");
+    await act(async () => {
+      fireEvent.click(composer);
+    });
+
+    expect(screen.getByTestId("side-chat-composer")).toBeTruthy();
+  });
+
+  it("releases the composer when the live-turn stream cannot be attached", async () => {
+    // The turn is accepted and running; only the attach failed. Leaving the
+    // composer disabled would strand the branch until the view remounts.
+    rs.mocked(getSession).mockResolvedValue({ id: "feedback-fork-session" } as never);
+    rs.mocked(openTurnStream).mockResolvedValue(new Response(null, { status: 502 }));
+
+    renderDetail();
+
+    const composer = await screen.findByTestId("side-chat-composer");
+    await waitFor(() => expect(openTurnStream).toHaveBeenCalled());
+    await waitFor(() => expect((composer as HTMLButtonElement).disabled).toBe(false));
+  });
+
+  it("refuses a second send while the first is still in flight", async () => {
+    // This view follows only the first running turn, so a queued second turn
+    // would run server-side and never render.
+    rs.mocked(getSession).mockResolvedValue({ id: "feedback-fork-session" } as never);
+    rs.mocked(listSessionTurns).mockResolvedValue([]);
+    let release: (() => void) | undefined;
+    rs.mocked(postSessionTurn).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          release = () =>
+            resolve({
+              ok: true,
+              data: { turnId: "follow-up-turn", sessionId: "feedback-fork-session", startedAt: "" },
+            });
+        }),
+    );
+
+    renderDetail();
+
+    const composer = await screen.findByTestId("side-chat-composer");
+    fireEvent.click(composer);
+    await waitFor(() => expect((composer as HTMLButtonElement).disabled).toBe(true));
+    fireEvent.click(composer);
+
+    expect(postSessionTurn).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      release?.();
+    });
   });
 });
 

@@ -718,6 +718,146 @@ describe("AgentRunner", () => {
       expect(row).toMatchObject({ model: MODEL_MAP.large });
     });
 
+    it("leaves a resumable thread behind for a fork that ran on its own provider thread", async () => {
+      let forkMode: string | undefined;
+      const messages = await runForkAgainstLiveSession(
+        () =>
+          forkSessionStub({
+            providerThreadId: "fork-provider-thread",
+            events: (async function* (): AsyncIterable<AgentMessage> {
+              yield { type: "result", content: "Fork answer" };
+            })(),
+          }),
+        {
+          sourceProviderThreadId: "source-provider-thread",
+          onFork: (params) => {
+            forkMode = params.mode;
+          },
+          fork: { persistThreadKey: (id: string) => `webchat:${id}` },
+        },
+      );
+
+      // A fork that wants to be continuable must ask for a thread of its own.
+      expect(forkMode).toBe("thread");
+      const start = messages.find((m) => m.type === "turn_start") as { sessionId: string };
+      const repo = new SessionsRepository(testDb.db);
+      await expect(
+        repo.findByChannelThreadKey(`webchat:${start.sessionId}`),
+      ).resolves.toMatchObject({
+        id: start.sessionId,
+        provider: "mock",
+        providerThreadId: "fork-provider-thread",
+        model: "mock-model",
+        status: "active",
+      });
+      // A fork never rewrites its parent: the source keeps its own pin.
+      await expect(repo.findByChannelThreadKey("webchat:fork-1")).resolves.toMatchObject({
+        model: MODEL_MAP.large,
+      });
+    });
+
+    it("withholds defer from a continuable fork's own turn", async () => {
+      // The first branch turn still carries the source's thread context, so a
+      // wake-up scheduled here would resume the fork session and deliver into
+      // the parent transcript. A one-shot fork keeps defer: it cannot be
+      // resumed at all, so nothing can answer into the wrong place.
+      const openParams: ModelSessionForkOpenParams[] = [];
+      const runFork = (fork: Partial<ForkRunParams>) =>
+        runForkAgainstLiveSession(
+          (params) => {
+            openParams.push(params);
+            return forkSessionStub({
+              providerThreadId: "fork-provider-thread",
+              events: (async function* (): AsyncIterable<AgentMessage> {
+                yield { type: "result", content: "Fork answer" };
+              })(),
+            });
+          },
+          { sourceProviderThreadId: "source-provider-thread", fork: { mode: "exact", ...fork } },
+        );
+
+      await runFork({ persistThreadKey: (id: string) => `webchat:${id}` });
+      await runFork({});
+
+      expect(openParams).toHaveLength(2);
+      expect(openParams[0].executeDefer).toBeUndefined();
+      expect(openParams[1].executeDefer).toBeDefined();
+    });
+
+    it("stays one-shot when the fork borrowed the source's thread", async () => {
+      // Codex's borrowed exact fork reports the SOURCE thread id: it runs the
+      // turn in the parent conversation and rolls it back out. Persisting that
+      // would append every follow-up to the parent chat.
+      const messages = await runForkAgainstLiveSession(
+        () =>
+          forkSessionStub({
+            providerThreadId: "shared-source-thread",
+            events: (async function* (): AsyncIterable<AgentMessage> {
+              yield { type: "result", content: "Fork answer" };
+            })(),
+          }),
+        {
+          sourceProviderThreadId: "shared-source-thread",
+          fork: { persistThreadKey: (id: string) => `webchat:${id}` },
+        },
+      );
+
+      const start = messages.find((m) => m.type === "turn_start") as { sessionId: string };
+      // findByChannelThreadKey returns null for a miss (SessionManager's
+      // findReusableSession, which wraps it, returns undefined — don't mix up).
+      await expect(
+        new SessionsRepository(testDb.db).findByChannelThreadKey(`webchat:${start.sessionId}`),
+      ).resolves.toBeNull();
+    });
+
+    it("stays one-shot and ephemeral with no thread key, no provider thread, or a failed fork", async () => {
+      let defaultMode: string | undefined;
+      const noKey = await runForkAgainstLiveSession(
+        () =>
+          forkSessionStub({
+            providerThreadId: "fork-provider-thread",
+            events: (async function* (): AsyncIterable<AgentMessage> {
+              yield { type: "result", content: "Fork answer" };
+            })(),
+          }),
+        {
+          onFork: (params) => {
+            defaultMode = params.mode;
+          },
+        },
+      );
+      const noThread = await runForkAgainstLiveSession(
+        () =>
+          forkSessionStub({
+            events: (async function* (): AsyncIterable<AgentMessage> {
+              yield { type: "result", content: "Fork answer" };
+            })(),
+          }),
+        { fork: { persistThreadKey: (id: string) => `webchat:${id}` } },
+      );
+      const failed = await runForkAgainstLiveSession(
+        () =>
+          forkSessionStub({
+            providerThreadId: "fork-provider-thread",
+            events: (async function* (): AsyncIterable<AgentMessage> {
+              yield { type: "error", error: "the branch blew up" };
+            })(),
+          }),
+        {
+          sourceProviderThreadId: "source-provider-thread",
+          fork: { persistThreadKey: (id: string) => `webchat:${id}` },
+        },
+      );
+
+      // Every other fork in Rome (recap, feedback) keeps today's cheap path.
+      expect(defaultMode).toBe("ephemeral");
+      const repo = new SessionsRepository(testDb.db);
+      for (const messages of [noKey, noThread, failed]) {
+        const start = messages.find((m) => m.type === "turn_start") as { sessionId: string };
+        await expect(repo.findByChannelThreadKey(`webchat:${start.sessionId}`)).resolves.toBeNull();
+      }
+    });
+
     it("synthesizes error + turn_end when the fork stream ends without a terminal", async () => {
       const messages = await runForkAgainstLiveSession(() =>
         forkSessionStub({
@@ -1188,6 +1328,49 @@ describe("AgentRunner", () => {
       });
       expect((actionResult as { pendingInteraction?: boolean }).pendingInteraction).toBeUndefined();
       expect((actionResult as { message: string }).message).toContain("Pick a time slot");
+    });
+
+    it("takes the non-interactive fallback for action results when opened detached", async () => {
+      // A side chat's follow-up runs on a `webchat:` key, so the surface check
+      // would otherwise say it can mount UI — but it renders in the read-only
+      // Sessions detail view, where nobody can answer a card.
+      registerDemoAction(async () => ({
+        status: "pending_interaction",
+        interaction: {
+          appId: "demo-app",
+          promptText: "Pick a time slot",
+          render: { kind: "inline", componentId: "slot-picker" },
+        },
+      }));
+
+      let actionResult: unknown;
+      const runImpl = async function* (
+        params: import("./agent-runner.js").ModelRunParams,
+      ): AsyncIterable<AgentMessage> {
+        actionResult = await params.executeAction("demo_action", {});
+        yield { type: "result", content: "done" };
+      };
+      const provider: ModelProvider = {
+        id: "mock",
+        displayName: "mock-detached",
+        builtinTools: new Set<string>(),
+        openSession: makeOpenSessionFromRun("mock", runImpl),
+      };
+      const manager = createAgentSessionManager(
+        managerDeps(createTestModelResolver({ providers: [provider] })),
+      );
+      const session = await manager.acquire(
+        { agentName: "test-main", channelThreadKey: "webchat:detached-follow-up" },
+        { interactiveSurfaceDetached: true },
+      );
+      await collectMessages(session.sendTurn({ prompt: "continue" }).events);
+
+      expect(actionResult).toMatchObject({
+        message: expect.stringContaining("cannot render an interactive UI"),
+      });
+      expect((actionResult as { pendingInteraction?: boolean }).pendingInteraction).toBeUndefined();
+
+      await session.close("shutdown");
     });
 
     it("exact forks of a handback session reject submit_output instead of claiming guardian review", async () => {
