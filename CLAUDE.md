@@ -13,7 +13,7 @@ A pnpm monorepo. All code lives under `packages/*` and `rome_apps/*`. Runtime de
 ## Playbook
 
 - Before opening a PR, read [`docs/authoring/prs.md`](docs/authoring/prs.md).
-- Before setting up, running, or verifying the repository, follow [`docs/development.md`](docs/development.md).
+- Before setting up, running, or verifying the repository, follow [`DEVELOPMENT.md`](DEVELOPMENT.md).
 - Before explaining a concept or asserting how a surface behaves, check [`docs/`](docs/README.md) and link instead of re-deriving.
 - Before building or editing an app, read [`rome_apps/CLAUDE.md`](rome_apps/CLAUDE.md).
 - When writing prose (docs, PR text), follow [`docs/authoring/WRITING.md`](docs/authoring/WRITING.md).

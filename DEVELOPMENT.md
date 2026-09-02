@@ -1,75 +1,92 @@
-# Development Setup
+# Development
+
+This is the shared development guide for contributors and agents.
 
 ## Prerequisites
 
-- [OrbStack](https://orbstack.dev/) or Docker Desktop — Rome and its observability stack run as containers.
-- [Nix](https://nixos.org/) + [direnv](https://direnv.net/) — manage host-side Node.js + pnpm for tools that run outside the container (e.g., `pnpm typecheck` on the host, editor tooling).
+The preferred environment is the repository's Nix development shell. It pins
+the Node.js and pnpm versions used by the project. Rome and its observability
+stack also require OrbStack or Docker Desktop with Docker Compose.
 
-## First-time setup
+Without Nix, install Node.js 24, Corepack, pnpm 11.6, Docker, and Docker
+Compose. The non-Nix setup can run the project, but contributors must keep its
+tool versions aligned with `package.json`.
 
-1. Install OrbStack (or Docker Desktop):
+## Set up the checkout
 
-```bash
-brew install --cask orbstack
-```
-
-2. Install Nix (Determinate Systems installer):
-
-```bash
-curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
-```
-
-3. Install and configure direnv:
+Enter the development shell before installing dependencies so native modules
+are built for the correct Node.js version:
 
 ```bash
-brew install direnv
-echo 'eval "$(direnv hook zsh)"' >> ~/.zshrc
-source ~/.zshrc
+nix develop
+pnpm install
+pnpm dev:all
 ```
 
-4. (Optional) Auto-allow direnv for this repo and its worktrees. Add to `~/.config/direnv/direnv.toml`:
+The repository also includes an `.envrc` for direnv users. After installing
+direnv, `direnv allow` enters the same Nix environment automatically.
 
-```toml
-[whitelist]
-prefix = ["/path/to/rome-internal"]
-```
-
-5. Set up the project:
+Without Nix, activate the repository's pnpm version before installing:
 
 ```bash
-cd rome-internal
-direnv allow          # activates Nix shell (provides node, pnpm)
-pnpm install          # install JS dependencies on the host (used by editor tooling)
+corepack enable
+corepack prepare pnpm@11.6.0 --activate
+pnpm install
+pnpm dev:all
 ```
 
-6. Start developing:
+## Use the development stack
+
+`pnpm dev:all` is the primary development entry point. It starts:
+
+- the worktree's containerized Rome instance with `tsx --watch`;
+- the Rsbuild development server;
+- the shared Traefik router; and
+- the shared rome-obs stack.
+
+The command exits after the stack is ready and prints the dashboard, logging,
+observability, and shutdown commands. It connects to `https://romeos.cc` by
+default. Set `ROME_DEV_PANTHEON_ORIGIN` to use another Rome Cloud deployment.
+
+Open the dashboard URL from the banner. A new instance has no default account
+and starts in the browser onboarding flow.
+
+Watched source files update without a restart. After changing dependencies,
+container configuration, or container environment variables, run
+`pnpm dev:all` again. The script reconciles the containers and installs the
+current lockfile inside the Rome container.
+
+Run commands inside that container with `./r`:
 
 ```bash
-pnpm dev:all          # Rome container + obs singleton + Traefik singleton
+./r pnpm test
+./r bash
 ```
 
-## Running processes
-
-`pnpm dev:all` is the single entry point. It calls `scripts/dev-up.sh`, which:
-
-- Ensures the `rome-traefik` singleton is up (shared across worktrees).
-- Ensures the `rome-obs` singleton is up (OTLP + ClickHouse + HyperDX UI; shared across worktrees).
-- Builds the Rome dev image and brings up the worktree's Compose project.
-- Writes `.obs/env` with discovery URLs and attaches to `docker compose logs`.
-
-For other flows:
+Other focused development commands are:
 
 ```bash
-pnpm dev:desktop      # Electron shell, host-native (desktop can't run in Linux container yet)
-pnpm dev:cdp          # CDP client
+pnpm start:web:mock # packages/web with mock data
+pnpm dev:desktop    # host-native Electron shell
+pnpm dev:cdp        # CDP client
 ```
 
-To run a command inside the worktree's Rome container:
+Use `pnpm start` and `pnpm start:web` only to debug host processes. They skip
+the production-shaped container wiring and do not share state with
+`pnpm dev:all`.
 
-```bash
-./r pnpm test         # any command: ./r <cmd>
-./r bash              # interactive shell
-```
+## Verify a change
+
+Run the general checks in this order:
+
+1. `pnpm typecheck`
+2. `pnpm test:unit`
+3. `pnpm dev:all`
+4. Confirm the Rome container logs contain `Rome started`.
+5. For UI changes, exercise the changed flow in a browser.
+
+Run the narrower lint command for the files changed by the work. Root scripts
+include `pnpm lint:agents`, `pnpm lint:prose`, and `pnpm lint:sh`.
 
 ## Test environment
 
@@ -77,76 +94,82 @@ Package test scripts run through `scripts/test-env.sh`, which starts the test
 process with `env -i`. Runtime configuration and credentials from the invoking
 shell therefore do not silently affect tests.
 
-The wrapper preserves only `PATH`, `HOME`, and the platform temporary-directory
+The wrapper preserves only `PATH`, `HOME`, and platform temporary-directory
 variables. It fixes `NODE_ENV=test`, `TZ=UTC`, and the locale to `C`. It also
-preserves the presence of `CI` and `GITHUB_ACTIONS`, which test runners use to reject
-focused tests and emit workflow annotations. Non-interactive output is fixed to
-no-color mode; interactive watch runs retain their terminal presentation.
-Additions to this allowlist should be explicit and covered by
-`scripts/test-env.test.ts`; application configuration and secrets must not be
-added.
+preserves the presence of `CI` and `GITHUB_ACTIONS`, which test runners use to
+reject focused tests and emit workflow annotations. Non-interactive output is
+fixed to no-color mode; interactive watch runs retain terminal presentation.
 
-This isolates process environment variables, not the filesystem: `HOME` remains
-the developer's real home so local package tooling continues to work. Tests that
-read or write home-derived state must redirect it to a temporary directory, as
-the core `createTestRome` harness does.
+Additions to the allowlist must be explicit and covered by
+`scripts/test-env.test.ts`. Do not add application configuration or secrets.
+Tests that read or write home-derived state must redirect it to a temporary
+directory, as the core `createTestRome` harness does.
 
-To provide configuration to a deliberately environment-backed test, set it
-inside the scrubbed process rather than on the outer `pnpm` command:
+Set configuration for a deliberately environment-backed test inside the
+scrubbed process:
 
 ```bash
 scripts/test-env.sh env TEST_DATABASE_URL=postgres://... pnpm exec rstest -c packages/core/rstest.config.ts path/to/example.integration.test.ts
 ```
 
-The launcher requires a POSIX shell and supports the project's macOS and Linux
-development environments. Native Windows development is not supported; use WSL
-or the development container.
+The launcher supports the project's macOS and Linux environments and requires
+a POSIX shell. On Windows, use WSL or the development container.
 
 ## Per-worktree state
 
-`pnpm dev:all` gives each worktree a physically separate host directory
-backing the container's `~/.rome`:
+`pnpm dev:all` gives each worktree a separate host directory backing the
+container's `~/.rome`:
 
-```
-host:      ~/.rome-worktrees/<slug>/   (per worktree, slug-keyed)
-container: /rome-home/.rome/           (always; profile = "default")
-```
-
-The compose bind-mount routes one to the other. Rome's code is unaware
-anything is per-worktree — all the slug logic lives in
-`scripts/dev-up.sh` and `compose.dev.yml`. This satisfies the
-single-tenant invariant (see `docs/architecture/process.md`): lockfile, SQLite DB,
-app data, memory, and runtime-status are per-worktree on disk, so
-sibling worktrees cannot race on shared state.
-
-Reset a worktree:
-
-```bash
-docker compose -f compose.dev.yml -p "$(scripts/worktree-slug.sh)" down -v
-rm -rf ~/.rome-worktrees/<slug>
+```text
+host:      ~/.rome-worktrees/<slug>/
+container: /rome-home/.rome/
 ```
 
-`git worktree remove` without first running `down -v` leaves an orphan
-host dir, but it cannot pollute any other worktree.
+The bind mount keeps each worktree's lockfile, SQLite database, app data,
+memory, and runtime status isolated. The slug logic lives in
+`scripts/dev-up.sh` and `compose.dev.yml`; Rome itself still sees its normal
+single-tenant paths. See `docs/architecture/process.md` for the process
+invariant.
 
-**Gotcha:** bare-metal `pnpm start` (host Node, no container) still
-writes to `~/.rome/<profile>/`, so it does *not* share state with
-`pnpm dev:all`. Mixing the two paths against the same source tree
-produces two separate sets of state. `pnpm dev:all` is canonical;
-`pnpm start` is for debugging the host process.
+Use the stop or reset commands printed by `pnpm dev:all`. Remove a worktree's
+containers and volumes before deleting the Git worktree so its state directory
+does not become orphaned.
 
 ## Logging
 
-The backend outputs structured JSON logs to stdout. Today Rome wires only
-an OTEL **trace** exporter; the log bridge into rome-obs is not live yet, so
-`otel_logs` in ClickHouse stays empty (see `docs/observability/schema.md`).
-Until the bridge lands, tail container stdout:
+The backend writes structured JSON logs to stdout. Rome currently exports OTEL
+traces, but the log bridge into rome-obs is not live, so `otel_logs` in
+ClickHouse remains empty. Until that bridge exists, tail the Rome container:
 
 ```bash
 docker compose -f compose.dev.yml -p "$(scripts/worktree-slug.sh)" logs -f rome | jq
 ```
 
-Traces (per-action spans via `action:<name>`, plus HTTP spans from the
-auto-instrumentation) are queryable in HyperDX at
-`http://obs.rome.localhost:3000` or via ClickHouse SQL — see
-`docs/observability/schema.md`.
+Traces are available in HyperDX at `http://obs.rome.localhost:3000` and through
+ClickHouse SQL. See `docs/observability/schema.md`.
+
+## Troubleshooting
+
+### Native modules fail after entering the Nix shell
+
+A dependency tree installed under another Node.js version can pass its own
+install checks and then fail inside the development shell. Enter `nix develop`
+and rebuild the native modules:
+
+```bash
+pnpm rebuild -r
+```
+
+Running `pnpm install` alone does not repair an up-to-date tree.
+
+### Biome does not run on NixOS
+
+Use the `biome` binary from `nix develop` on the host. The npm binary does not
+run directly on NixOS. `pnpm lint` remains available in CI and the development
+container.
+
+### The stack does not become ready
+
+Use the log command printed by `pnpm dev:all`. The script waits for both
+`/api/health` and `/api/bootstrap`; a readiness failure names the Rome
+container to inspect.

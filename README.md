@@ -99,7 +99,7 @@ pnpm install
 pnpm dev:all
 ```
 
-See the [development guide](docs/development.md) for the non-Nix setup,
+See the [development guide](DEVELOPMENT.md) for the non-Nix setup,
 day-to-day workflow, container commands, validation order, and troubleshooting.
 
 ## Rome Apps

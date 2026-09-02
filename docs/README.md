@@ -9,7 +9,7 @@ Durable design documentation for Rome. For the rules used when writing docs, see
 - [`architecture/`](architecture/index.md) — the components on each surface and the invariants binding them.
 - `adrs/` — records of standing decisions, one file per decision keyed by filename. [authoring/adrs.md](authoring/adrs.md) defines the family.
 - [`authoring/`](authoring/authoring.md) — the rulebook for each content type (docs, PRs, issues, ADRs, design tokens, code comments, CLAUDE.md files) plus the cross-cutting prose rules.
-- [`development.md`](development.md) — setup, the daily development loop, validation, and troubleshooting for contributors and agents.
+- [`DEVELOPMENT.md`](../DEVELOPMENT.md) — setup, the daily development loop, validation, and troubleshooting for contributors and agents.
 - [`northstars/`](northstars/CLAUDE.md) — ideal-state docs, one per area: what should be true, checked against the codebase by the `loop-reconcile` skill.
 - [`ui/`](ui/CLAUDE.md) — the design token docs, one directory per kind of token. [authoring/ui-tokens.md](authoring/ui-tokens.md) holds the rules they share.
 
