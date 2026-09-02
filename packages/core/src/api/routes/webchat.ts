@@ -1172,7 +1172,7 @@ export function createWebchatRuntime(deps: ApiDeps): { routes: Hono; runtime: We
      * fork behind turn feedback is a background errand and stays one-shot.
      */
     continuable: boolean;
-  }): Promise<ForkSessionPlacement | null> => {
+  }): Promise<ForkSessionPlacement | "no_turn_checkpoint" | null> => {
     if (!deps.agentRunner.runForked) {
       log.warn("turn fork unavailable: runner cannot fork", {
         sessionId: input.session.id,
@@ -1254,7 +1254,10 @@ export function createWebchatRuntime(deps: ApiDeps): { routes: Hono; runtime: We
           turnId: input.turnId,
           label: input.label,
         });
-        return null;
+        // Distinguishable so the branch route can tell the user this turn has
+        // no branch point (a promoted side chat's own first answer is the
+        // common case) rather than implying a transient failure.
+        return "no_turn_checkpoint";
       }
       sourceCheckpoint = {
         providerId: storedCheckpoint.provider,
@@ -1317,8 +1320,47 @@ export function createWebchatRuntime(deps: ApiDeps): { routes: Hono; runtime: We
     const forkSessionId = first.value.sessionId;
     const forkTurnId = first.value.turnId;
     void (async () => {
-      while (!(await iterator.next()).done) {
-        // AgentRunner persists every fork message; this caller only has to drain.
+      let finalStatus: string | undefined;
+      let next = await iterator.next();
+      while (!next.done) {
+        // AgentRunner persists every fork message; this caller only watches
+        // for the terminal turn_end.
+        if (next.value.type === "turn_end") finalStatus = next.value.status;
+        next = await iterator.next();
+      }
+      // A branch that completed on its own provider thread stops being
+      // special. The resumable row is the source of truth: persistForkThread
+      // already declined errored turns and borrowed threads, and promoting
+      // without it would hand the next message a fresh provider thread and
+      // silently drop the branched context.
+      if (input.continuable && finalStatus === "completed") {
+        const row = await deps.sessionManager.findReusableSession(
+          buildWebchatChannelThreadKey(forkSessionId, null),
+          agentName,
+        );
+        if (row?.providerThreadId) {
+          const current = await deps.webchatRepo.getSession(forkSessionId);
+          // Retitle BEFORE the flip: the sidebar refetches the moment any
+          // observer sees type "webchat", and nothing re-notifies it when a
+          // late title lands — so the raw `branch: …` name must already be
+          // gone when the type changes. The deterministic fallback (the
+          // branch prompt, truncated) is written synchronously; the generated
+          // title replaces it afterwards unless the guardian renamed the chat
+          // meanwhile. An ordinary chat is titled from its first user
+          // message; the branch's is the prompt typed into the popover.
+          const fallbackTitle = fallbackConversationTitle(input.prompt);
+          if (current && fallbackTitle) {
+            await deps.webchatRepo.updateSessionNameIfCurrent(
+              forkSessionId,
+              current.name,
+              fallbackTitle,
+            );
+          }
+          await deps.webchatRepo.promoteForkToChat(forkSessionId);
+          if (current && fallbackTitle) {
+            void generateAndPersistConversationTitle(forkSessionId, fallbackTitle, input.prompt);
+          }
+        }
       }
     })().catch((err) => {
       log.warn("turn fork failed", {
@@ -1375,7 +1417,7 @@ export function createWebchatRuntime(deps: ApiDeps): { routes: Hono; runtime: We
     turnId: string;
     rating: "positive" | "negative";
     comment: string;
-  }): Promise<ForkSessionPlacement | null> => {
+  }): Promise<ForkSessionPlacement | "no_turn_checkpoint" | null> => {
     // The fork inherits the source transcript at its current head, which may
     // have moved past the rated turn (feedback stays available on older
     // turns). Reconstruct the rated exchange from the persisted transcript
@@ -2437,6 +2479,11 @@ export function createWebchatRuntime(deps: ApiDeps): { routes: Hono; runtime: We
       initiator: "system:turn-branch",
       continuable: true,
     });
+    if (placement === "no_turn_checkpoint") {
+      // Not transient: this turn persisted no provider checkpoint to fork
+      // from. A follow-up answer in the same conversation is branchable.
+      return c.json({ error: "This answer has no branch point", code: "turn_not_branchable" }, 409);
+    }
     if (!placement) {
       return c.json({ error: "Couldn't start side chat from this conversation" }, 409);
     }
@@ -2552,10 +2599,13 @@ export function createWebchatRuntime(deps: ApiDeps): { routes: Hono; runtime: We
           comment,
         })
       : null;
+    // The learning fork is best-effort; a turn with no branch point (e.g. a
+    // promoted side chat's first answer) just skips it.
+    const processingPlacement = typeof processing === "string" ? null : processing;
 
     return c.json({
       feedback: formatFeedback(stored),
-      ...(processing ? { processing } : {}),
+      ...(processingPlacement ? { processing: processingPlacement } : {}),
     });
   });
 

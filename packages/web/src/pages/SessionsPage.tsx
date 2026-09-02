@@ -51,6 +51,7 @@ import {
   postSessionTurn,
   type ListRomeSessionsOptions,
 } from "@/lib/chat-api";
+import { emitSessionsChanged } from "@/lib/session-events";
 import { parseSSEEvents } from "@/lib/chat-sse";
 import { artifactLocalName } from "@/lib/artifact-name";
 import type {
@@ -1162,7 +1163,11 @@ function SessionDetailPage({ sessionId }: { sessionId: string }) {
 
   const probeContinuable = useCallback(
     async (sessionType: string | undefined) => {
-      if (sessionType !== "fork") {
+      // A fork may be continuable once its first answer persists a thread; an
+      // ordinary chat always is (the send routes accept it), which keeps the
+      // composer alive in the branch widget after promotion instead of
+      // forcing a hop to the full chat view. Everything else stays read-only.
+      if (sessionType !== "fork" && sessionType !== "webchat") {
         setContinuable(false);
         return;
       }
@@ -1268,6 +1273,34 @@ function SessionDetailPage({ sessionId }: { sessionId: string }) {
     }
     const controller = new AbortController();
     let cancelled = false;
+    // Both completion sites below share this: promotion happens server-side
+    // at the same completion, so refetch rather than trusting mount-time
+    // state. A promoted session comes back "webchat", which keeps the
+    // composer (an ordinary chat is continuable right here), surfaces
+    // "Open chat", fixes the badge, and is the sidebar's cue to pick the
+    // new chat up. A transient refetch failure keeps the current state
+    // rather than replacing a just-finished answer with an error card.
+    // The server's promotion usually wins the race against this refetch (a
+    // few local writes vs a network round trip); when it loses, one delayed
+    // retry keeps the sidebar from missing the promotion until an unrelated
+    // refresh.
+    const reconcileFork = async (attempt = 0): Promise<void> => {
+      let refreshed: RomeSessionDetail | null = null;
+      try {
+        refreshed = await getRomeSession(sessionId);
+      } catch {
+        // Transient — the retry, next completion, or navigation reconciles.
+      }
+      if (cancelled) return;
+      if (refreshed) setSession(refreshed);
+      void probeContinuable(refreshed?.type ?? session?.type);
+      if (refreshed?.type === "webchat") {
+        emitSessionsChanged();
+      } else if (attempt === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        if (!cancelled) await reconcileFork(1);
+      }
+    };
     void (async () => {
       const turns = await listSessionTurns(sessionId);
       // A turn is reported `queued` until it becomes the session's current
@@ -1287,7 +1320,11 @@ function SessionDetailPage({ sessionId }: { sessionId: string }) {
           // answer can finish between the mount probe (which 404s while it is
           // still running) and this lookup, and a failed listSessionTurns lands
           // here as well. Without it the composer would never appear.
-          void probeContinuable(session?.type);
+          if (session?.type !== "fork") {
+            void probeContinuable(session?.type);
+          } else {
+            await reconcileFork();
+          }
         }
         return;
       }
@@ -1364,7 +1401,11 @@ function SessionDetailPage({ sessionId }: { sessionId: string }) {
         setSending(false);
         // The branch's own first answer only writes its resumable row on
         // completion, and this view opened while that turn was still running.
-        void probeContinuable(session?.type);
+        if (session?.type !== "fork") {
+          void probeContinuable(session?.type);
+        } else {
+          await reconcileFork();
+        }
       }
     })().catch((err) => {
       if (!cancelled && (err as { name?: string }).name !== "AbortError") {
