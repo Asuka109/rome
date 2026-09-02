@@ -19,6 +19,7 @@ import { getConfiguredInstanceOrigin } from "./lib/rome-cloud-origin.js";
 import { reportBootVersion, commitBootVersion } from "./lib/boot-version-report.js";
 import { getBuildInfo } from "./build-info.js";
 import { initTelemetry, getTracer, shutdown as shutdownTelemetry } from "./telemetry.js";
+import type { ChatStopHandler } from "@rome-os/app-runtime";
 
 const log = createLogger("startup");
 
@@ -93,6 +94,7 @@ import { createAgentSessionManager } from "./core/agent-session.js";
 import { createAgentLifecycleDispatcher } from "./core/agent-lifecycle.js";
 import { createTurnMiddlewareChain } from "./core/turn-middleware.js";
 import { AgentSessionBridge } from "./core/agent-session-bridge.js";
+import { stopActiveConversationTurn } from "./core/chat-stop.js";
 import { CapabilityDiscovery } from "./core/capability-discovery.js";
 import { EventBus } from "./events/event-bus.js";
 import { EventService } from "./events/event-service.js";
@@ -624,6 +626,12 @@ async function main() {
 
   const activeSubagentRegistry = createActiveSubagentRegistry();
   const agentTurnStreamRegistry = createAgentTurnStreamRegistry();
+  const chatStop: ChatStopHandler = (input) =>
+    stopActiveConversationTurn(input, {
+      turns: agentTurnStreamRegistry,
+      isGuardian: async (service, senderId) =>
+        (await personMappingRepo.findByChannelUser(service, senderId))?.bondLevel === "guardian",
+    });
   const subagentExecutionService = createSubagentExecutionService({
     webchatRepo,
     activeRegistry: activeSubagentRegistry,
@@ -656,6 +664,7 @@ async function main() {
     agentSessionManager,
     webchatRepo,
     actionWorkerCoordinator,
+    agentTurnStreamRegistry,
   );
   actionEngine.setAgentSessionBridge(agentSessionBridge);
 
@@ -942,6 +951,7 @@ async function main() {
   registerBuiltinConnections(connectionRegistry, {
     settingsRepo,
     conversationSettings,
+    chatStop,
     personMappingRepo,
     webchatRepo,
     whatsAppSyncSink: whatsAppStoreRepo,
@@ -980,6 +990,7 @@ async function main() {
         actionEngine,
         talkRouter,
         conversationSettings,
+        chatStop,
       });
       if (loadedHook) {
         messageHook = loadedHook;
@@ -1014,7 +1025,7 @@ async function main() {
   const reloadChannelMessageHook = messageHandlerRegistered
     ? createChannelMessageHookReloader({
         catalog: appCatalog,
-        deps: { actionEngine, talkRouter, conversationSettings },
+        deps: { actionEngine, talkRouter, conversationSettings, chatStop },
         getCurrent: () => messageHook,
         setCurrent: (hook) => {
           messageHook = hook;
