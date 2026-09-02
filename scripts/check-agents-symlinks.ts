@@ -17,6 +17,8 @@ import { fileURLToPath } from "node:url";
 
 const LINK_TARGET = "CLAUDE.md";
 const SYMLINK_MODE = "120000";
+const CANONICAL_SKILLS_ROOT = ".agents/skills";
+const CLAUDE_SKILLS_ROOT = ".claude/skills";
 /**
  * The git prefix every suggested command carries: `--` ends option parsing but
  * not pathspec magic, so `git add -- 'star*dir/AGENTS.md'` would also stage a
@@ -249,11 +251,82 @@ export function lintAgentsSymlinks(cwd: string = process.cwd()): LintResult {
   return { checked: claudeFiles.length, findings };
 }
 
+function projectedSkillFinding(root: string, skill: string): string | null {
+  const link = `${CLAUDE_SKILLS_ROOT}/${skill}`;
+  const target = `../../${CANONICAL_SKILLS_ROOT}/${skill}`;
+  const entry = readIndexEntry(root, link);
+
+  if (entry) {
+    if (entry.stage !== "0") return `${link} has unresolved merge stages`;
+    if (entry.mode !== SYMLINK_MODE) return `${link} is committed as a regular file or directory`;
+    const expectedSha = git(root, ["hash-object", "--stdin"], target).toString("utf8").trim();
+    if (entry.sha === expectedSha) return null;
+    const actual = git(root, ["cat-file", "blob", entry.sha]).toString("utf8");
+    return `${link} points to ${JSON.stringify(actual)}, expected ${JSON.stringify(target)}`;
+  }
+
+  const onDisk = inspect(path.join(root, link));
+  if (onDisk.kind === "symlink") {
+    if (onDisk.target !== target) {
+      return `${link} points to ${JSON.stringify(onDisk.target)}, expected ${JSON.stringify(target)}`;
+    }
+    return `${link} is not tracked by git`;
+  }
+  if (onDisk.kind === "directory") return `${link} is a directory, not a compatibility symlink`;
+  if (onDisk.kind === "other") return `${link} is a regular file, not a compatibility symlink`;
+  return `${link} is missing`;
+}
+
+/** Checks that Claude sees exactly the canonical project skills through links. */
+export function lintSkillSymlinks(cwd: string = process.cwd()): LintResult {
+  const root = git(cwd, ["rev-parse", "--show-toplevel"]).toString("utf8").trim();
+  const listing = run(root, [
+    "ls-files",
+    "-z",
+    "--cached",
+    "--others",
+    "--exclude-standard",
+    "--",
+    CANONICAL_SKILLS_ROOT,
+    CLAUDE_SKILLS_ROOT,
+  ]);
+  if (listing.stderr) {
+    throw new LintEnvironmentError(`could not enumerate project skills: ${listing.stderr}`);
+  }
+
+  const files = [...new Set(splitNul(listing.stdout))];
+  const canonical = new Set<string>();
+  const claude = new Set<string>();
+  for (const file of files) {
+    const canonicalMatch = file.match(/^\.agents\/skills\/([^/]+)\/SKILL\.md$/);
+    if (canonicalMatch) canonical.add(canonicalMatch[1]);
+    const claudeMatch = file.match(/^\.claude\/skills\/([^/]+)(?:\/|$)/);
+    if (claudeMatch) claude.add(claudeMatch[1]);
+  }
+
+  const findings: string[] = [];
+  for (const skill of [...canonical].sort()) {
+    const finding = projectedSkillFinding(root, skill);
+    if (finding) findings.push(finding);
+  }
+  for (const skill of [...claude].sort()) {
+    if (!canonical.has(skill)) {
+      findings.push(
+        `${CLAUDE_SKILLS_ROOT}/${skill} has no canonical ${CANONICAL_SKILLS_ROOT}/${skill}`,
+      );
+    }
+  }
+
+  return { checked: canonical.size, findings };
+}
+
 /** Prints the verdict. 0 clean, 1 findings, 2 the check could not run. */
 export function runCli(cwd: string = process.cwd()): number {
-  let result: LintResult;
+  let agents: LintResult;
+  let skills: LintResult;
   try {
-    result = lintAgentsSymlinks(cwd);
+    agents = lintAgentsSymlinks(cwd);
+    skills = lintSkillSymlinks(cwd);
   } catch (error) {
     // Exit 1 states that the invariant was checked and violated, so a crash
     // takes 2 like every other outcome where it was never checked at all.
@@ -268,21 +341,20 @@ export function runCli(cwd: string = process.cwd()): number {
 
   // A repository checked out at its root always has one. Zero means the
   // enumeration broke, and reporting success would hide the broken lint.
-  if (result.checked === 0) {
+  if (agents.checked === 0) {
     console.error("check-agents-symlinks: found no CLAUDE.md files at all — the check did not run");
     return 2;
   }
 
-  if (result.findings.length > 0) {
-    for (const finding of result.findings) console.error(`  - ${finding}`);
-    console.error(
-      `check-agents-symlinks: ${result.findings.length} problem(s) found — each line above names its fix`,
-    );
+  const findings = [...agents.findings, ...skills.findings];
+  if (findings.length > 0) {
+    for (const finding of findings) console.error(`  - ${finding}`);
+    console.error(`check-agents-symlinks: ${findings.length} problem(s) found`);
     return 1;
   }
 
   console.log(
-    `check-agents-symlinks: ${result.checked} CLAUDE.md file(s) all have an AGENTS.md symlink`,
+    `check-agents-symlinks: ${agents.checked} CLAUDE.md and ${skills.checked} project skill link(s) are valid`,
   );
   return 0;
 }

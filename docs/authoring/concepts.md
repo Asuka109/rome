@@ -28,7 +28,7 @@ Content banned from entries, regardless of the admission bar ([principles entrie
 <!-- vale Rome.History = NO -->
 - **History** — prior states and change narration ("previously", "no longer", "renamed from"). Entries state what is true now. Git history owns the past.
 <!-- vale Rome.History = YES -->
-- **Process steps** — how-to sequences and runbooks. Those are skills in [`.claude/skills/`](../../.claude/skills/), loaded when they fire. These docs carry only what must hold on every diff.
+- **Process steps** — how-to sequences and runbooks. Those are skills in [`.agents/skills/`](../../.agents/skills/), loaded when they fire. These docs carry only what must hold on every diff.
 
 ## Eviction
 

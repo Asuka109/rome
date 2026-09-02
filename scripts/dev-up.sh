@@ -7,7 +7,7 @@
 #   2. Ensure the observability singleton is running (rome-obs project).
 #   3. Build + up the worktree Compose project (Rome + browser sidecar).
 #   4. Run `pnpm install --frozen-lockfile` inside the rome container.
-#   5. Wait for /api/health + the configured Rome Cloud, seed the default guardian.
+#   5. Wait for /api/health, /api/bootstrap, and the configured Rome Cloud.
 #   6. Write .obs/env with the worktree's URLs (shell KEY=VALUE).
 #   7. Print the URL banner and exit. Containers keep running detached;
 #      stop them with the command in the banner.
@@ -506,32 +506,16 @@ fi
 echo "dev-up: Rome Cloud is serving (host + in-container)"
 
 # ---------------------------------------------------------------------------
-# 5c. Ensure a default guardian account exists so the dashboard is usable
-# without walking through the onboarding wizard each time a worktree is
-# brought up. Idempotent: if a guardian already exists, skip.
-#
-# Defaults — overridable via env:
-#   ROME_DEV_USERID         (default: dev)
-#   ROME_DEV_PASSWORD       (default: rome-dev-default; min 8 chars)
-#   ROME_DEV_GUARDIAN_NAME  (default: Dev)
+# 5c. Wait for the bootstrap endpoint. A new instance stays in onboarding
+# until its first guardian completes setup in the browser.
 # ---------------------------------------------------------------------------
-ROME_DEV_USERID="${ROME_DEV_USERID:-dev}"
-ROME_DEV_PASSWORD="${ROME_DEV_PASSWORD:-rome-dev-default}"
-ROME_DEV_GUARDIAN_NAME="${ROME_DEV_GUARDIAN_NAME:-Dev}"
-
-if [ "${#ROME_DEV_PASSWORD}" -lt 8 ]; then
-  echo "dev-up: ROME_DEV_PASSWORD must be at least 8 characters." >&2
-  exit 1
-fi
-
 ROME_API_BASE="http://${SLUG}.rome.localhost:3000"
-echo "dev-up: checking guardian account state ..."
+echo "dev-up: waiting for bootstrap state ..."
 # /api/health can start returning OK before the system app's DB + repos finish
 # initializing, so /api/bootstrap may still 500 for a brief window. Retry
 # with the same cadence as the /api/health wait above.
 attempts=0
-guardian_state=""
-until guardian_state="$(curl -fsS --max-time 5 "${ROME_API_BASE}/api/bootstrap" 2>/dev/null)" && [ -n "$guardian_state" ]; do
+until curl -fsS --max-time 5 -o /dev/null "${ROME_API_BASE}/api/bootstrap" 2>/dev/null; do
   attempts=$((attempts + 1))
   if [ "$attempts" -gt 30 ]; then
     echo "dev-up: /api/bootstrap never returned a valid response (60s)." >&2
@@ -540,48 +524,6 @@ until guardian_state="$(curl -fsS --max-time 5 "${ROME_API_BASE}/api/bootstrap" 
   fi
   sleep 2
 done
-
-# if printf '%s' "$guardian_state" | grep -q '"exists":true'; then
-#   echo "dev-up: guardian already exists — skipping default-account bootstrap."
-# else
-#   echo "dev-up: creating default guardian account (userId=${ROME_DEV_USERID}) ..."
-#   cookie_jar="$(mktemp -t rome-dev-up-cookies.XXXXXX)"
-#   trap 'rm -f "$cookie_jar"' EXIT
-#
-#   account_payload="$(printf '{"userId":"%s","password":"%s"}' "$ROME_DEV_USERID" "$ROME_DEV_PASSWORD")"
-#   if ! curl -fsS --max-time 10 \
-#       -c "$cookie_jar" \
-#       -H "Content-Type: application/json" \
-#       -X POST \
-#       --data "$account_payload" \
-#       "${ROME_API_BASE}/api/onboard/create-account" >/dev/null; then
-#     echo "dev-up: /api/onboard/create-account failed." >&2
-#     exit 1
-#   fi
-
-#   setup_payload="$(printf '{"profile":{"guardianName":"%s"}}' "$ROME_DEV_GUARDIAN_NAME")"
-#   if ! curl -fsS --max-time 10 \
-#       -b "$cookie_jar" -c "$cookie_jar" \
-#       -H "Content-Type: application/json" \
-#       -X POST \
-#       --data "$setup_payload" \
-#       "${ROME_API_BASE}/api/onboard/setup" >/dev/null; then
-#     echo "dev-up: /api/onboard/setup failed." >&2
-#     exit 1
-#   fi
-#
-#   if ! curl -fsS --max-time 10 \
-#       -b "$cookie_jar" -c "$cookie_jar" \
-#       -X POST \
-#       "${ROME_API_BASE}/api/onboard/complete" >/dev/null; then
-#     echo "dev-up: /api/onboard/complete failed." >&2
-#     exit 1
-#   fi
-#
-#   rm -f "$cookie_jar"
-#   trap - EXIT
-#   echo "dev-up: default guardian account ready."
-# fi
 
 # ---------------------------------------------------------------------------
 # 6. Write .obs/env — URL discovery for agents and scripts.
@@ -619,9 +561,6 @@ cat <<EOF
 │ Rome Cloud    : ${ROME_CLOUD_URL}
 │ Observability : ${OBS_UI_URL}           (HyperDX UI)
 │ ClickHouse    : ${ROME_OBS_QUERY_URL}   (raw SQL over HTTP)
-│
-│ Login as      : ${ROME_DEV_USERID} / ${ROME_DEV_PASSWORD}
-│                 (override via ROME_DEV_USERID / ROME_DEV_PASSWORD)
 │
 │ In-container  :  ./r pnpm test   (./r <cmd>)
 │ Logs          :  docker compose -f compose.dev.yml -p ${SLUG} logs -f

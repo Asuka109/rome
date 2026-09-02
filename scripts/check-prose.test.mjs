@@ -86,7 +86,7 @@ test("the sources pass reaches tracked TypeScript outside packages/", () => {
   // One root per line of defence that a directory-list version of this would
   // have had to name by hand. `scripts/` shipped a real violation the gate
   // missed while the list was ["packages", "rome_apps"].
-  for (const root of ["packages/", "rome_apps/", "scripts/", "example_apps/", ".claude/"]) {
+  for (const root of ["packages/", "rome_apps/", "scripts/", "example_apps/", ".agents/"]) {
     assert.ok(
       files.some((f) => f.startsWith(root)),
       `no tracked source found under ${root}`,

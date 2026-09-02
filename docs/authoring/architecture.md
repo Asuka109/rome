@@ -64,7 +64,7 @@ A new doc enters the family only when no existing doc owns the surface. The inde
 Content the admission tests already reject, named so tooling can catch it:
 
 - **File references** — no path under `packages/`, `rome_apps/`, or `scripts/`, and no `.ts`, `.tsx`, or `.yaml` token. `[mech]`
-- **Process steps** — how-to sequences are skills in `.claude/skills/`. These docs carry only what must hold on every diff. `[llm]`
+- **Process steps** — how-to sequences are skills in `.agents/skills/`. These docs carry only what must hold on every diff. `[llm]`
 
   > Prefer: "Boot installs every packed first-party artifact."
   > Over: "1. Run the build. 2. Restart the daemon. 3. Confirm the app list."

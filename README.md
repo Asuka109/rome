@@ -90,28 +90,17 @@ forwards.
 
 ### Run the development environment
 
-To run this repository from source, you need:
-
-- Node.js 24 or newer
-- Corepack and pnpm 11.6
-- Docker with Docker Compose
-
-From a checkout of this repository:
+Enter the Nix development shell, install dependencies, and start the local
+stack:
 
 ```bash
-corepack enable
+nix develop
 pnpm install
 pnpm dev:all
 ```
 
-`pnpm dev:all` starts the production-shaped local stack: Rome, observability,
-routing, and the web development server. It connects to `https://romeos.cc` by
-default; set `ROME_DEV_PANTHEON_ORIGIN` to use another Rome Cloud deployment.
-The script prints the local URLs and development credentials when startup completes.
-
-This is the contributor development path, not the final production self-hosting
-distribution. See [`CLAUDE.md`](CLAUDE.md) for the complete development loop,
-container commands, and validation requirements.
+See the [development guide](docs/development.md) for the non-Nix setup,
+day-to-day workflow, container commands, validation order, and troubleshooting.
 
 ## Rome Apps
 

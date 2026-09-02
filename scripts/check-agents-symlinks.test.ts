@@ -4,7 +4,12 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { afterEach, beforeEach, describe, expect, it } from "@rstest/core";
-import { LintEnvironmentError, lintAgentsSymlinks, runCli } from "./check-agents-symlinks.js";
+import {
+  LintEnvironmentError,
+  lintAgentsSymlinks,
+  lintSkillSymlinks,
+  runCli,
+} from "./check-agents-symlinks.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -22,6 +27,20 @@ async function git(...args: string[]): Promise<string> {
 async function writeClaudeMd(dir: string): Promise<void> {
   await mkdir(path.join(repo, dir), { recursive: true });
   await writeFile(path.join(repo, dir, "CLAUDE.md"), "# guidance\n");
+}
+
+async function writeSkill(name: string): Promise<void> {
+  const dir = path.join(repo, ".agents/skills", name);
+  await mkdir(dir, { recursive: true });
+  await writeFile(
+    path.join(dir, "SKILL.md"),
+    `---\nname: ${name}\ndescription: Test skill.\n---\n`,
+  );
+}
+
+async function linkSkill(name: string, target = `../../.agents/skills/${name}`): Promise<void> {
+  await mkdir(path.join(repo, ".claude/skills"), { recursive: true });
+  await symlink(target, path.join(repo, ".claude/skills", name));
 }
 
 /** Writes a blob with exactly these bytes and stages it as a symlink at `at`. */
@@ -338,6 +357,62 @@ describe("lintAgentsSymlinks", () => {
     await writeFile(path.join(repo, ".git/index"), "not an index");
 
     expect(() => lintAgentsSymlinks(repo)).toThrow(LintEnvironmentError);
+  });
+});
+
+describe("lintSkillSymlinks", () => {
+  it("passes when every canonical skill has a committed Claude symlink", async () => {
+    await writeSkill("example");
+    await linkSkill("example");
+    await git("add", "-A");
+
+    expect(lintSkillSymlinks(repo)).toEqual({ checked: 1, findings: [] });
+  });
+
+  it("reports a missing Claude skill link", async () => {
+    await writeSkill("example");
+    await git("add", "-A");
+
+    expect(lintSkillSymlinks(repo).findings).toEqual([".claude/skills/example is missing"]);
+  });
+
+  it("reports a Claude skill link with the wrong target", async () => {
+    await writeSkill("example");
+    await linkSkill("example", "../../.agents/skills/other");
+    await git("add", "-A");
+
+    expect(lintSkillSymlinks(repo).findings[0]).toContain("expected");
+  });
+
+  it("rejects a copied Claude skill directory", async () => {
+    await writeSkill("example");
+    await mkdir(path.join(repo, ".claude/skills/example"), { recursive: true });
+    await writeFile(path.join(repo, ".claude/skills/example/SKILL.md"), "copy\n");
+    await git("add", "-A");
+
+    expect(lintSkillSymlinks(repo).findings).toEqual([
+      ".claude/skills/example is a directory, not a compatibility symlink",
+    ]);
+  });
+
+  it("rejects an orphaned Claude skill", async () => {
+    await mkdir(path.join(repo, ".claude/skills/orphan"), { recursive: true });
+    await writeFile(path.join(repo, ".claude/skills/orphan/SKILL.md"), "orphan\n");
+    await git("add", "-A");
+
+    expect(lintSkillSymlinks(repo).findings).toEqual([
+      ".claude/skills/orphan has no canonical .agents/skills/orphan",
+    ]);
+  });
+
+  it("uses the Git index when symlinks are checked out as plain files", async () => {
+    await writeSkill("example");
+    await git("add", "-A");
+    await stageSymlinkBlob(".claude/skills/example", "../../.agents/skills/example");
+    await mkdir(path.join(repo, ".claude/skills"), { recursive: true });
+    await writeFile(path.join(repo, ".claude/skills/example"), "checked-out link target\n");
+
+    expect(lintSkillSymlinks(repo)).toEqual({ checked: 1, findings: [] });
   });
 });
 

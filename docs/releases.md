@@ -6,7 +6,7 @@ Rome ships two kinds of release artifacts: the **runtime Docker image** (the pro
 
 The runtime image is released by pushing a git tag — there is no manual image publish path. [`.github/workflows/docker-publish.yml`](../.github/workflows/docker-publish.yml) triggers on `v*` tags, builds multi-arch (amd64 + arm64) images, and publishes to the repository named by `IMAGE_NAME` in that workflow. A stable release uses `vMAJOR.MINOR.PATCH`, and a prerelease appends `-rc.N`.
 
-The steps for cutting a release — preflight, version choice, the confirmed push, and verification — live in the [`release-rome-image`](../.claude/skills/release-rome-image/SKILL.md) skill. Follow it rather than running the helper directly.
+The steps for cutting a release — preflight, version choice, the confirmed push, and verification — live in the [`release-rome-image`](../.agents/skills/release-rome-image/SKILL.md) skill. Follow it rather than running the helper directly.
 
 `scripts/dev/create-patch-release-tag.sh` is a planning aid the skill calls with `--dry-run` to compute the next patch version, not a release command. It accepts `--remote`, `--branch`, `--prefix`, and the matching `ROME_RELEASE_*` environment variables. **A bare invocation creates the annotated tag and pushes it**, which starts the publish with nothing between it and Docker Hub. Pass `--dry-run` to see the version and target commit without releasing.
 
