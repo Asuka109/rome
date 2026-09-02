@@ -1,6 +1,6 @@
 ---
 name: release-rome-image
-description: Manual only. Release a new Rome runtime image by pushing a `vX.Y.Z` tag — pick the version, verify main is releasable, push the tag, and confirm the image published to Docker Hub. Covers the `v*` runtime-image tag only, not the desktop app (`desktop-v*`) and not npm packages (`ui-v*`, `app-runtime-v*`).
+description: Release a new Rome runtime image by pushing a `vX.Y.Z` tag — pick the version, verify main is releasable, push the tag, and confirm the image published to Docker Hub. Covers the `v*` runtime-image tag only, not the desktop app (`desktop-v*`) and not npm packages (`ui-v*`, `app-runtime-v*`).
 disable-model-invocation: true
 ---
 

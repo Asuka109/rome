@@ -1,6 +1,6 @@
 ---
 name: loop-northstar
-description: Manual only. Hold an interactive session to create or revise an ideal-state doc, or to slice it into approved repository milestones.
+description: Hold an interactive session to create or revise an ideal-state doc, or to slice it into approved repository milestones.
 disable-model-invocation: true
 ---
 

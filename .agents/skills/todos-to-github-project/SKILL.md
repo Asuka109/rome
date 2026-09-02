@@ -1,6 +1,6 @@
 ---
 name: todos-to-github-project
-description: Manual only. Turn the remaining todos of the current conversation into a GitHub project of task-spec issues wired with native blocked-by dependencies.
+description: Turn the remaining todos of the current conversation into a GitHub project of task-spec issues wired with native blocked-by dependencies.
 disable-model-invocation: true
 ---
 

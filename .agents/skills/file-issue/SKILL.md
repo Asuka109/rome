@@ -1,6 +1,6 @@
 ---
 name: file-issue
-description: "Manual only. File one GitHub issue from a description the user gives — classify it as a bug report, feature request, or task spec, gather what the body needs from the tracker and the code, ask the user only for what those cannot answer, draft it in the repo's issue format, and create it with `gh` after a go-ahead. Use when the user says \"file an issue / bug / feature request / task for <description>\"."
+description: File one GitHub issue from a description the user gives — classify it as a bug report, feature request, or task spec, gather what the body needs from the tracker and the code, ask the user only for what those cannot answer, draft it in the repo's issue format, and create it with `gh` after a go-ahead. Use when the user says "file an issue / bug / feature request / task for <description>".
 argument-hint: [description]
 disable-model-invocation: true
 ---

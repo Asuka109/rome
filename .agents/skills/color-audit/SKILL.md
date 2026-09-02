@@ -22,7 +22,7 @@ Evaluate a design system's color selection against the codified disciplines from
 Find where color truth lives. Look for, in rough order: CSS custom properties (`:root`/theme blocks), a theme/token definition module, Tailwind config, and the framework vocabulary layer that exposes tokens to components.
 
 In **this repo** the layers are:
-- Primitives (oklch ramps): `packages/web/src/lib/themes.ts`
+- Primitives (oklch ramps): `packages/web/src/styles/primitives.css`
 - Semantic values per theme × mode: `packages/web/src/lib/themes.ts` (light/dark halves per theme)
 - Component-facing vocabulary: the `@theme inline` block in `packages/ui/src/styles.css` (its token comments are also the step-semantics documentation)
 

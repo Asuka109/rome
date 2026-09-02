@@ -1,6 +1,6 @@
 ---
 name: loop-reconcile
-description: Manual only. Autonomously compute the gap between an ideal-state doc and the codebase, then file the next work issues, a report on what needs discussion, or both.
+description: Autonomously compute the gap between an ideal-state doc and the codebase, then file the next work issues, a report on what needs discussion, or both.
 disable-model-invocation: true
 ---
 
