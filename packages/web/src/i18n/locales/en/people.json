@@ -1,10 +1,10 @@
 {
   "page": {
-    "subtitle": "Who has something new, most recent first. Search reaches everyone Rome knows.",
     "loading": "Loading…",
     "emptyTitle": "Nothing new yet",
     "emptyHint": "Anyone who messages you shows up here, ready to place.",
     "emptyForSearch": "Nobody matches your search",
+    "emptyDirectory": "Nobody here yet",
     "loadMore": "Show more"
   },
   "header": {
@@ -27,12 +27,6 @@
     "acquaintance": "Acquaintance",
     "other": "Other",
     "stranger": "Stranger"
-  },
-  "levelHints": {
-    "innerCircle": "Rome speaks freely, relays promptly",
-    "acquaintance": "Rome answers, but checks before acting",
-    "other": "Known, kept at arm's length",
-    "stranger": "Rome does not engage — reversible any time"
   },
   "channels": {
     "telegram": "Telegram",
@@ -107,10 +101,6 @@
     "label": "View",
     "latest": "Latest",
     "directory": "Directory"
-  },
-  "stream": {
-    "hint": "one row per person · newest first",
-    "searchHint": "searching everyone Rome knows, quiet contacts included"
   },
   "detail": {
     "back": "People",
