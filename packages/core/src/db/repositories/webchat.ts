@@ -222,7 +222,14 @@ export function channelConversationId(channel: string, threadId: string): string
   return `channel:${channel}:${threadId}`;
 }
 
-function conversationPlatformMessageId(sessionId: string, platformMessageId: string): string {
+/** The row id a recorded outbound message takes when the provider named it.
+ *  Derived rather than random so a caller that knows the provider's id can
+ *  predict the timeline `ref` the message will carry — which is how the
+ *  outbox knows a send has landed (`src/people/outbox.ts`). */
+export function conversationPlatformMessageId(
+  sessionId: string,
+  platformMessageId: string,
+): string {
   const digest = createHash("sha256")
     .update(sessionId)
     .update("\0")
@@ -1417,6 +1424,23 @@ export class WebChatRepository {
       .where(eq(romeSessions.id, id))
       .returning();
     return rows[0] ?? null;
+  }
+
+  /**
+   * A branch whose first answer completed on its own provider thread stops
+   * being special: it becomes an ordinary chat, listed and managed like any
+   * other. Provenance columns are left in place — only the type and the
+   * unread clock change. Guarded on the current type so a double call, or a
+   * call racing a delete, is a no-op.
+   */
+  async promoteForkToChat(id: string): Promise<void> {
+    await this.db
+      .update(romeSessions)
+      .set({
+        type: "webchat",
+        lastSeenActivityAt: sql`${romeSessions.activityAt}`,
+      })
+      .where(and(eq(romeSessions.id, id), eq(romeSessions.type, "fork")));
   }
 
   async updateSessionName(id: string, name: string) {

@@ -2934,6 +2934,18 @@ describe("Webchat API", () => {
       // Seed the rated exchange plus a later turn: the fork inherits the
       // source transcript at its head, so the prompt must quote the rated
       // turn's exchange verbatim rather than pointing at "the latest turn".
+      // The mocked runner skips createForkTraceRecorder, which is what writes
+      // the fork's Rome session row; seed it so the type assertion below has a
+      // row to read.
+      await deps.webchatRepo.ensureRomeSession({
+        id: "feedback-fork-session",
+        type: "fork",
+        name: "feedback: Branch Routes",
+        agentName: null,
+        trigger: { triggerKind: "fork", triggerName: "feedback" },
+        parentSessionId: SESSION_ID,
+        parentTurnId: TURN_ID,
+      });
       await deps.webchatRepo.addMessage(
         "fb-rated-user",
         SESSION_ID,
@@ -3019,6 +3031,10 @@ describe("Webchat API", () => {
         },
         processing: { appId: "sessions", route: "feedback-fork-session" },
       });
+      // Promotion keys off `continuable`, and the feedback fork is one-shot:
+      // it stays a fork and never reaches the sidebar.
+      const feedbackFork = await deps.webchatRepo.getSession("feedback-fork-session");
+      expect(feedbackFork?.type).toBe("fork");
       expect(forkParams).toMatchObject({
         agentName: "main",
         sourceSessionId: "live-source-session",
@@ -3309,7 +3325,7 @@ describe("Webchat API", () => {
       );
     });
 
-    it("resumes the source, runs an exact fork, and shows its Sessions route", async () => {
+    it("resumes the source, runs an exact fork, and returns the branch session id", async () => {
       await deps.webchatRepo.addMessage(
         "branch-later-anchor",
         SESSION_ID,
@@ -3361,8 +3377,10 @@ describe("Webchat API", () => {
       });
 
       expect(res.status).toBe(201);
+      // The client places a real chat card itself — no server-driven widget.
       await expect(res.json()).resolves.toEqual({
-        placement: { appId: "sessions", route: "branch-fork-session" },
+        sessionId: "branch-fork-session",
+        placement: null,
       });
       expect(forkParams).toMatchObject({
         agentName: "main",
@@ -3389,15 +3407,7 @@ describe("Webchat API", () => {
           }),
         }),
       );
-      expect(showApp).toHaveBeenCalledWith(
-        "show_app",
-        { appId: "sessions", route: "branch-fork-session" },
-        expect.objectContaining({
-          initiator: "system:turn-branch",
-          sessionId: "branch-fork-session",
-          turnId: "branch-fork-turn",
-        }),
-      );
+      expect(showApp).not.toHaveBeenCalled();
       // A side chat is a conversation: it asks to be left resumable, keyed by
       // the fork's own id with no model-selection suffix — exactly what
       // handleChatSend will derive for it on a follow-up.
@@ -3519,13 +3529,197 @@ describe("Webchat API", () => {
       });
 
       expect(res.status).toBe(409);
+      // The distinct code lets the client say "this answer has no branch
+      // point" instead of implying a transient failure.
+      await expect(res.json()).resolves.toMatchObject({ code: "turn_not_branchable" });
       expect(runForked).not.toHaveBeenCalled();
+    });
+
+    it("creates the branch as an ordinary chat at 201", async () => {
+      // The mocked runner below skips the real AgentRunner.runForked, which is
+      // what creates the fork's Rome session row; seed it so promotion has a
+      // row to flip.
+      await deps.webchatRepo.ensureRomeSession({
+        id: "branch-fork-session",
+        type: "fork",
+        name: "branch: Branch Routes",
+        agentName: null,
+        trigger: { triggerKind: "fork", triggerName: "branch" },
+        parentSessionId: SESSION_ID,
+        parentTurnId: TURN_ID,
+      });
+      deps.agentRunner = {
+        run: deps.agentRunner.run.bind(deps.agentRunner),
+        async *runForked(params) {
+          yield {
+            type: "turn_start",
+            turnId: "branch-fork-turn",
+            sessionId: "branch-fork-session",
+            userPrompt: params.prompt,
+          };
+          yield { type: "result", content: "Here is the side-chat answer." };
+          yield {
+            type: "turn_end",
+            turnId: "branch-fork-turn",
+            status: "completed",
+            durationMs: 1,
+          };
+        },
+      };
+      rs.spyOn(deps.agentSessionManager, "acquire").mockResolvedValue({
+        sessionId: "live-source-session",
+      } as AgentSession);
+      rs.spyOn(deps.sessionManager, "getTurnCheckpoint").mockResolvedValue({
+        sessionId: "live-source-session",
+        turnId: TURN_ID,
+        provider: "openai",
+        providerThreadId: "source-provider-thread",
+        checkpointId: "provider-turn-t2",
+      });
+      rs.spyOn(deps.actionEngine, "run").mockResolvedValue({
+        status: "place_widget",
+        placement: { appId: "sessions", route: "branch-fork-session" },
+      });
+      const app = createWebchatRuntime(deps).routes;
+
+      const res = await app.request(`/chat/sessions/${SESSION_ID}/turns/${TURN_ID}/forks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: "What about the other approach?" }),
+      });
+      expect(res.status).toBe(201);
+
+      // Promotion happens before the 201 leaves the server — no waiting, no
+      // drain involvement, and no resumable-row consultation.
+      const promoted = await deps.webchatRepo.getSession("branch-fork-session");
+      expect(promoted?.type).toBe("webchat");
+      // Provenance survives promotion.
+      expect(promoted?.parentSessionId).toBe(SESSION_ID);
+      // The unread clock is armed like any ordinary chat's.
+      expect(promoted?.lastSeenActivityAt).not.toBeNull();
+      // The raw `branch: …` name never exists once the type is visible: the
+      // fallback retitle (the branch prompt, normalized — trailing punctuation
+      // stripped) lands before the flip.
+      expect(promoted?.name).toBe("What about the other approach");
+      // The sidebar list contains it immediately, with no query change.
+      const listed = (await (await app.request("/chat/sessions")).json()) as Array<{ id: string }>;
+      expect(listed.map((s) => s.id)).toContain("branch-fork-session");
+    });
+
+    it("refuses a follow-up until the branch thread exists", async () => {
+      await deps.webchatRepo.ensureRomeSession({
+        id: "branch-fork-session",
+        type: "fork",
+        name: "branch: Branch Routes",
+        agentName: null,
+        trigger: { triggerKind: "fork", triggerName: "branch" },
+        parentSessionId: SESSION_ID,
+        parentTurnId: TURN_ID,
+      });
+      deps.agentRunner = {
+        run: deps.agentRunner.run.bind(deps.agentRunner),
+        async *runForked(params) {
+          yield {
+            type: "turn_start",
+            turnId: "branch-fork-turn",
+            sessionId: "branch-fork-session",
+            userPrompt: params.prompt,
+          };
+          yield { type: "result", content: "Here is the side-chat answer." };
+          yield {
+            type: "turn_end",
+            turnId: "branch-fork-turn",
+            status: "completed",
+            durationMs: 1,
+          };
+        },
+      };
+      rs.spyOn(deps.agentSessionManager, "acquire").mockResolvedValue({
+        sessionId: "live-source-session",
+      } as AgentSession);
+      rs.spyOn(deps.sessionManager, "getTurnCheckpoint").mockResolvedValue({
+        sessionId: "live-source-session",
+        turnId: TURN_ID,
+        provider: "openai",
+        providerThreadId: "source-provider-thread",
+        checkpointId: "provider-turn-t2",
+      });
+      rs.spyOn(deps.actionEngine, "run").mockResolvedValue({
+        status: "place_widget",
+        placement: { appId: "sessions", route: "branch-fork-session" },
+      });
+      const findRow = rs
+        .spyOn(deps.sessionManager, "findReusableSession")
+        .mockResolvedValue(undefined);
+      const app = createWebchatRuntime(deps).routes;
+
+      const res = await app.request(`/chat/sessions/${SESSION_ID}/turns/${TURN_ID}/forks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: "What about the other approach?" }),
+      });
+      expect(res.status).toBe(201);
+
+      // Visibility now precedes thread persistence, so the send guard is what
+      // keeps "visible" from outrunning "continuable": a follow-up before
+      // persistForkThread's row exists would acquire a fresh provider thread
+      // and silently lose the branched context.
+      const refused = await app.request(`/chat/sessions/branch-fork-session/turns`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: "And the failure case?" }),
+      });
+      expect(refused.status).toBe(409);
+      await expect(refused.json()).resolves.toMatchObject({ code: "branch_thread_missing" });
+      expect(findRow).toHaveBeenCalled();
+
+      // Once the thread lands, the same send is accepted.
+      findRow.mockResolvedValue({
+        id: "branch-fork-session",
+        provider: "anthropic",
+        providerThreadId: "fork-provider-thread",
+        model: "claude",
+        createdAt: new Date(),
+        lastActiveAt: new Date(),
+      });
+      deps.agentSessionManager = {
+        acquire: rs.fn(async () => {
+          return {
+            key: { agentName: "main", channelThreadKey: "webchat:branch-fork-session" },
+            sessionId: "fork-agent-session",
+            status: "idle",
+            sendTurn() {
+              return {
+                turnId: "follow-up-turn",
+                events: (async function* () {
+                  yield { type: "result", content: "It fails closed." };
+                })(),
+                turnContext: otelContext.active(),
+              };
+            },
+            subscribe: () => () => undefined,
+            onStatusChange: () => () => undefined,
+            interrupt: async () => undefined,
+            close: async () => undefined,
+          } satisfies AgentSession;
+        }),
+        peek: () => undefined,
+        shutdown: async () => undefined,
+      };
+      const accepted = await app.request(`/chat/sessions/branch-fork-session/turns`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: "And the failure case?" }),
+      });
+      expect(accepted.status).toBe(200);
     });
   });
 
   describe("continuable side chats", () => {
     const FORK_ID = "branch-session-continuable";
     const LEGACY_FORK_ID = "branch-session-legacy";
+    // A branch as it ships now: born type "webchat" with lineage intact.
+    const PROMOTED_ID = "branch-session-promoted";
 
     const withThread = (id: string) => ({
       id,
@@ -3548,6 +3742,15 @@ describe("Webchat API", () => {
           parentTurnId: "parent-turn",
         });
       }
+      await deps.webchatRepo.ensureRomeSession({
+        id: PROMOTED_ID,
+        type: "webchat",
+        name: "What about the other approach?",
+        agentName: null,
+        trigger: { triggerKind: "fork", triggerName: "branch" },
+        parentSessionId: "parent-chat",
+        parentTurnId: "parent-turn",
+      });
     });
 
     it("serves a fork that has a resumable thread and refuses one that does not", async () => {
@@ -3561,8 +3764,9 @@ describe("Webchat API", () => {
     });
 
     it("leaves every other fork-facing route closed", async () => {
-      // The feature needs two routes. Widening the shared lookup would also
-      // hand a branch nested forks and turn feedback, which nothing designed.
+      // Legacy fork-typed rows keep the narrow surface. A branch that ships
+      // today is born type "webchat" and deliberately gets every ordinary
+      // route — this fixture covers the pre-promotion shape that remains.
       rs.spyOn(deps.sessionManager, "findReusableSession").mockResolvedValue(withThread(FORK_ID));
       const app = createWebchatRuntime(deps).routes;
 
@@ -3582,8 +3786,10 @@ describe("Webchat API", () => {
       );
     });
 
-    it("resumes the fork's own thread for a follow-up turn, with no interactive surface", async () => {
-      rs.spyOn(deps.sessionManager, "findReusableSession").mockResolvedValue(withThread(FORK_ID));
+    it("resumes the branch's own thread for a follow-up turn, with no interactive surface", async () => {
+      rs.spyOn(deps.sessionManager, "findReusableSession").mockResolvedValue(
+        withThread(PROMOTED_ID),
+      );
       let acquiredKey: unknown;
       let acquiredInit: AgentSessionInit | undefined;
       deps.agentSessionManager = {
@@ -3591,7 +3797,7 @@ describe("Webchat API", () => {
           acquiredKey = key;
           acquiredInit = init;
           return {
-            key: { agentName: "main", channelThreadKey: `webchat:${FORK_ID}` },
+            key: { agentName: "main", channelThreadKey: `webchat:${PROMOTED_ID}` },
             sessionId: "fork-agent-session",
             status: "idle",
             sendTurn() {
@@ -3614,33 +3820,38 @@ describe("Webchat API", () => {
       };
       const app = createWebchatRuntime(deps).routes;
 
-      const res = await app.request(`/chat/sessions/${FORK_ID}/turns`, {
+      const res = await app.request(`/chat/sessions/${PROMOTED_ID}/turns`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: "And what about the failure case?" }),
       });
 
       expect(res.status).toBe(200);
-      // Runs under the fork's own key, so it resumes the branch instead of
+      // Runs under the branch's own key, so it resumes the branch instead of
       // leasing or extending the parent chat.
-      expect(acquiredKey).toEqual({ agentName: "main", channelThreadKey: `webchat:${FORK_ID}` });
-      expect(acquiredInit?.romeSessionId).toBe(FORK_ID);
-      // The Sessions detail view renders this read-only, so the session must
-      // not open believing it can mount a card nobody can answer.
-      expect(acquiredInit?.interactiveSurfaceDetached).toBe(true);
+      expect(acquiredKey).toEqual({
+        agentName: "main",
+        channelThreadKey: `webchat:${PROMOTED_ID}`,
+      });
+      expect(acquiredInit?.romeSessionId).toBe(PROMOTED_ID);
     });
 
     it("resumes a branch under its persisted key even when a selection is sent", async () => {
       // `persistForkThread` stored the row without a model-selection suffix. If
       // a follow-up ever recomputed a suffixed key, `acquire` would open a
-      // fresh provider thread and lose the branch history with no error.
-      rs.spyOn(deps.sessionManager, "findReusableSession").mockResolvedValue(withThread(FORK_ID));
+      // fresh provider thread and lose the branch history with no error. The
+      // selector setting must be ON or the selection is discarded before the
+      // pin and this proves nothing.
+      await deps.settingsRepo.set("enableModelSelector", true);
+      rs.spyOn(deps.sessionManager, "findReusableSession").mockResolvedValue(
+        withThread(PROMOTED_ID),
+      );
       let acquiredKey: unknown;
       deps.agentSessionManager = {
         acquire: rs.fn(async (key) => {
           acquiredKey = key;
           return {
-            key: { agentName: "main", channelThreadKey: `webchat:${FORK_ID}` },
+            key: { agentName: "main", channelThreadKey: `webchat:${PROMOTED_ID}` },
             sessionId: "fork-agent-session",
             status: "idle",
             sendTurn() {
@@ -3663,57 +3874,16 @@ describe("Webchat API", () => {
       };
       const app = createWebchatRuntime(deps).routes;
 
-      await app.request(`/chat/sessions/${FORK_ID}/turns`, {
+      await app.request(`/chat/sessions/${PROMOTED_ID}/turns`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: "and then?", largeModelSelection: "claude-opus" }),
       });
 
-      expect(acquiredKey).toEqual({ agentName: "main", channelThreadKey: `webchat:${FORK_ID}` });
-    });
-
-    it("leaves an ordinary chat's interactive surface attached", async () => {
-      let acquiredInit: AgentSessionInit | undefined;
-      deps.agentSessionManager = {
-        acquire: rs.fn(async (_key, init) => {
-          acquiredInit = init;
-          return {
-            key: { agentName: "main", channelThreadKey: "webchat:test" },
-            sessionId: "agent-session",
-            status: "idle",
-            sendTurn() {
-              return {
-                turnId: "turn-1",
-                events: (async function* () {
-                  yield { type: "result", content: "" };
-                })(),
-                turnContext: otelContext.active(),
-              };
-            },
-            subscribe: () => () => undefined,
-            onStatusChange: () => () => undefined,
-            interrupt: async () => undefined,
-            close: async () => undefined,
-          } satisfies AgentSession;
-        }),
-        peek: () => undefined,
-        shutdown: async () => undefined,
-      };
-      const app = createWebchatRuntime(deps).routes;
-
-      const sessionRes = await app.request("/chat/sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: "Ordinary chat" }),
+      expect(acquiredKey).toEqual({
+        agentName: "main",
+        channelThreadKey: `webchat:${PROMOTED_ID}`,
       });
-      const session = (await sessionRes.json()) as { id: string };
-      await app.request(`/chat/sessions/${session.id}/turns`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: "hello" }),
-      });
-
-      expect(acquiredInit?.interactiveSurfaceDetached).toBe(false);
     });
   });
 
