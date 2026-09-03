@@ -4,7 +4,7 @@ import { act, cleanup, render, screen, waitFor, within } from "@testing-library/
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { TimelineEntry } from "@rome/api-types/people";
+import type { OutboxMessage, TimelineEntry } from "@rome/api-types/people";
 import {
   countPeople,
   linkConflict,
@@ -47,12 +47,45 @@ const PERSON: PersonResource = {
   id: "wei-chen",
   displayName: "Wei Chen",
   bondLevel: "acquaintance",
+  // Both sendable, WhatsApp heard from more recently — so `defaultSendAccount`
+  // has a preference to express and the composer has one to render.
   accounts: [
-    { channel: "whatsapp", channelUserId: "6591881123@s.whatsapp.net", displayName: "Wei" },
-    { channel: "telegram", channelUserId: "418820113", displayName: "wei_c" },
+    {
+      channel: "whatsapp",
+      channelUserId: "6591881123@s.whatsapp.net",
+      displayName: "Wei",
+      send: "yes",
+      latestAt: NOW - 300,
+    },
+    {
+      channel: "telegram",
+      channelUserId: "418820113",
+      displayName: "wei_c",
+      send: "yes",
+      latestAt: NOW - 90_000,
+    },
   ],
   messageCount: 12,
   latest: { source: "whatsapp", timestamp: NOW - 300, preview: "the landlord replies fast" },
+};
+
+/** Reachable on one channel Rome mirrors and cannot write to — the composer's
+ *  place is taken by the reason instead. */
+const READ_ONLY_PERSON: PersonResource = {
+  id: "arvind",
+  displayName: "Arvind Srivastav",
+  bondLevel: "acquaintance",
+  accounts: [
+    {
+      channel: "linkedin",
+      channelUserId: "ACoAAB1",
+      displayName: "Arvind",
+      send: "unsupported",
+      latestAt: NOW - 4_000,
+    },
+  ],
+  messageCount: 1,
+  latest: null,
 };
 
 const ENTRIES: TimelineEntry[] = [
@@ -117,6 +150,7 @@ interface WriteBody {
   channelUserId?: string;
   transferFrom?: string;
   from?: string;
+  text?: string;
 }
 
 interface FetchCall {
@@ -134,10 +168,43 @@ function mockApi(
     people?: PersonResource[];
     accounts?: DirectoryAccount[];
     writes?: "fail";
+    /**
+     * How the channel answers a send. `"land"` accepts it and surfaces it on
+     * the timeline a read later, which is how a row leaves the outbox;
+     * `"refuse"` is the 409 a client that raced a disconnect earns; `"fail"` is
+     * the channel taking it and rejecting it, which is the one state that
+     * persists and the only one a guardian can act on.
+     */
+    send?: "land" | "refuse" | "fail";
+    /**
+     * How the retry route answers. `"refuse"` is the 404 for a row no longer
+     * this reader's to send — claimed by a concurrent retry, or already
+     * discarded. `"fail"` is the request itself going wrong, which has changed
+     * nothing and is the guardian's to try again.
+     */
+    retry?: "refuse" | "fail";
+    /** Rows already in the outbox when the page opens — how a send stranded by
+     *  an earlier process reaches a reader. */
+    outbox?: OutboxMessage[];
   } = {},
 ) {
   const calls: FetchCall[] = [];
   const person = typeof options.person === "object" ? { ...options.person } : { ...PERSON };
+  // The server's two stores, kept as two: a row is on the timeline or in the
+  // outbox, never both and never neither. Nothing here marks a row delivered —
+  // it moves between the stores, and the reads report where it is.
+  const outbox: OutboxMessage[] = [...(options.outbox ?? [])];
+  const delivered: TimelineEntry[] = [];
+  /** The channel took it and its mirror now holds it — which is what puts it on
+   *  the timeline, and therefore what takes it out of the outbox. */
+  const accept = (row: OutboxMessage) =>
+    delivered.unshift({
+      source: row.channel,
+      timestamp: row.timestamp,
+      body: row.text,
+      direction: "outbound",
+      ref: row.ref!,
+    });
   rs.spyOn(globalThis, "fetch").mockImplementation((async (
     input: RequestInfo | URL,
     init?: RequestInit,
@@ -151,6 +218,44 @@ function mockApi(
     const path = new URL(url, "http://localhost").pathname;
     const json = (payload: unknown, status = 200) =>
       ({ ok: status < 400, status, json: async () => payload }) as Response;
+
+    if (method === "POST" && path.endsWith("/messages")) {
+      if (options.send === "refuse") {
+        return json({ error: "That channel is not connected", send: "not-connected" }, 409);
+      }
+      const row: OutboxMessage = {
+        id: `outbox-${outbox.length + 1}`,
+        channel: String(body?.channel),
+        channelUserId: String(body?.channelUserId),
+        text: String(body?.text),
+        timestamp: NOW,
+        state: options.send === "fail" ? "failed" : "unconfirmed",
+        ref: `sent-${outbox.length + 1}`,
+        error: options.send === "fail" ? "the channel rejected this message" : null,
+      };
+      outbox.push(row);
+      if (options.send === "land") accept(row);
+      return json(row, 202);
+    }
+    if (method === "POST" && path.endsWith("/retry")) {
+      const row = outbox.find((candidate) => path.includes(candidate.id));
+      // Only a failed row of theirs is retryable, and the state is what claims
+      // it: the second of two retries finds a row no longer theirs to send.
+      if (options.retry === "fail") return json({ error: "retry store unavailable" }, 500);
+      if (!row || row.state !== "failed" || options.retry === "refuse") {
+        return json({ error: "No failed message of theirs with that id" }, 404);
+      }
+      // A retry reuses the row, so it never reads as a second message the
+      // guardian did not write.
+      Object.assign(row, { state: "unconfirmed", error: null });
+      if (options.send !== "fail") accept(row);
+      return json(row, 202);
+    }
+    if (method === "DELETE" && path.includes("/outbox/")) {
+      const at = outbox.findIndex((candidate) => path.endsWith(candidate.id));
+      if (at !== -1) outbox.splice(at, 1);
+      return { ok: true, status: 204, json: async () => null } as Response;
+    }
 
     if (method !== "GET") {
       if (options.writes === "fail") return json({ error: "write refused" }, 500);
@@ -180,12 +285,23 @@ function mockApi(
       return json({ error: "Unknown route" }, 404);
     }
 
+    if (path.endsWith("/outbox")) {
+      // The read that clears a row, and the comparison the route makes: a row
+      // is gone once its `ref` is on the timeline. Nothing marks one delivered,
+      // so there is no callback to miss and the two reads cannot disagree.
+      const arrived = new Set(delivered.map((entry) => entry.ref));
+      for (let i = outbox.length - 1; i >= 0; i -= 1) {
+        if (outbox[i]!.ref !== null && arrived.has(outbox[i]!.ref!)) outbox.splice(i, 1);
+      }
+      return json({ messages: [...outbox] });
+    }
+
     if (url.includes("/messages")) {
       if (options.entries === "fail") return json({ error: "timeline unavailable" }, 500);
       const cursor = new URL(url, "http://localhost").searchParams.get("cursor");
       if (cursor) return json({ entries: options.older ?? [], nextCursor: null });
       return json({
-        entries: options.entries ?? ENTRIES,
+        entries: [...delivered, ...(options.entries ?? ENTRIES)],
         nextCursor: options.nextCursor ?? null,
       });
     }
@@ -666,5 +782,281 @@ describe("PersonDetailPage back link consumes the dossier's history entry", () =
 
     expect(screen.queryByRole("heading", { name: "Wei Chen" })).toBeNull();
     expect(screen.getByTestId("address").textContent).toBe("/people/latest");
+  });
+});
+
+// The composer, the outbox and the switcher — the half of this page that writes.
+//
+// What is under test is the one rule the design turns on: Rome never picks a
+// recipient out of sight. So the target is on screen before Send is pressed, the
+// request carries the account that was on screen, and the view that already
+// names an account offers no second choice.
+describe("PersonDetailPage, sending", () => {
+  it("names the account it will send to before anything is typed", async () => {
+    mockApi();
+    renderPage();
+
+    // The sendable account heard from most recently, which is
+    // `defaultSendAccount`'s answer and WhatsApp's here. A default rendered, not
+    // a decision taken off screen.
+    expect(await screen.findByRole("button", { name: /WhatsApp · \+6591881123/ })).toBeTruthy();
+  });
+
+  it("sends from the merged view to the account it showed, and settles both reads", async () => {
+    const user = userEvent.setup();
+    const calls = mockApi({ send: "land" });
+    renderPage();
+
+    await screen.findByRole("heading", { name: "Wei Chen" });
+    await user.type(screen.getByRole("textbox", { name: "Message text" }), "on my way");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    const sent = await waitFor(() =>
+      calls.find((call) => call.method === "POST" && call.url.endsWith("/messages")),
+    );
+    // The account is named, always — and it is the one the composer showed.
+    expect(sent?.body).toEqual({
+      channel: "whatsapp",
+      channelUserId: "6591881123@s.whatsapp.net",
+      text: "on my way",
+    });
+
+    // It lives in the outbox until the timeline has it, then leaves on its own.
+    // Nothing here marks it delivered: the reads are re-asked and they answer.
+    await waitFor(
+      () => {
+        expect(screen.getByText("on my way")).toBeTruthy();
+        expect(screen.queryByRole("list", { name: "Outbox" })).toBeNull();
+      },
+      { timeout: 4000 },
+    );
+  });
+
+  it("offers no picker inside an account view, because the view is the target", async () => {
+    const user = userEvent.setup();
+    const calls = mockApi({ send: "land" });
+    renderPage();
+
+    await screen.findByRole("heading", { name: "Wei Chen" });
+    await user.click(screen.getByRole("radio", { name: "Telegram" }));
+
+    // The trigger that changes the target is gone; the target itself is still
+    // stated. Asking the guardian to choose again inside a view named after one
+    // account is asking twice.
+    expect(screen.queryByRole("button", { name: /WhatsApp · / })).toBeNull();
+    expect(screen.getByText(/Telegram · 418820113/)).toBeTruthy();
+
+    await user.type(screen.getByRole("textbox", { name: "Message text" }), "see you there");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    const sent = await waitFor(() =>
+      calls.find((call) => call.method === "POST" && call.url.endsWith("/messages")),
+    );
+    expect(sent?.body).toMatchObject({ channel: "telegram", channelUserId: "418820113" });
+  });
+
+  it("keeps a refused send with the channel's words, and retries it under its own id", async () => {
+    const user = userEvent.setup();
+    const calls = mockApi({ send: "fail" });
+    renderPage();
+
+    await screen.findByRole("heading", { name: "Wei Chen" });
+    await user.type(screen.getByRole("textbox", { name: "Message text" }), "are you there");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    // A failed row stays until the guardian acts on it — the one outbox state
+    // that persists, and the only one they can do anything about.
+    const outbox = await screen.findByRole("list", { name: "Outbox" });
+    expect(within(outbox).getByText("are you there")).toBeTruthy();
+    expect(within(outbox).getByText("the channel rejected this message")).toBeTruthy();
+
+    await user.click(within(outbox).getByRole("button", { name: "Retry" }));
+
+    const retry = await waitFor(() =>
+      calls.find((call) => call.method === "POST" && call.url.endsWith("/retry")),
+    );
+    // The row's own id: a retry is the same message again, not a second one the
+    // guardian never wrote.
+    expect(retry?.url).toContain("/outbox/outbox-1/retry");
+    expect(
+      calls.filter((call) => call.url.endsWith("/messages") && call.method === "POST"),
+    ).toHaveLength(1);
+  });
+
+  it("renders a send Rome was stranded on in the server's own equivocal words", async () => {
+    // The one error text on this surface that is not a provider message. Rome
+    // does not know whether the message went out, and the row says exactly that
+    // rather than flattening it to "refused" — a guardian deciding whether to
+    // send it again is deciding on this sentence.
+    const stranded = "Rome stopped before the channel answered; this may or may not have been sent";
+    mockApi({
+      outbox: [
+        {
+          id: "outbox-stranded",
+          channel: "whatsapp",
+          channelUserId: "6591881123@s.whatsapp.net",
+          text: "are we still on for six",
+          timestamp: NOW - 400,
+          state: "failed",
+          ref: null,
+          error: stranded,
+        },
+      ],
+    });
+    renderPage();
+
+    const outbox = await screen.findByRole("list", { name: "Outbox" });
+    expect(within(outbox).getByText("are we still on for six")).toBeTruthy();
+    expect(within(outbox).getByText(stranded)).toBeTruthy();
+    // And it is actionable, which is why the read marks it rather than leaving
+    // it spinning where nothing can move it.
+    expect(within(outbox).getByRole("button", { name: "Retry" })).toBeTruthy();
+    expect(within(outbox).getByRole("button", { name: "Discard this message" })).toBeTruthy();
+  });
+
+  it("stays quiet when a retry loses a race, and leaves the row actionable", async () => {
+    const user = userEvent.setup();
+    const calls = mockApi({ send: "fail", retry: "refuse" });
+    renderPage();
+
+    await screen.findByRole("heading", { name: "Wei Chen" });
+    await user.type(screen.getByRole("textbox", { name: "Message text" }), "are you there");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    const outbox = await screen.findByRole("list", { name: "Outbox" });
+    await user.click(within(outbox).getByRole("button", { name: "Retry" }));
+
+    await waitFor(() => expect(calls.some((call) => call.url.endsWith("/retry"))).toBe(true));
+
+    // The winner is sending the message correctly, so the loser has nothing to
+    // report. It re-reads the outbox instead, and hands the row's gestures back
+    // rather than leaving a row nobody can act on.
+    await waitFor(() => {
+      expect(
+        within(screen.getByRole("list", { name: "Outbox" })).getByRole("button", { name: "Retry" }),
+      ).toHaveProperty("disabled", false);
+    });
+    expect(
+      calls.filter((call) => call.method === "GET" && call.url.endsWith("/outbox")).length,
+    ).toBeGreaterThan(1);
+    expect(screen.queryByText(/No failed message/)).toBeNull();
+  });
+
+  it("retires a refusal when the target changes, so it never names the wrong channel", async () => {
+    const user = userEvent.setup();
+    mockApi({ send: "refuse" });
+    renderPage();
+
+    await screen.findByRole("heading", { name: "Wei Chen" });
+    await user.type(screen.getByRole("textbox", { name: "Message text" }), "on my way");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    // The 409 renders as the line the composer would have shown had the read
+    // been fresh — WhatsApp's, because WhatsApp is the target.
+    const refusal = await screen.findByText(
+      "WhatsApp isn't connected, so Rome can't send there. Connect it in Settings.",
+    );
+    expect(refusal).toBeTruthy();
+
+    // Switching account retires it. A refusal names a channel, so one left
+    // standing here would be describing a channel that is no longer the one
+    // being written to.
+    await user.click(screen.getByRole("button", { name: /WhatsApp · / }));
+    await user.click(await screen.findByRole("menuitem", { name: /Telegram/ }));
+
+    await waitFor(() =>
+      expect(
+        screen.queryByText(
+          "WhatsApp isn't connected, so Rome can't send there. Connect it in Settings.",
+        ),
+      ).toBeNull(),
+    );
+    expect(screen.getByText(/Telegram · 418820113/)).toBeTruthy();
+  });
+
+  it("says why a retry could not be made, and leaves the row actionable", async () => {
+    const user = userEvent.setup();
+    mockApi({ send: "fail", retry: "fail" });
+    renderPage();
+
+    await screen.findByRole("heading", { name: "Wei Chen" });
+    await user.type(screen.getByRole("textbox", { name: "Message text" }), "are you there");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    const outbox = await screen.findByRole("list", { name: "Outbox" });
+    await user.click(within(outbox).getByRole("button", { name: "Retry" }));
+
+    // A gesture that never reached the server has changed nothing and is the
+    // guardian's to try again — and this row is the only place the attempt can
+    // be made, so it says what happened rather than going quiet.
+    expect(
+      await within(screen.getByRole("list", { name: "Outbox" })).findByRole("status"),
+    ).toBeTruthy();
+
+    // And it stays usable. An outbox with nothing in flight has stopped
+    // polling, so a row left disabled here is one nothing else recovers.
+    const rows = screen.getByRole("list", { name: "Outbox" });
+    expect(within(rows).getByRole("button", { name: "Retry" })).toHaveProperty("disabled", false);
+    expect(within(rows).getByRole("button", { name: "Discard this message" })).toHaveProperty(
+      "disabled",
+      false,
+    );
+  });
+
+  it("gives a stuck unconfirmed row a way out, and a fresh one none", async () => {
+    const WINDOW = 5 * 60;
+    // Against the real clock, not the fixture's noon anchor: staleness is what
+    // is under test, and the block that renders it reads `Date.now()`. Noon is
+    // in the future for any run that starts before it.
+    const REAL_NOW = Math.floor(Date.now() / 1000);
+    const stuck = {
+      id: "outbox-stuck",
+      channel: "whatsapp",
+      channelUserId: "6591881123@s.whatsapp.net",
+      text: "delivered but never seen",
+      timestamp: REAL_NOW - WINDOW - 10,
+      state: "unconfirmed" as const,
+      ref: "sent-stuck",
+      error: null,
+    };
+    mockApi({
+      outbox: [
+        stuck,
+        { ...stuck, id: "outbox-fresh", text: "just went out", timestamp: REAL_NOW - 5 },
+      ],
+    });
+    renderPage();
+
+    const outbox = await screen.findByRole("list", { name: "Outbox" });
+    const rows = within(outbox).getAllByRole("listitem");
+    const stuckRow = rows.find((row) => row.textContent?.includes("delivered but never seen"))!;
+    const freshRow = rows.find((row) => row.textContent?.includes("just went out"))!;
+
+    // Past the landing window nothing will move it on its own, so dismissing it
+    // is the only exit it has. Retry is not offered — a refusal is what can be
+    // tried again, and this was accepted.
+    expect(within(stuckRow).getByRole("button", { name: "Discard this message" })).toBeTruthy();
+    expect(within(stuckRow).queryByRole("button", { name: "Retry" })).toBeNull();
+
+    // Inside the window it is ordinary and about to clear itself, so there is
+    // nothing to offer — and the route would refuse it anyway.
+    expect(within(freshRow).queryByRole("button", { name: "Discard this message" })).toBeNull();
+    expect(within(freshRow).queryByRole("button", { name: "Retry" })).toBeNull();
+  });
+
+  it("replaces the composer with the reason when the account cannot be written to", async () => {
+    mockApi({ person: READ_ONLY_PERSON });
+    renderPage("arvind");
+
+    await screen.findByRole("heading", { name: "Arvind Srivastav" });
+    // The reason the server declared, in this locale's words — no sentence
+    // crossed the wire. LinkedIn's is its own: it is an inbox Rome mirrors and
+    // cannot write to, which is not the same as a channel it has yet to learn.
+    expect(
+      screen.getByText("Rome reads LinkedIn but cannot write to it. Reply from LinkedIn itself."),
+    ).toBeTruthy();
+    expect(screen.queryByRole("textbox", { name: "Message text" })).toBeNull();
+    // And the history stays readable.
+    expect(await screen.findByText("the landlord replies fast")).toBeTruthy();
   });
 });
