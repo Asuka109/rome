@@ -10,7 +10,8 @@ A Rome session is the durable product boundary around one continuous body of age
 - Only an explicit product boundary — New Chat, or entering another platform-native thread — creates another conversation. An ordinary reply never does.
 - Provider compaction manages the live context window without deleting Rome's durable transcript.
 - Usage belongs to the session that executed it: a first-class child subagent session owns its own [runs](#agent-run) and accounting, and the parent session does not duplicate that usage. Parent/child sessions are linked and appear as session lineage.
-- Project attribution matches the session's project directory (exact path or child path). A project's display name is metadata, not an attribution fallback. Forks and subagents inherit the parent's project. Sessions created without project context stay unattributed.
+- Project attribution matches the session's project directory (exact path or child path). A project's display name is metadata, not an attribution fallback.
+- A new WebChat session without a project selection gets an isolated implicit project. Forks and subagents inherit the parent's project. Other sessions without project context stay unattributed.
 
 **Not to be confused with:**
 

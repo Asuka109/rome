@@ -38,7 +38,6 @@ interface ProjectSelectorProps {
   projectsError: string | null;
   draftProjectName: string;
   draftProjectLabel: string;
-  defaultProjectName: string;
   menuOpen: boolean;
   searchQuery: string;
   setSearchQuery: (value: string) => void;
@@ -67,7 +66,6 @@ export const ProjectSelector = forwardRef(function ProjectSelector(
     projectsError,
     draftProjectName,
     draftProjectLabel,
-    defaultProjectName,
     menuOpen,
     searchQuery,
     setSearchQuery,
@@ -85,7 +83,7 @@ export const ProjectSelector = forwardRef(function ProjectSelector(
   ref: Ref<HTMLDivElement>,
 ) {
   const searchInputRef = useRef<HTMLInputElement | null>(null);
-  const isDefault = draftProjectName === defaultProjectName;
+  const hasNoSelection = !draftProjectName;
   const projects = projectCatalog?.projects ?? [];
 
   const filtered = useMemo(() => {
@@ -96,17 +94,12 @@ export const ProjectSelector = forwardRef(function ProjectSelector(
     );
   }, [projects, searchQuery]);
 
-  const namedProjects = filtered.filter((p) => p.name !== defaultProjectName);
-  const defaultProject =
-    filtered.find((p) => p.name === defaultProjectName) ??
-    (searchQuery.trim() ? null : { name: defaultProjectName, path: "" });
-
   // Rendered above the list rather than inside it: cmdk gives CommandList
   // role="listbox", whose children have to be options or groups. Non-null
   // exactly when there are no project rows to show.
   const status = projectsLoading
     ? { text: t("project.loading"), loading: true }
-    : namedProjects.length > 0
+    : filtered.length > 0
       ? null
       : projects.length > 0 && filtered.length === 0
         ? {
@@ -118,7 +111,7 @@ export const ProjectSelector = forwardRef(function ProjectSelector(
             loading: false,
           };
 
-  const resetRowVisible = Boolean(!projectsLoading && defaultProject);
+  const resetRowVisible = !projectsLoading;
 
   return (
     <div ref={ref} className="shrink-0">
@@ -131,18 +124,20 @@ export const ProjectSelector = forwardRef(function ProjectSelector(
         <PopoverTrigger asChild>
           <Button
             type="button"
-            // The fill is the variant's job: transparent while the default
-            // project is in play, filled once a real one is, and each variant
+            // The fill is the variant's job: transparent while no project is
+            // selected, filled once a real one is, and each variant
             // carries its own open-state fill through `aria-expanded`. `ghost`
             // sets no resting colour, so the label takes one or it reads as the
             // loudest thing in a row of muted chrome.
-            variant={isDefault ? "ghost" : "secondary"}
+            variant={hasNoSelection ? "ghost" : "secondary"}
             size="sm"
-            className={cn("max-w-[200px] touch-target", isDefault && "text-muted-foreground")}
-            title={isDefault ? t("project.buttonLabel") : draftProjectLabel}
+            className={cn("max-w-[200px] touch-target", hasNoSelection && "text-muted-foreground")}
+            title={hasNoSelection ? t("project.noProjectSelected") : draftProjectLabel}
             aria-label={t("project.buttonLabel")}
           >
-            <span className="truncate">{isDefault ? defaultProjectName : draftProjectLabel}</span>
+            <span className="truncate">
+              {hasNoSelection ? t("project.buttonLabel") : draftProjectLabel}
+            </span>
             <ChevronDown data-icon="inline-end" aria-hidden="true" />
           </Button>
         </PopoverTrigger>
@@ -228,7 +223,7 @@ export const ProjectSelector = forwardRef(function ProjectSelector(
             >
               {status ? null : (
                 <CommandGroup>
-                  {namedProjects.map((project, index) => {
+                  {filtered.map((project, index) => {
                     const isSelected = project.name === draftProjectName;
                     return (
                       <CommandItem
@@ -259,7 +254,7 @@ export const ProjectSelector = forwardRef(function ProjectSelector(
                   that selection once the projects arrive — leaving the
                   highlight on the trailing reset row instead of the first
                   project, which is then what Enter picks. */}
-              {!projectsLoading && defaultProject && (
+              {!projectsLoading && (
                 // Sticky so it stays visible once the projects overflow the
                 // list's own scroll box — before the migration it sat in a
                 // footer outside that box. Opaque, or the rows scroll under it.
@@ -270,18 +265,15 @@ export const ProjectSelector = forwardRef(function ProjectSelector(
                 // The failure is visual only, so no test will catch it.
                 <CommandGroup className="sticky bottom-0 border-t border-border-subtle bg-popover">
                   <CommandItem
-                    value={defaultProject.name}
-                    onSelect={() => onPickProject(defaultProject.name)}
+                    value="standalone-chat"
+                    onSelect={() => onPickProject("")}
                     className="text-muted-foreground"
                   >
                     <span className="min-w-0 flex-1 truncate">
-                      {defaultProject.name}
-                      <span className="ml-2 text-aux text-subtle-foreground">
-                        {t("project.noProjectSelected")}
-                      </span>
+                      {t("project.noProjectSelected")}
                     </span>
                     <span className="flex w-3.5 justify-center text-foreground">
-                      {isDefault ? <Check className="size-3.5 shrink-0" aria-hidden /> : null}
+                      {hasNoSelection ? <Check className="size-3.5 shrink-0" aria-hidden /> : null}
                     </span>
                   </CommandItem>
                 </CommandGroup>

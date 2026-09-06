@@ -271,7 +271,7 @@ export async function listRomeSessionMessages(sessionId: string): Promise<ChatMe
 export interface CreateSessionInput {
   name: string;
   personaId?: string;
-  projectPath: string;
+  projectPath?: string;
   largeModelSelection?: string;
   reasoningEffort: ReasoningEffort;
   agentName?: string;

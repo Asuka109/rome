@@ -77,6 +77,9 @@ function renderChatComponent(
       });
     }
     if (url === "/api/chat/sessions") {
+      if (init?.method === "POST") {
+        return Response.json({ id: "new-session" });
+      }
       return Response.json(homeData?.sessions ?? []);
     }
     if (url === "/api/chat/projects") {
@@ -96,6 +99,9 @@ function renderChatComponent(
       const target = homeData?.sessions.find((session) => session.id === id);
       if (target) target.pinnedAt = null;
       return Response.json(target ?? {});
+    }
+    if (/\/api\/chat\/sessions\/[^/]+\/turns$/.test(url) && init?.method === "POST") {
+      return Response.json({ turnId: "turn-1" });
     }
     return Response.json({}, { status: 404 });
   }) as typeof fetch);
@@ -135,6 +141,65 @@ describe("ChatComponent draft file drops", () => {
     fireEvent.drop(container.firstElementChild as Element, { dataTransfer });
 
     expect(await screen.findByText("note.txt")).toBeTruthy();
+  });
+});
+
+describe("ChatComponent draft project selection", () => {
+  it("omits projectPath when starting a standalone chat", async () => {
+    const user = userEvent.setup();
+    const { fetchSpy } = renderChatComponent({}, { sessions: [], projects: [] });
+
+    await user.type(screen.getByRole("textbox"), "Start isolated work");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    await waitFor(() =>
+      expect(
+        fetchSpy.mock.calls.some(
+          ([input, init]) => String(input) === "/api/chat/sessions" && init?.method === "POST",
+        ),
+      ).toBe(true),
+    );
+    const createCall = fetchSpy.mock.calls.find(
+      ([input, init]) => String(input) === "/api/chat/sessions" && init?.method === "POST",
+    );
+    const body = JSON.parse(String(createCall?.[1]?.body)) as Record<string, unknown>;
+    expect(body).not.toHaveProperty("projectPath");
+  });
+
+  it("sends projectPath only after the guardian selects a project", async () => {
+    const user = userEvent.setup();
+    const { fetchSpy } = renderChatComponent(
+      {},
+      {
+        sessions: [],
+        projects: [
+          {
+            name: "alpha",
+            displayName: "Alpha project",
+            projectPath: "alpha",
+            path: "/projects/alpha",
+          },
+        ],
+      },
+    );
+
+    await user.click(screen.getByRole("button", { name: "Project" }));
+    await user.click(await screen.findByRole("option", { name: "Alpha project" }));
+    await user.type(screen.getByRole("textbox"), "Reuse shared work");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    await waitFor(() =>
+      expect(
+        fetchSpy.mock.calls.some(
+          ([input, init]) => String(input) === "/api/chat/sessions" && init?.method === "POST",
+        ),
+      ).toBe(true),
+    );
+    const createCall = fetchSpy.mock.calls.find(
+      ([input, init]) => String(input) === "/api/chat/sessions" && init?.method === "POST",
+    );
+    const body = JSON.parse(String(createCall?.[1]?.body)) as Record<string, unknown>;
+    expect(body.projectPath).toBe("alpha");
   });
 });
 

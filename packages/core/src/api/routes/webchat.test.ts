@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { context as otelContext } from "@opentelemetry/api";
@@ -27,6 +27,7 @@ import { ModelResolutionError } from "../../core/model-resolver.js";
 import { webchatProjects } from "../../db/schema.js";
 import { TURN_BRANCH_PROMPT_MAX_LENGTH } from "@rome/api-types/trace-segments";
 import type { TraceSnapshot } from "@rome/api-types/trace-segments";
+import { resolveWebchatContinuationWorkingDir } from "../../webchat/projects.js";
 
 describe("Webchat API", () => {
   const originalProjectsRoot = process.env.ROME_PROJECTS_ROOT;
@@ -629,6 +630,106 @@ describe("Webchat API", () => {
       });
     });
 
+    it("creates and binds an implicit project before returning a standalone session", async () => {
+      const app = createWebchatRuntime(deps).routes;
+
+      const res = await app.request("/chat/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "Standalone" }),
+      });
+
+      expect(res.status).toBe(200);
+      const session = (await res.json()) as { id: string; projectPath: string };
+      expect(session.projectPath).toBe(`chats/${session.id}`);
+      await expect(deps.webchatRepo.getProjectByPath(session.projectPath)).resolves.toMatchObject({
+        path: session.projectPath,
+      });
+      expect(existsSync(join(projectsRoot, session.projectPath))).toBe(true);
+
+      const catalog = (await (await app.request("/chat/projects")).json()) as {
+        projects: Array<{ name: string }>;
+      };
+      expect(catalog.projects.map((project) => project.name)).toEqual(["default"]);
+    });
+
+    it("isolates the cwd and relative files of two standalone sessions", async () => {
+      const app = createWebchatRuntime(deps).routes;
+      const createStandalone = async (name: string) => {
+        const response = await app.request("/chat/sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name }),
+        });
+        return (await response.json()) as { id: string; projectPath: string };
+      };
+
+      const first = await createStandalone("First");
+      const second = await createStandalone("Second");
+      const firstCwd = await resolveWebchatContinuationWorkingDir(
+        "webchat",
+        first.id,
+        deps.webchatRepo,
+        projectsRoot,
+      );
+      const secondCwd = await resolveWebchatContinuationWorkingDir(
+        "webchat",
+        second.id,
+        deps.webchatRepo,
+        projectsRoot,
+      );
+
+      expect(first.projectPath).not.toBe(second.projectPath);
+      expect(firstCwd).not.toBe(secondCwd);
+      writeFileSync(join(firstCwd as string, "result.txt"), "first");
+      writeFileSync(join(secondCwd as string, "result.txt"), "second");
+      expect(readFileSync(join(firstCwd as string, "result.txt"), "utf8")).toBe("first");
+      expect(readFileSync(join(secondCwd as string, "result.txt"), "utf8")).toBe("second");
+    });
+
+    it("reuses the exact selected project for an explicit project session", async () => {
+      const app = createWebchatRuntime(deps).routes;
+      await deps.webchatRepo.createProject("Alpha", "alpha");
+      mkdirSync(join(projectsRoot, "alpha"));
+
+      const res = await app.request("/chat/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "Explicit", projectPath: "alpha" }),
+      });
+
+      expect(res.status).toBe(200);
+      await expect(res.json()).resolves.toMatchObject({
+        projectName: "Alpha",
+        projectPath: "alpha",
+      });
+    });
+
+    it("reloads and continues a standalone session in its stored workspace", async () => {
+      const app = createWebchatRuntime(deps).routes;
+      const created = (await (
+        await app.request("/chat/sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: "Persistent" }),
+        })
+      ).json()) as { id: string; projectPath: string };
+
+      const reloadedApp = createWebchatRuntime(deps).routes;
+      const reloaded = (await (
+        await reloadedApp.request(`/chat/sessions/${created.id}`)
+      ).json()) as { projectPath: string };
+      const continuationCwd = await resolveWebchatContinuationWorkingDir(
+        "webchat",
+        created.id,
+        deps.webchatRepo,
+        projectsRoot,
+      );
+
+      expect(reloaded.projectPath).toBe(created.projectPath);
+      expect(continuationCwd).toBe(join(projectsRoot, created.projectPath));
+    });
+
     it("does not list or materialize archived projects", async () => {
       await deps.webchatRepo.createProject("alpha", "alpha");
       await deps.webchatRepo.archiveProjectsByPathPrefix("alpha");
@@ -919,7 +1020,7 @@ describe("Webchat API", () => {
           "rome.log.source": "rome",
           sessionId: created.id,
           agentName: "main",
-          projectPath: "default",
+          projectPath: `chats/${created.id}`,
         },
       });
       expect(creationRecords[0].attributes).not.toHaveProperty("name");

@@ -18,11 +18,12 @@ The memory system provides persistent, git-tracked knowledge that survives acros
 
 ## Projects
 
-Projects are working directories where the agent does its work — writing code, creating files, running commands. A default project directory serves when no specific project context applies.
+Projects are execution workspaces rooted at local directories. Agents write files and run commands inside them.
 
 **Contracts:**
 
 - A project can have a memory summary. The first paragraph of the summary always loads into agent context as a brief description. The rest is available for deeper reference (repo structure, commands, conventions).
+- A standalone WebChat session gets its own implicit project. Selecting an existing project starts a chat that intentionally shares that workspace.
 
 **Not to be confused with:**
 

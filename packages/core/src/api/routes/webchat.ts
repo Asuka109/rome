@@ -32,8 +32,10 @@ import type { ChatShareSnapshot, ChatShareMessage } from "../share-snapshot.js";
 import { createRegistryAppResolver } from "../registry-app-resolver.js";
 import {
   ensureWebchatProjectWorkspace,
+  getStandaloneWebchatProjectPath,
   getWebchatProjectDisplayName,
   getWebchatProjectsRoot,
+  isStandaloneWebchatProjectPath,
   normalizeWebchatProjectPath,
   normalizeSelectedWebchatProjectPath,
   resolveWebchatProjectPath,
@@ -1964,7 +1966,9 @@ export function createWebchatRuntime(deps: ApiDeps): { routes: Hono; runtime: We
         id: DEFAULT_WEBCHAT_PROJECT_NAME,
       },
     );
-    const projects = await deps.webchatRepo.listProjects();
+    const projects = (await deps.webchatRepo.listProjects()).filter(
+      (project) => !isStandaloneWebchatProjectPath(project.path),
+    );
     await Promise.all(
       projects.map((project) => ensureWebchatProjectWorkspace(project.path, rootPath)),
     );
@@ -2025,8 +2029,11 @@ export function createWebchatRuntime(deps: ApiDeps): { routes: Hono; runtime: We
     const name = body.name || "New Chat";
     let project;
     try {
+      const selectedProjectPath = body.projectPath ?? body.projectName;
       project = await ensureStoredProjectSelection(
-        normalizeSelectedWebchatProjectPath(body.projectPath ?? body.projectName),
+        selectedProjectPath?.trim()
+          ? normalizeSelectedWebchatProjectPath(selectedProjectPath)
+          : getStandaloneWebchatProjectPath(id),
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : "Internal error";

@@ -1,7 +1,7 @@
 import { mkdir, readdir, stat } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { getProjectsRoot } from "../paths.js";
-import { DEFAULT_WEBCHAT_PROJECT_NAME } from "./constants.js";
+import { DEFAULT_WEBCHAT_PROJECT_NAME, STANDALONE_WEBCHAT_PROJECT_PREFIX } from "./constants.js";
 
 export interface WebchatProjectOption {
   archivedAt?: string | null;
@@ -133,6 +133,16 @@ export function getWebchatProjectPath(
 export function normalizeSelectedWebchatProjectPath(projectPath?: string | null): string {
   const trimmed = typeof projectPath === "string" ? projectPath.trim() : "";
   return trimmed ? normalizeWebchatProjectPath(trimmed) : DEFAULT_WEBCHAT_PROJECT_NAME;
+}
+
+export function getStandaloneWebchatProjectPath(sessionId: string): string {
+  return `${STANDALONE_WEBCHAT_PROJECT_PREFIX}/${sessionId}`;
+}
+
+export function isStandaloneWebchatProjectPath(projectPath: string): boolean {
+  return /^chats\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    projectPath,
+  );
 }
 
 export async function listWebchatProjects(

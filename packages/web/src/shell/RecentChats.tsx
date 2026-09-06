@@ -133,6 +133,12 @@ function projectNameFromPath(projectPath: string): string {
   return projectPath.split(/[\\/]/).filter(Boolean).at(-1) ?? projectPath;
 }
 
+function isStandaloneProjectPath(projectPath: string): boolean {
+  return /^chats\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    projectPath,
+  );
+}
+
 function isDefaultProjectChat(session: ChatSession): boolean {
   return (
     session.projectPath === DEFAULT_PROJECT_NAME ||
@@ -305,9 +311,18 @@ export function RecentChats({ onSearch }: RecentChatsProps) {
     [pinnedProjectPaths, sessions],
   );
 
+  const standaloneSessions = useMemo(
+    () =>
+      regularSessions.filter(
+        (session) => !!session.projectPath && isStandaloneProjectPath(session.projectPath),
+      ),
+    [regularSessions],
+  );
+
   const projectGroups = useMemo<SessionGroup[]>(() => {
     const buckets = new Map<string, { label: string; items: ChatSession[]; projectPath: string }>();
     for (const session of regularSessions) {
+      if (session.projectPath && isStandaloneProjectPath(session.projectPath)) continue;
       const projectPath = projectPathForSession(session);
       const rawKey = projectPath || session.projectName || "";
       if (!rawKey) continue;
@@ -881,32 +896,47 @@ export function RecentChats({ onSearch }: RecentChatsProps) {
               </div>
             )
           ) : groupMode === "project" ? (
-            projectGroups.length > 0 ? (
-              <section
-                aria-label={hasPinned ? undefined : t("recentChats.sectionProjects")}
-                aria-labelledby={hasPinned ? "recent-chats-projects-heading" : undefined}
-              >
-                {hasPinned ? (
-                  <h2
-                    id="recent-chats-projects-heading"
-                    className="px-2 pb-1 pt-3 text-aux text-subtle-foreground"
-                  >
-                    {t("recentChats.sectionProjects")}
-                  </h2>
-                ) : null}
-                <div className="space-y-1">
-                  {projectGroups.map(({ key, label, items, projectPath }) =>
-                    renderProjectGroup({
-                      key,
-                      label,
-                      items,
-                      projectPath,
-                      pinned: false,
-                    }),
-                  )}
-                </div>
-              </section>
-            ) : null
+            <>
+              {standaloneSessions.length > 0 ? (
+                <section aria-label={t("recentChats.title")} className="space-y-1">
+                  {standaloneSessions.map((session) => renderChatRow(session))}
+                </section>
+              ) : null}
+              {projectGroups.length > 0 ? (
+                <section
+                  aria-label={
+                    hasPinned || standaloneSessions.length > 0
+                      ? undefined
+                      : t("recentChats.sectionProjects")
+                  }
+                  aria-labelledby={
+                    hasPinned || standaloneSessions.length > 0
+                      ? "recent-chats-projects-heading"
+                      : undefined
+                  }
+                >
+                  {hasPinned || standaloneSessions.length > 0 ? (
+                    <h2
+                      id="recent-chats-projects-heading"
+                      className="px-2 pb-1 pt-3 text-aux text-subtle-foreground"
+                    >
+                      {t("recentChats.sectionProjects")}
+                    </h2>
+                  ) : null}
+                  <div className="space-y-1">
+                    {projectGroups.map(({ key, label, items, projectPath }) =>
+                      renderProjectGroup({
+                        key,
+                        label,
+                        items,
+                        projectPath,
+                        pinned: false,
+                      }),
+                    )}
+                  </div>
+                </section>
+              ) : null}
+            </>
           ) : (
             dateGroups.map(({ key, label, items }) => {
               const collapsed = collapsedGroups.has(key);

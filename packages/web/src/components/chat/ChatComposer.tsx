@@ -27,7 +27,6 @@ import { usePeople } from "@/hooks/use-people";
 import { useCoarsePointer } from "@/hooks/use-coarse-pointer";
 import {
   DEFAULT_LARGE_MODEL_SELECTION,
-  DEFAULT_PROJECT_NAME,
   DEFAULT_REASONING_EFFORT,
   LARGE_MODEL_OPTIONS,
 } from "@/lib/chat-constants";
@@ -58,7 +57,7 @@ export interface ChatComposerSnapshot {
   personaId?: string;
   largeModelSelection?: string;
   reasoningEffort: ReasoningEffort;
-  projectPath: string;
+  projectPath?: string;
   // Set only in draft mode when the user picked an `@app/agent` from the
   // mention menu. Active sessions inherit their agent from `pinnedAgentMention`
   // instead — `onSend` for those should ignore this field.
@@ -256,9 +255,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(fu
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [reasoningMenuOpen, setReasoningMenuOpen] = useState(false);
 
-  const [draftProjectName, setDraftProjectName] = useState(
-    initialProjectName?.trim() || DEFAULT_PROJECT_NAME,
-  );
+  const [draftProjectName, setDraftProjectName] = useState(initialProjectName?.trim() || "");
   const [projectCatalog, setProjectCatalog] = useState<ProjectCatalog | null>(null);
   const [projectsLoading, setProjectsLoading] = useState(false);
   const [projectsError, setProjectsError] = useState<string | null>(null);
@@ -297,12 +294,12 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(fu
   //      project the user explicitly picked from the menu.
   const initialProjectNameRef = useRef(initialProjectName);
   useEffect(() => {
-    const next = initialProjectName?.trim() || DEFAULT_PROJECT_NAME;
+    const next = initialProjectName?.trim() || "";
     if (next === draftProjectName) {
       initialProjectNameRef.current = initialProjectName;
       return;
     }
-    if (draftProjectName === (initialProjectNameRef.current?.trim() || DEFAULT_PROJECT_NAME)) {
+    if (draftProjectName === (initialProjectNameRef.current?.trim() || "")) {
       setDraftProjectName(next);
     }
     initialProjectNameRef.current = initialProjectName;
@@ -438,7 +435,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(fu
           largeModelSelection:
             showModelSelector && modelSelectorEnabled ? largeModelSelection : undefined,
           reasoningEffort,
-          projectPath: draftProjectName,
+          projectPath: draftProjectName || undefined,
           agentMention: draftAgentMention ?? undefined,
           skillName,
         };
@@ -507,7 +504,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(fu
       largeModelSelection:
         showModelSelector && modelSelectorEnabled ? largeModelSelection : undefined,
       reasoningEffort,
-      projectPath: draftProjectName,
+      projectPath: draftProjectName || undefined,
       // Pinned sessions ignore this; draft hosts read it to lock the new
       // session to the picked agent.
       agentMention: draftAgentMention ?? undefined,
@@ -797,7 +794,9 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(fu
   const draftProject = projectCatalog?.projects.find((p) => p.name === draftProjectName);
   const draftProjectLabel = draftProject
     ? (draftProject.displayName ?? formatProjectLabel(draftProject.name))
-    : formatProjectLabel(draftProjectName);
+    : draftProjectName
+      ? formatProjectLabel(draftProjectName)
+      : t("project.noProjectSelected");
 
   // Live handoff (not the approve moment, which keeps its own banner). When set,
   // it's the active chip in the row and supersedes the @agent chip — both would
@@ -951,7 +950,6 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(fu
               projectsError={projectsError}
               draftProjectName={draftProjectName}
               draftProjectLabel={draftProjectLabel}
-              defaultProjectName={DEFAULT_PROJECT_NAME}
               menuOpen={draftProjectMenuOpen}
               searchQuery={projectSearchQuery}
               setSearchQuery={setProjectSearchQuery}

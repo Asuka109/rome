@@ -406,6 +406,40 @@ describe("RecentChats", () => {
     expect(within(pinnedSection).queryByText("Pinned project child")).toBeNull();
   });
 
+  it("keeps implicit standalone chats navigable outside project groups", async () => {
+    const id = "4e4c34b7-4c2a-4563-a3e8-709154afbdff";
+    mockSessions([
+      {
+        id,
+        name: "Isolated chat",
+        createdAt: "2026-07-02T00:00:00.000Z",
+        activityAt: "2026-07-09T10:00:00.000Z",
+        lastSeenActivityAt: null,
+        unread: false,
+        projectName: id,
+        projectPath: `chats/${id}`,
+      },
+      {
+        id: "shared-chat",
+        name: "Shared chat",
+        createdAt: "2026-07-01T00:00:00.000Z",
+        activityAt: "2026-07-09T09:00:00.000Z",
+        lastSeenActivityAt: null,
+        unread: false,
+        projectName: "Alpha",
+        projectPath: "alpha",
+      },
+    ]);
+
+    renderRecentChats();
+
+    const chatsSection = await screen.findByRole("region", { name: "Chats" });
+    expect(within(chatsSection).getByRole("link", { name: "Isolated chat" })).toBeTruthy();
+    const projectsSection = screen.getByRole("region", { name: "Projects" });
+    expect(within(projectsSection).getByRole("button", { name: "Alpha" })).toBeTruthy();
+    expect(within(projectsSection).queryByText("Isolated chat")).toBeNull();
+  });
+
   it("does not render unread dots for the active session", async () => {
     mockSessions([
       {

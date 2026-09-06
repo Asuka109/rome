@@ -7,7 +7,9 @@ import { tmpdir } from "node:os";
 import {
   createWebchatProject,
   ensureWebchatProjectExists,
+  getStandaloneWebchatProjectPath,
   getWebchatProjectDisplayName,
+  isStandaloneWebchatProjectPath,
   listWebchatProjects,
   normalizeSelectedWebchatProjectPath,
   normalizeWebchatProjectPath,
@@ -88,6 +90,14 @@ describe("webchat project helpers", () => {
     expect(normalizeSelectedWebchatProjectPath(" landingpage/content ")).toBe(
       "landingpage/content",
     );
+  });
+
+  it("derives the standalone project path from the session id", () => {
+    const sessionId = "4e4c34b7-4c2a-4563-a3e8-709154afbdff";
+
+    expect(getStandaloneWebchatProjectPath(sessionId)).toBe(`chats/${sessionId}`);
+    expect(isStandaloneWebchatProjectPath(`chats/${sessionId}`)).toBe(true);
+    expect(isStandaloneWebchatProjectPath("chats/not-a-session-id")).toBe(false);
   });
 
   it("rejects creating the default project because it already exists", async () => {

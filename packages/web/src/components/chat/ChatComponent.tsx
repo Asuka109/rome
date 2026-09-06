@@ -77,7 +77,7 @@ export function ChatComponent({
   const [isDraggingDraftFiles, setIsDraggingDraftFiles] = useState(false);
   const pendingDraftRef = useRef<{
     sessionId: string;
-    projectPath: string;
+    projectPath?: string;
     largeModelSelection?: string;
     agentName?: string;
   } | null>(null);

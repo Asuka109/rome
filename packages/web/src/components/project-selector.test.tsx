@@ -24,7 +24,6 @@ function renderCreateForm() {
       projectsError={null}
       draftProjectName="general"
       draftProjectLabel="general"
-      defaultProjectName="general"
       menuOpen
       searchQuery=""
       setSearchQuery={rs.fn()}
@@ -61,7 +60,6 @@ function baseProps() {
     projectsError: null,
     draftProjectName: "general",
     draftProjectLabel: "general",
-    defaultProjectName: "general",
     menuOpen: true as const,
     searchQuery: "",
     setSearchQuery: rs.fn(),
@@ -160,10 +158,10 @@ describe("project selector list", () => {
 
     // `loop` wraps upward from the first project straight onto the reset row.
     await user.keyboard("{ArrowUp}");
-    await waitFor(() => expect(selectedOption()).toContain("general"));
+    await waitFor(() => expect(selectedOption()).toContain("no project selected"));
 
     await user.keyboard("{Enter}");
-    expect(props.onPickProject).toHaveBeenCalledWith("general");
+    expect(props.onPickProject).toHaveBeenCalledWith("");
   });
 });
 
