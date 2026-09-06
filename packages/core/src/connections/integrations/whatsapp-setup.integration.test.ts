@@ -141,7 +141,7 @@ describe("WhatsApp generic setup — pairing readiness", () => {
         const state = await setupState(app, cid);
         expect(state.status).toBe("presenting");
         if (state.status === "presenting") {
-          expect(state.view.body).toContain("ABCD-1234");
+          expect(state.view.code?.value).toBe("ABCD1234");
         }
       },
       { timeout: 2_000 },
