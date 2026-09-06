@@ -239,33 +239,25 @@ export async function waitForDiscordGuardianLink(
   }
 }
 
-/** A random six-digit guardian-link code, matching the telegram/feishu pattern. */
-function sixDigitCode(): string {
-  return String(Math.floor(100000 + Math.random() * 900000));
-}
-
 /**
  * Build the Discord conferral setup. A linear coroutine:
  *   1. prompt the bot token (re-prompt on a refused token, carrying the error),
  *   2. probe it (`users/@me`) for the bot identity,
- *   3. show the guardian-link instructions,
- *   4. `ctx.step` — wait for the guardian to message the bot (probe on the
- *      pending token), then
- *   5. return the terminal conferral: credential + profile + guardian mapping.
- * The runtime performs the single durable write from the returned conferral.
+ *   3. return the terminal conferral: credential + bot profile.
+ * Human identities are paired only after the live Talker receives a message,
+ * through the shared admission boundary; setup never opens a second gateway.
  */
 export function makeDiscordSetup(deps: {
   probeBotIdentity: (
     token: string,
     signal?: AbortSignal,
   ) => Promise<{ botId: string; botUsername: string }>;
-  waitForGuardianLink: (
+  waitForGuardianLink?: (
     token: string,
     code: string,
     signal: AbortSignal,
   ) => Promise<{ channelUserId: string }>;
-  /** Mints the one-time guardian-link code shown in the dashboard. */
-  generateCode: () => string;
+  generateCode?: () => string;
 }): SetupFn {
   return async (interact, ctx) => {
     let error: string | undefined;
@@ -310,35 +302,15 @@ export function makeDiscordSetup(deps: {
       }
     }
 
-    // Mint a one-time code the guardian must send to the bot. Binding is gated
-    // on this proof (see waitForDiscordGuardianLink) so a shared-guild member
-    // cannot race the guardian by simply messaging the bot first.
-    const code = deps.generateCode();
-    interact.show({
-      title: "Link your account",
-      body: [
-        `Your bot @${identity.botUsername} is verified.`,
-        "To finish linking your account as guardian, send this exact code to the bot in Discord:",
-        code,
-      ],
-      steps: [{ text: `Send ${code} to your bot in Discord` }],
-      progress: true,
-    });
-
-    const { channelUserId } = await ctx.step("discord-guardian-link", (signal) =>
-      deps.waitForGuardianLink(token, code, signal),
-    );
-
     const profile =
       discordProfileFromSettings({ botId: identity.botId, botUsername: identity.botUsername }) ??
       undefined;
     return {
       credential: { material: { token }, expiresAt: "never" },
       profile,
-      guardianChannelUserId: channelUserId,
       summary: {
         title: "Discord connected",
-        body: [`@${identity.botUsername} is live and your account is linked as guardian.`],
+        body: [`@${identity.botUsername} is live.`],
       },
     };
   };
@@ -352,19 +324,15 @@ export function makeDiscordSetup(deps: {
 export function makeDiscordDescriptor(deps: DiscordDeps): ConnectionDescriptor {
   const validateToken = deps.validateToken ?? pingDiscordToken;
   const probeBotIdentity = deps.probeBotIdentity ?? pingDiscordIdentity;
-  const waitForGuardianLink = deps.waitForGuardianLink ?? waitForDiscordGuardianLink;
-  const generateCode = deps.generateVerificationCode ?? sixDigitCode;
 
   const botScheme = tokenPaste({
     label: "Discord bot token",
     instructions: "Paste the bot token from the Discord Developer Portal.",
     validate: validateToken,
   });
-  // The Discord conferral setup: prompt the bot token, probe it,
-  // present the guardian-link instructions, then wait (inside the setup, on
-  // the PENDING token) for the guardian to message the bot before the single
-  // terminal write of credential + profile + guardian mapping.
-  botScheme.setup = makeDiscordSetup({ probeBotIdentity, waitForGuardianLink, generateCode });
+  // The Discord conferral setup verifies and stores the bot. Human accounts
+  // are paired later through the shared inbound admission boundary.
+  botScheme.setup = makeDiscordSetup({ probeBotIdentity });
 
   return {
     service: "discord",

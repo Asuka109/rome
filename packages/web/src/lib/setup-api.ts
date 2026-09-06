@@ -26,6 +26,14 @@ export interface SetupViewStep {
   done?: boolean;
 }
 
+export interface SetupViewCode {
+  label: string;
+  value: string;
+  destination: string;
+  copyLabel: string;
+  copiedLabel: string;
+}
+
 export interface SetupForm {
   instructions?: string;
   /** A numbered how-to shown above the fields (e.g. the BotFather walkthrough). */
@@ -39,6 +47,7 @@ export interface SetupForm {
 
 export interface SetupView {
   title?: string;
+  code?: SetupViewCode;
   body?: string[];
   links?: SetupViewLink[];
   steps?: SetupViewStep[];

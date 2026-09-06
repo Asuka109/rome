@@ -26,16 +26,6 @@ import {
   waitForTelegramGuardianLink,
 } from "./telegram.js";
 
-function deferred<T>() {
-  let resolve!: (v: T) => void;
-  let reject!: (e: unknown) => void;
-  const promise = new Promise<T>((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-  return { promise, resolve, reject };
-}
-
 const BOT_INFO: UserFromGetMe = {
   id: 424242,
   is_bot: true,
@@ -91,10 +81,9 @@ function tgMessage(fromId: number, text: string, isBot = false) {
 }
 
 describe("makeTelegramSetup", () => {
-  it("prompts, probes, shows the one-time code, then confers on guardian link", async () => {
-    const link = deferred<{ channelUserId: string }>();
+  it("prompts, probes, and confers without consuming inbound updates", async () => {
     const probeBotIdentity = rs.fn(async () => ({ botId: "424242", botUsername: "@setup_bot" }));
-    const waitForGuardianLink = rs.fn(() => link.promise);
+    const waitForGuardianLink = rs.fn(async () => ({ channelUserId: "unused" }));
     const guardianLinked = rs.fn(async () => false);
     const generateCode = rs.fn(() => "246810");
     const fn = makeTelegramSetup({
@@ -120,29 +109,15 @@ describe("makeTelegramSetup", () => {
 
     const afterInput = await session.provideInput({ token: "123:abc" });
     expect(probeBotIdentity).toHaveBeenCalledWith("123:abc", expect.anything());
-    expect(afterInput.state.status).toBe("presenting");
-    if (afterInput.state.status === "presenting") {
-      expect(afterInput.state.view.title).toBe("Link your account");
-      // The code is server-authored into the view payload so the standard
-      // renderer shows it without any Telegram-specific knowledge.
-      expect(afterInput.state.view.body).toContain("246810");
-      expect(afterInput.state.view.steps).toEqual([
-        { text: "Send 246810 to @setup_bot in Telegram" },
-      ]);
-    }
-    // The probe is gated on the exact minted code.
-    expect(waitForGuardianLink).toHaveBeenCalledWith("123:abc", "246810", expect.anything());
-
-    link.resolve({ channelUserId: "guardian-777" });
-    await rs.waitFor(() => expect(session.state.status).toBe("done"));
+    expect(afterInput.state.status).toBe("done");
+    expect(waitForGuardianLink).not.toHaveBeenCalled();
     expect(commit).toHaveBeenCalledTimes(1);
     expect(commit.mock.calls[0][0]).toEqual({
       credential: { material: { token: "123:abc" }, expiresAt: "never" },
       profile: { botId: "424242", botUsername: "@setup_bot" },
-      guardianChannelUserId: "guardian-777",
       summary: {
         title: "Telegram connected",
-        body: ["@setup_bot is live and your account is linked as guardian."],
+        body: ["@setup_bot is live."],
       },
     });
   });
@@ -205,36 +180,7 @@ describe("makeTelegramSetup", () => {
     ]);
 
     const accepted = await session.provideInput({ token: "good" });
-    expect(accepted.state.status).toBe("presenting");
-  });
-
-  it("interrupts the guardian-link wait on cancel, running no commit", async () => {
-    const probeBotIdentity = rs.fn(async () => ({ botId: "1", botUsername: "@ok" }));
-    let linkSignal: AbortSignal | undefined;
-    const waitForGuardianLink = rs.fn(
-      (_token: string, _code: string, signal: AbortSignal) =>
-        new Promise<{ channelUserId: string }>((_resolve, reject) => {
-          linkSignal = signal;
-          signal.addEventListener("abort", () => reject(new Error("aborted")), { once: true });
-        }),
-    );
-    const commit = rs.fn(async () => {});
-    const fn = makeTelegramSetup({
-      probeBotIdentity,
-      waitForGuardianLink,
-      guardianLinked: async () => false,
-      generateCode: () => "222222",
-    });
-    const session = new SetupSession({ fn, commit });
-
-    await session.started();
-    await session.provideInput({ token: "good" });
-    expect(session.state.status).toBe("presenting");
-
-    const state = await session.cancel();
-    expect(state).toEqual({ status: "cancelled" });
-    expect(commit).not.toHaveBeenCalled();
-    expect(linkSignal?.aborted).toBe(true);
+    expect(accepted.state.status).toBe("done");
   });
 
   it("interrupts an in-flight token probe on cancel (no re-prompt), running no commit", async () => {

@@ -45,6 +45,7 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const SettingsTabPage = lazy(() => import("./pages/SettingsTabPage"));
 const ConnectionDetailPage = lazy(() => import("./pages/ConnectionDetailPage"));
 const AppKeysPage = lazy(() => import("./pages/AppKeysPage"));
+const PairingPage = lazy(() => import("./pages/PairingPage"));
 // Dev-only pages (src/pages/dev/). import.meta.env.DEV is statically false in
 // production builds, so the route entries below are dropped AND — because each
 // registry entry's lazy() dynamic import is only referenced from inside the
@@ -179,6 +180,7 @@ export default function App() {
             {/* Guide merged into the Showcases app; keep the old path working. */}
             <Route path="/guide" element={<Navigate to="/apps/showcases" replace />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/pairing/:id" element={<PairingPage />} />
             {/* More-specific static-segment path must win over the wildcard
                 `:tab` route: `/settings/connections` (no id) still falls through
                 to SettingsTabPage. */}

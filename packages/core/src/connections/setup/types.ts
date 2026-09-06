@@ -46,6 +46,15 @@ export interface SetupViewStep {
   done?: boolean;
 }
 
+/** A single provider-issued value the guardian must copy somewhere else. */
+export interface SetupViewCode {
+  label: string;
+  value: string;
+  destination: string;
+  copyLabel: string;
+  copiedLabel: string;
+}
+
 /** A prompt's form — the instructional preamble plus the fields to collect. The
  *  preamble mirrors {@link SetupView}'s narrative slots (`steps`, `links`) so a
  *  token-paste prompt can carry a full "how to get this credential" guide
@@ -72,6 +81,8 @@ export interface SetupForm {
  */
 export interface SetupView {
   title?: string;
+  /** Rendered once, immediately after the title and before all help text. */
+  code?: SetupViewCode;
   /** Paragraphs of plain structured text. */
   body?: string[];
   links?: SetupViewLink[];

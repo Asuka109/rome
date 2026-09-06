@@ -10,6 +10,7 @@ import { EmptyState, EmptyStateIcon, EmptyStateTitle } from "@/components/ui/emp
 import { Skeleton } from "@/components/ui/skeleton";
 import { buildConnectionCards } from "@/lib/connection-cards";
 import { StatusIndicator } from "@/lib/connection-status";
+import { PairingRequests } from "@/components/pairing-requests";
 import type { ApiConnection } from "@/lib/connections-api";
 import type { ComposioCliStatus } from "@/lib/provider-types";
 
@@ -64,6 +65,8 @@ export function ConnectionsSection({
           what it enables.
         </p>
       </div>
+
+      <PairingRequests />
 
       <div className="flex flex-col gap-2">
         {loading ? (

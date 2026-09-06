@@ -182,7 +182,7 @@ export interface FeishuSetupDeps {
    * sender of the message that carries the one-time `code` shown in the
    * dashboard. Must honor the abort signal (cancel interrupts promptly).
    */
-  waitForGuardianLink: (
+  waitForGuardianLink?: (
     material: FeishuPendingMaterial,
     code: string,
     signal: AbortSignal,
@@ -190,9 +190,9 @@ export interface FeishuSetupDeps {
   /** True when a guardian already has a feishu channel mapping — re-conferral
    *  then skips the link step (and avoids a probe connection competing with a
    *  live adapter for inbound events). */
-  guardianLinked: () => Promise<boolean>;
+  guardianLinked?: () => Promise<boolean>;
   /** Mints the one-time guardian-link code shown in the dashboard. */
-  generateCode: () => string;
+  generateCode?: () => string;
 }
 
 /**
@@ -254,32 +254,16 @@ function agentReadyQrView(qr: FeishuAgentReadyQr): SetupView {
   };
 }
 
-function guardianLinkView(appId: string, code: string): SetupView {
-  return {
-    title: "Link your account",
-    body: [
-      `Your Feishu app ${appId} is verified.`,
-      "To finish linking your account as guardian, send this exact code to your bot in Feishu:",
-      code,
-    ],
-    steps: [{ text: `Send ${code} to your bot in Feishu` }],
-    progress: true,
-  };
-}
-
 /**
  * Build the Feishu conferral setup. A linear coroutine:
  *   1. prompt the setup mode (agent-ready vs manual) + tenant domain,
  *   2. get credentials — manual: re-prompt loop over a tenant-token probe;
  *      agent-ready: `ctx.step` around the SDK registerApp QR dance (the QR is
  *      shown mid-step; the SDK mints the app credentials on scan),
- *   3. unless a guardian is already mapped, show the one-time code and
- *      `ctx.step`-wait (probe long connection on the PENDING credential) for
- *      the guardian to send it to the bot, then
- *   4. return the terminal conferral: credential (domain duplicated into
- *      material) + profile + guardian mapping.
- * The runtime performs the single durable write from the returned conferral —
- * the bespoke flows' pre-conferral `feishu_verification` settings write is gone.
+ *   3. return the terminal conferral: credential (domain duplicated into
+ *      material) + app profile.
+ * Human identities are paired only after the live Talker receives a message,
+ * through the shared admission boundary; setup never opens a second connection.
  */
 export function makeFeishuSetup(deps: FeishuSetupDeps): SetupFn {
   return async (interact, ctx) => {
@@ -322,18 +306,6 @@ export function makeFeishuSetup(deps: FeishuSetupDeps): SetupFn {
       );
     }
 
-    // Guardian link inside the setup (subsumes the bespoke verify-status
-    // surface): skipped when a guardian mapping already exists, so re-conferral
-    // never runs a probe connection against a live adapter's event stream.
-    let guardianChannelUserId: string | undefined;
-    if (!(await deps.guardianLinked())) {
-      const code = deps.generateCode();
-      interact.show(guardianLinkView(pending.appId, code));
-      ({ channelUserId: guardianChannelUserId } = await ctx.step("feishu-guardian-link", (signal) =>
-        deps.waitForGuardianLink(pending, code, signal),
-      ));
-    }
-
     // Same material shape the boot importer's FEISHU_SETTINGS_IMPORT_ROW
     // extracts: domain (and appType) duplicated into material and profile by
     // the one atomic write, so the two halves cannot disagree.
@@ -349,14 +321,9 @@ export function makeFeishuSetup(deps: FeishuSetupDeps): SetupFn {
     return {
       credential: { material, expiresAt: "never" },
       profile,
-      ...(guardianChannelUserId !== undefined ? { guardianChannelUserId } : {}),
       summary: {
         title: "Feishu connected",
-        body: [
-          guardianChannelUserId !== undefined
-            ? `App ${pending.appId} is live and your account is linked as guardian.`
-            : `App ${pending.appId} is live.`,
-        ],
+        body: [`App ${pending.appId} is live.`],
       },
     };
   };
@@ -497,17 +464,6 @@ export async function waitForFeishuGuardianLink(
   }
 }
 
-/** True when any guardian person already carries a feishu channel mapping. */
-async function feishuGuardianLinked(repo: PersonMappingRepository): Promise<boolean> {
-  const guardians = await repo.findByBondLevel("guardian");
-  return guardians.some((g) => g.channelMappings.some((m) => m.channel === "feishu"));
-}
-
-/** A random six-digit guardian-link code, matching the telegram/discord pattern. */
-function sixDigitCode(): string {
-  return String(Math.floor(100000 + Math.random() * 900000));
-}
-
 /** Default LarkChannel factory (mirrors the FeishuAdapter default) parameterized
  *  by the pasted `app` material so `validate` can mint a token from it. */
 function defaultCreateChannel(config: FeishuConfig): LarkChannel {
@@ -531,13 +487,6 @@ export function createFeishuDescriptor(deps: FeishuDescriptorDeps): ConnectionDe
   const createChannel = deps.createChannel ?? defaultCreateChannel;
   const probeCredentials = deps.probeCredentials ?? probeFeishuCredentials;
   const registerAgentApp = deps.registerAgentApp ?? registerFeishuAgentApp;
-  const waitForGuardianLink =
-    deps.waitForGuardianLink ??
-    ((material: FeishuPendingMaterial, code: string, signal: AbortSignal) =>
-      waitForFeishuGuardianLink(material, code, signal, createChannel));
-  const guardianLinked =
-    deps.guardianLinked ?? (() => feishuGuardianLinked(deps.personMappingRepo));
-  const generateCode = deps.generateVerificationCode ?? sixDigitCode;
 
   const appScheme = credentialsPaste({
     instructions: "Paste your Feishu/Lark custom-app App ID and App Secret.",
@@ -561,16 +510,11 @@ export function createFeishuDescriptor(deps: FeishuDescriptorDeps): ConnectionDe
       }
     },
   });
-  // The Feishu conferral setup: mode + domain prompt, then either the
-  // manual credential probe or the agent-ready registerApp QR dance, then the
-  // in-setup guardian link (probe long connection on the PENDING credential)
-  // before the single terminal write of credential + profile + guardian mapping.
+  // The Feishu conferral setup verifies and stores the app. Human accounts
+  // are paired later through the shared inbound admission boundary.
   appScheme.setup = makeFeishuSetup({
     probeCredentials,
     registerAgentApp,
-    waitForGuardianLink,
-    guardianLinked,
-    generateCode,
   });
 
   return {

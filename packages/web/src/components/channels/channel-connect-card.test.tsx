@@ -150,7 +150,7 @@ describe("ChannelConnectCard — shared frame", () => {
 
     const field = await screen.findByLabelText("Discord bot token");
     fireEvent.change(field, { target: { value: "bot-token-123" } });
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.click(screen.getByRole("button", { name: "Connect" }));
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(

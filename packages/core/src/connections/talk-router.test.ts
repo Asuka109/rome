@@ -11,6 +11,10 @@ import { ConnectionRegistry } from "./registry.js";
 import { tokenPaste } from "./schemes.js";
 import type { ConnectionDescriptor, Talker } from "./types.js";
 import { createTalkRouter } from "./talk-router.js";
+import { createPairingAdmission } from "./pairing-admission.js";
+import { ChannelPairingRepository } from "../db/repositories/channel-pairing.js";
+import { PersonMappingRepository } from "../db/repositories/person-mapping.js";
+import { persons } from "../db/schema.js";
 
 describe("ConnectionTalkRouter", () => {
   let testDb: TestDb | undefined;
@@ -112,5 +116,80 @@ describe("ConnectionTalkRouter", () => {
     });
     expect(received).toEqual(["inbound-1", "inbound-2"]);
     expect((await history?.query({ limit: 10 }))?.[0]?.messageId).toBe("history-2");
+  });
+
+  it("blocks an unapproved identity before the subscriber runs", async () => {
+    testDb = createTestDb();
+    const sends: string[] = [];
+    let deliver: ((message: InboundMessage) => void) | undefined;
+    const registry = new ConnectionRegistry({ ledger: new DrizzleGrantLedger(testDb.db) });
+    registry.register({
+      service: "telegram",
+      auth: { bot: tokenPaste({ label: "token", validate: async () => {} }) },
+      capabilities: {
+        talker: {
+          needs: ["bot"],
+          build(): Talker {
+            return {
+              start(next) {
+                deliver = next;
+              },
+              stop() {},
+              async send(conversationId, message) {
+                sends.push(message.text ?? "");
+                return { conversationId, messageId: "blocked" };
+              },
+              feature: () => null,
+            };
+          },
+        },
+      },
+    });
+    const connection = await registry.connect("telegram");
+    testDb.db
+      .insert(persons)
+      .values({
+        id: "guardian",
+        displayName: "Guardian",
+        bondLevel: "guardian",
+        approved: true,
+        createdAt: new Date(0),
+      })
+      .run();
+    const pairings = new ChannelPairingRepository(testDb.db);
+    const router = createTalkRouter(
+      registry,
+      createPairingAdmission({
+        pairings,
+        people: new PersonMappingRepository(testDb.db),
+        instanceOrigin: null,
+      }),
+    );
+    const received: string[] = [];
+    router.subscribe(connection.id, async (message) => {
+      received.push(message.messageId);
+    });
+    await registry.importCredential(connection.id, "bot", {
+      material: { token: "token" },
+      expiresAt: "never",
+    });
+    const message: InboundMessage = {
+      messageId: "one",
+      conversationId: "dm" as ConversationId,
+      senderId: "42",
+      text: "hello",
+      attachments: [],
+      timestamp: new Date(0),
+    };
+    deliver?.(message);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(received).toEqual([]);
+    expect(sends[0]).toContain("waiting for guardian approval");
+
+    const request = pairings.listPending()[0]!;
+    expect(pairings.resolve(request.id, "approve", request.token).ok).toBe(true);
+    deliver?.({ ...message, messageId: "two" });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(received).toEqual(["two"]);
   });
 });

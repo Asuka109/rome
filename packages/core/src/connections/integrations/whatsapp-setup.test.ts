@@ -70,7 +70,13 @@ describe("makeWhatsAppSetup", () => {
     await rs.waitFor(() => {
       const state = session.state;
       if (state.status !== "presenting") throw new Error("not presenting");
-      expect(state.view.body).toContain("ABCD-1234");
+      expect(state.view.code).toEqual({
+        label: "WhatsApp pairing code",
+        value: "ABCD1234",
+        destination: "Enter this exact code in WhatsApp on your phone.",
+        copyLabel: "Copy code",
+        copiedLabel: "WhatsApp pairing code copied",
+      });
       expect(state.view.progress).toBe(true);
       expect(state.view.steps?.length).toBeGreaterThan(0);
     });

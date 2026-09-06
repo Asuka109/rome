@@ -45,7 +45,11 @@
     "online": "Online",
     "offline": "Offline",
     "remove": "Remove",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "completed": "Completed",
+    "remaining": "Remaining",
+    "setupFailed": "Something went wrong",
+    "cancelled": "Cancelled"
   },
   "connections": {
     "loading": "Loading connections",
@@ -745,6 +749,22 @@
     "title": "Sentinel Settings",
     "intervalLabel": "Review interval (minutes)",
     "intervalHelp": "How often the guardian is reminded to review sentinel log entries."
+  },
+  "pairing": {
+    "title": "Accounts waiting for approval",
+    "description": "Approve only the account you recognize. Unapproved messages do not reach your agent.",
+    "approve": "Approve",
+    "reject": "Reject",
+    "approved": "Account approved.",
+    "rejected": "Request rejected.",
+    "failed": "Could not update the request.",
+    "otherWays": "Other ways to approve",
+    "openLink": "Open the guardian pairing link",
+    "cli": "On the Rome host, run one of these commands:",
+    "pageTitle": "Review account pairing",
+    "pageDescription": "Confirm that this messaging account belongs to you before approving it.",
+    "loading": "Loading pairing request…",
+    "unavailable": "This pairing request is unavailable, expired, or already resolved."
   },
   "easterEgg": {
     "closeLabel": "Close advanced easter egg",

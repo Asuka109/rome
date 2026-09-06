@@ -48,6 +48,7 @@ import type { ConnectionRegistry } from "../connections/index.js";
 import type { SetupManager } from "../connections/setup/manager.js";
 import type { AgentRunnerInterface } from "../core/types.js";
 import type { ConversationTitleGenerator } from "../core/conversation-title.js";
+import type { ChannelPairingRepository } from "../db/repositories/channel-pairing.js";
 
 export interface ApiConfig {
   port: number;
@@ -90,6 +91,8 @@ export interface ApiDeps {
   outboxRepo: OutboxRepository;
   webhookInvocationsRepo: WebhookInvocationsRepository;
   approvalsRepo: ApprovalsRepository;
+  pairingRepo: ChannelPairingRepository;
+  pairingMethods: { instanceOrigin: string | null; cliOrigin: string | null };
   approvalHandler: ApprovalHandler;
   /** Main-process backend-turn orchestrator. The webchat runtime it
    * needs for SSE delivery is bound inside `buildApp` once `createWebchatRuntime`

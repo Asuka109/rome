@@ -59,6 +59,7 @@ import { createAccountNames } from "./channels/account-names.js";
 import { channelList } from "./channels/channel-list.js";
 import { SentinelLogRepository } from "./db/repositories/sentinel-log.js";
 import { ApprovalsRepository } from "./db/repositories/approvals.js";
+import { ChannelPairingRepository } from "./db/repositories/channel-pairing.js";
 import { SettingsRepository } from "./db/repositories/settings.js";
 import { AppKeysRepository } from "./db/repositories/app-keys.js";
 import { AppKeyInjector } from "./app-keys/injector.js";
@@ -167,6 +168,7 @@ import {
   parseLegacyArtifactBindings,
 } from "./apps/artifact-id.js";
 import { ConnectionRegistry, DrizzleGrantLedger, createTalkRouter } from "./connections/index.js";
+import { createPairingAdmission } from "./connections/pairing-admission.js";
 import { SetupManager } from "./connections/setup/manager.js";
 import { registerBuiltinConnections } from "./connections/integrations/index.js";
 import {
@@ -244,6 +246,7 @@ async function main() {
   const channels = channelList({ db, whatsAppAccounts, linkedInAccounts });
   const accountNames = createAccountNames({ channels, sentinelLogRepo });
   const approvalsRepo = new ApprovalsRepository(db);
+  const pairingRepo = new ChannelPairingRepository(db);
   const settingsRepo = new SettingsRepository(db);
 
   // Instance token: the DB is the single runtime read path. A cloud VM
@@ -281,7 +284,11 @@ async function main() {
   // the load()/import that hydrate + rebuild live connections run LATER — after
   // the message hook exists, so the first Talk unlock can attach its subscription.
   const connectionRegistry = new ConnectionRegistry({ ledger: new DrizzleGrantLedger(db) });
-  const talkRouter = createTalkRouter(connectionRegistry);
+  const instanceOrigin = getConfiguredInstanceOrigin();
+  const talkRouter = createTalkRouter(
+    connectionRegistry,
+    createPairingAdmission({ pairings: pairingRepo, people: personMappingRepo, instanceOrigin }),
+  );
   // Conferral setups: in-memory session store keyed per grant,
   // sharing the registry (descriptor lookup + terminal write) and the person
   // mapping repo (guardian-link auto-mapping). Drives the generic setup
@@ -1234,6 +1241,11 @@ async function main() {
       webchatRepo,
       webhookInvocationsRepo,
       approvalsRepo,
+      pairingRepo,
+      pairingMethods: {
+        instanceOrigin,
+        cliOrigin: config.instanceSlug ? null : `http://127.0.0.1:${config.internalApi.port}`,
+      },
       approvalHandler,
       backendTurnRunner,
       routineEngine,

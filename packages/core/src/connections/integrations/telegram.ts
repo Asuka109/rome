@@ -11,7 +11,6 @@
 //   - any other terminal transport failure → Disconnected → runtime backs off
 //     and rebuilds.
 
-import { randomInt } from "node:crypto";
 import { Bot, GrammyError } from "grammy";
 import type { Update } from "grammy/types";
 import { z } from "zod";
@@ -21,7 +20,7 @@ import type { PersonMappingRepository } from "../../db/repositories/person-mappi
 import { CredentialRejected, Disconnected } from "../errors.js";
 import { tokenPaste } from "../schemes.js";
 import { SetupAbortError } from "../setup/session.js";
-import type { SetupFn, SetupView } from "../setup/types.js";
+import type { SetupFn } from "../setup/types.js";
 import type { ConnectionDescriptor, ProfileDisplay, ProfileRecord, Talker } from "../types.js";
 import {
   addressIsConversationFeature,
@@ -245,62 +244,26 @@ export async function waitForTelegramGuardianLink(
   }
 }
 
-/** A random six-digit guardian-link code from a CSPRNG. The code is the sole
- *  proof binding a Telegram account as guardian (it closes the shared-group
- *  race), so it must not come from a predictable PRNG. (Discord/Feishu still
- *  mint theirs with Math.random(); folding all three onto a shared CSPRNG helper
- *  is a worthwhile follow-up beyond this cutover.) */
-function sixDigitCode(): string {
-  return String(randomInt(100000, 1000000));
-}
-
-/** True when any guardian person already carries a telegram channel mapping. */
-async function telegramGuardianLinked(repo: PersonMappingRepository): Promise<boolean> {
-  const guardians = await repo.findByBondLevel("guardian");
-  return guardians.some((g) => g.channelMappings.some((m) => m.channel === "telegram"));
-}
-
-/** The one-time-code view the guardian sends back to the bot. Server-authored so
- *  the standard renderer shows it without any Telegram-specific knowledge. */
-function guardianLinkView(botUsername: string, code: string): SetupView {
-  const bot = botUsername || "your bot";
-  return {
-    title: "Link your account",
-    body: [
-      `Your bot ${bot} is verified.`,
-      "To finish linking your account as guardian, send this exact code to the bot in Telegram:",
-      code,
-    ],
-    steps: [{ text: `Send ${code} to ${bot} in Telegram` }],
-    progress: true,
-  };
-}
-
 /**
  * Build the Telegram conferral setup. A linear coroutine:
  *   1. prompt the bot token (re-prompt on a refused token, carrying the error),
  *   2. probe it (getMe) for the bot identity,
- *   3. unless a guardian is already mapped, show the one-time code and `ctx.step`
- *      a `getUpdates` probe on the PENDING token until the guardian sends it back,
- *   4. return the terminal conferral: credential + profile + guardian mapping.
- * The runtime performs the single durable write from the returned conferral —
- * the bespoke flow's pre-conferral `telegram_verification` settings write is gone
- * (the code lives in setup state).
+ *   3. return the terminal conferral: credential + bot profile.
+ * Human identities are paired only after the live Talker receives a message,
+ * through the shared admission boundary; setup never competes for getUpdates.
  */
 export function makeTelegramSetup(deps: {
   probeBotIdentity: (
     token: string,
     signal?: AbortSignal,
   ) => Promise<{ botId: string; botUsername: string }>;
-  waitForGuardianLink: (
+  waitForGuardianLink?: (
     token: string,
     code: string,
     signal: AbortSignal,
   ) => Promise<{ channelUserId: string }>;
-  /** True when a guardian is already mapped — skip the link step on re-conferral. */
-  guardianLinked: () => Promise<boolean>;
-  /** Mints the one-time guardian-link code shown in the dashboard. */
-  generateCode: () => string;
+  guardianLinked?: () => Promise<boolean>;
+  generateCode?: () => string;
 }): SetupFn {
   return async (interact, ctx) => {
     let error: string | undefined;
@@ -334,33 +297,15 @@ export function makeTelegramSetup(deps: {
       }
     }
 
-    // Guardian link inside the setup: skipped when a guardian mapping already
-    // exists (re-conferral of a rotated token), so the getUpdates probe never
-    // competes with the live adapter for the same token's long-poll (409).
-    let guardianChannelUserId: string | undefined;
-    if (!(await deps.guardianLinked())) {
-      const code = deps.generateCode();
-      interact.show(guardianLinkView(identity.botUsername, code));
-      ({ channelUserId: guardianChannelUserId } = await ctx.step(
-        "telegram-guardian-link",
-        (signal) => deps.waitForGuardianLink(token, code, signal),
-      ));
-    }
-
     const profile =
       telegramProfileFromSettings({ botId: identity.botId, botUsername: identity.botUsername }) ??
       undefined;
     return {
       credential: { material: { token }, expiresAt: "never" },
       profile,
-      ...(guardianChannelUserId !== undefined ? { guardianChannelUserId } : {}),
       summary: {
         title: "Telegram connected",
-        body: [
-          guardianChannelUserId !== undefined
-            ? `${identity.botUsername || "Your bot"} is live and your account is linked as guardian.`
-            : `${identity.botUsername || "Your bot"} is live.`,
-        ],
+        body: [`${identity.botUsername || "Your bot"} is live.`],
       },
     };
   };
@@ -375,16 +320,6 @@ export function makeTelegramDescriptor(deps: TelegramDescriptorDeps = {}): Conne
   const createBot: CreateTelegramBot = deps.createBot ?? ((token) => new Bot(token));
   const probeBotIdentity =
     deps.probeBotIdentity ?? ((token, signal) => pingTelegramIdentity(createBot, token, signal));
-  const waitForGuardianLink =
-    deps.waitForGuardianLink ??
-    ((token: string, code: string, signal: AbortSignal) =>
-      waitForTelegramGuardianLink(createBot, token, code, signal));
-  const guardianLinked =
-    deps.guardianLinked ??
-    (deps.personMappingRepo
-      ? () => telegramGuardianLinked(deps.personMappingRepo as PersonMappingRepository)
-      : async () => false);
-  const generateCode = deps.generateVerificationCode ?? sixDigitCode;
 
   const botScheme = tokenPaste({
     label: "Telegram bot token",
@@ -394,16 +329,9 @@ export function makeTelegramDescriptor(deps: TelegramDescriptorDeps = {}): Conne
       await createBot(token).api.getMe();
     },
   });
-  // The Telegram conferral setup: prompt the bot token, probe getMe,
-  // then (unless a guardian is already mapped) show the one-time code and run a
-  // getUpdates probe on the PENDING token until the guardian sends it back,
-  // before the single terminal write of credential + profile + guardian mapping.
-  botScheme.setup = makeTelegramSetup({
-    probeBotIdentity,
-    waitForGuardianLink,
-    guardianLinked,
-    generateCode,
-  });
+  // The Telegram conferral setup verifies and stores the bot. Human accounts
+  // are paired later through the shared inbound admission boundary.
+  botScheme.setup = makeTelegramSetup({ probeBotIdentity });
 
   return {
     service: "telegram",

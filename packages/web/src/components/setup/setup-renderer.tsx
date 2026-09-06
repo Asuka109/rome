@@ -8,6 +8,7 @@
  */
 
 import { useId, useState, type ComponentType, type ReactElement } from "react";
+import { Check, Circle, Copy } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -43,6 +44,8 @@ export interface SetupLabels {
   connected: string;
   failed: string;
   cancelled: string;
+  completed: string;
+  remaining: string;
 }
 
 const DEFAULT_LABELS: SetupLabels = {
@@ -53,6 +56,8 @@ const DEFAULT_LABELS: SetupLabels = {
   connected: "Connected",
   failed: "Something went wrong",
   cancelled: "Cancelled",
+  completed: "Completed",
+  remaining: "Remaining",
 };
 
 /** Key format for the custom-component registry: `"<service>:<status>"`. */
@@ -83,7 +88,7 @@ export function StandardSetupRenderer(
     case "presenting":
       return (
         <div className="space-y-2" data-testid="setup-presenting">
-          <ViewBody view={state.view} />
+          <ViewBody view={state.view} labels={labels} />
           {props.error && <p className="text-aux text-destructive-fg">{props.error}</p>}
           <Button variant="ghost" size="sm" onClick={props.onCancel} disabled={props.busy}>
             {labels.cancel}
@@ -100,13 +105,16 @@ export function StandardSetupRenderer(
           >
             {labels.continue}
           </a>
+          <Button variant="ghost" size="sm" onClick={props.onCancel} disabled={props.busy}>
+            {labels.cancel}
+          </Button>
         </div>
       );
     case "done":
       return (
         <div className="space-y-1" data-testid="setup-done">
           {state.conferral.summary ? (
-            <ViewBody view={state.conferral.summary} />
+            <ViewBody view={state.conferral.summary} labels={labels} />
           ) : (
             <p className="text-aux text-success-fg">{labels.connected}</p>
           )}
@@ -153,7 +161,7 @@ function AwaitingInput(props: SetupRenderProps & { labels: SetupLabels }): React
   return (
     <div className="space-y-3" data-testid="setup-input">
       {form.instructions && <p className="text-aux text-muted-foreground">{form.instructions}</p>}
-      <StepList steps={form.steps} />
+      <StepList steps={form.steps} labels={labels} />
       <LinkList links={form.links} />
       {form.fields.map((field) => (
         <Field key={field.name}>
@@ -196,19 +204,25 @@ function AwaitingInput(props: SetupRenderProps & { labels: SetupLabels }): React
       {form.note && <p className="text-aux text-muted-foreground">{form.note}</p>}
       {error && <p className="text-aux text-destructive-fg">{error}</p>}
       {props.error && <p className="text-aux text-destructive-fg">{props.error}</p>}
-      <Button size="sm" onClick={() => props.onSubmit(values)} disabled={props.busy || !complete}>
-        {labels.submit}
-      </Button>
+      <div className="flex gap-2">
+        <Button size="sm" onClick={() => props.onSubmit(values)} disabled={props.busy || !complete}>
+          {labels.submit}
+        </Button>
+        <Button variant="ghost" size="sm" onClick={props.onCancel} disabled={props.busy}>
+          {labels.cancel}
+        </Button>
+      </div>
     </div>
   );
 }
 
 /** Render a view payload: title, paragraphs, a QR image, links, and a step
  *  checklist. */
-function ViewBody({ view }: { view: SetupView }): ReactElement {
+function ViewBody({ view, labels }: { view: SetupView; labels: SetupLabels }): ReactElement {
   return (
     <div className="space-y-2">
       {view.title && <p className="text-ui text-foreground">{view.title}</p>}
+      {view.code && <CodeCard code={view.code} />}
       {view.body?.map((paragraph, i) => (
         <p key={i} className="text-aux text-muted-foreground">
           {paragraph}
@@ -221,23 +235,61 @@ function ViewBody({ view }: { view: SetupView }): ReactElement {
           className="h-44 w-44 rounded-8 border border-border bg-white p-2"
         />
       )}
-      <StepList steps={view.steps} />
+      <StepList steps={view.steps} labels={labels} />
       <LinkList links={view.links} />
     </div>
   );
 }
 
 /** A numbered checklist — shared by presented views and prompt-form preambles. */
-function StepList({ steps }: { steps?: SetupViewStep[] }): ReactElement | null {
+function StepList({
+  steps,
+  labels,
+}: {
+  steps?: SetupViewStep[];
+  labels: Pick<SetupLabels, "completed" | "remaining">;
+}): ReactElement | null {
   if (!steps || steps.length === 0) return null;
   return (
-    <ol className="list-inside list-decimal space-y-1 text-aux text-muted-foreground">
+    <ol className="space-y-1 text-aux text-muted-foreground">
       {steps.map((step, i) => (
-        <li key={i} className={step.done ? "line-through opacity-60" : undefined}>
-          {step.text}
+        <li key={i} className="flex items-start gap-2">
+          {step.done ? (
+            <Check className="mt-1 size-4 shrink-0 text-success-fg" aria-hidden />
+          ) : (
+            <Circle className="mt-1 size-4 shrink-0" aria-hidden />
+          )}
+          <span className="sr-only">{step.done ? labels.completed : labels.remaining}: </span>
+          <span>{step.text}</span>
         </li>
       ))}
     </ol>
+  );
+}
+
+function CodeCard({ code }: { code: NonNullable<SetupView["code"]> }): ReactElement {
+  const [message, setMessage] = useState("");
+  const copy = async (): Promise<void> => {
+    try {
+      await navigator.clipboard.writeText(code.value);
+      setMessage(code.copiedLabel);
+    } catch {
+      setMessage("Could not copy the code.");
+    }
+  };
+  return (
+    <div className="rounded-8 border border-border bg-surface-raised p-3" data-testid="setup-code">
+      <p className="text-caption text-muted-foreground">{code.label}</p>
+      <code className="mt-1 block break-all text-title text-foreground">{code.value}</code>
+      <p className="mt-1 text-aux text-muted-foreground">{code.destination}</p>
+      <Button className="mt-2" size="sm" variant="secondary" onClick={() => void copy()}>
+        <Copy aria-hidden />
+        {code.copyLabel}
+      </Button>
+      <p className="sr-only" role="status" aria-live="polite">
+        {message}
+      </p>
+    </div>
   );
 }
 

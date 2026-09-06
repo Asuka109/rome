@@ -17,6 +17,8 @@ import { appsRoutes } from "./routes/apps.js";
 import { agentsRoutes } from "./routes/agents.js";
 import { skillsRoutes } from "./routes/skills.js";
 import { discordCliRoutes } from "./routes/discord-cli.js";
+import { pairingsCliRoutes } from "./routes/pairings-cli.js";
+import { pairingsRoutes } from "./routes/pairings.js";
 import { conversationSettingsRoutes } from "./routes/conversation-settings.js";
 import { connectionsRoutes } from "./routes/connections.js";
 import { setupsRoutes } from "./routes/setups.js";
@@ -82,6 +84,9 @@ export function buildApp(
   // Same-container Agent surface. This is deliberately outside `/api`, which
   // is Caddy-proxied, and refuses to register on a non-loopback listener.
   app.route("/", discordCliRoutes(deps, config.host));
+  if (deps.pairingMethods.cliOrigin) {
+    app.route("/", pairingsCliRoutes(deps, config.host));
+  }
 
   // External webhooks — X-API-Key auth, no /api/ prefix. Intentionally outside
   // sessionActorMiddleware: a machine-credential surface records no session
@@ -144,6 +149,7 @@ export function buildApp(
   api.route("/", favorRoutes(deps));
   api.route("/", conversationSettingsRoutes(deps));
   api.route("/", approvalsRoutes(deps));
+  api.route("/", pairingsRoutes(deps));
   api.route("/", settingsRoutes(deps));
   api.route("/", appKeysRoutes(deps));
   api.route("/", routinesRoutes(deps));

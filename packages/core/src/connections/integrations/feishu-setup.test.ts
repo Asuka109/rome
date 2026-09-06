@@ -40,9 +40,8 @@ function makeDeps(overrides: Partial<FeishuSetupDeps> = {}): FeishuSetupDeps {
 }
 
 describe("makeFeishuSetup (manual mode)", () => {
-  it("prompts mode+domain, then credentials, probes, links the guardian, and confers once", async () => {
-    const link = deferred<{ channelUserId: string }>();
-    const deps = makeDeps({ waitForGuardianLink: rs.fn(() => link.promise) });
+  it("prompts mode+domain, then credentials, probes, and confers once", async () => {
+    const deps = makeDeps();
     const commit = rs.fn(async (_c: SetupConferral, _s: AbortSignal) => {});
     const session = new SetupSession({ fn: makeFeishuSetup(deps), commit });
 
@@ -64,21 +63,8 @@ describe("makeFeishuSetup (manual mode)", () => {
       { appId: "cli_abc", appSecret: "shh", domain: "lark" },
       expect.anything(),
     );
-    // The link view is server-authored: the code is in the payload so the
-    // standard renderer shows it without any Feishu-specific knowledge.
-    expect(afterCreds.state.status).toBe("presenting");
-    if (afterCreds.state.status === "presenting") {
-      expect(afterCreds.state.view.body).toContain("246810");
-      expect(afterCreds.state.view.progress).toBe(true);
-    }
-    expect(deps.waitForGuardianLink).toHaveBeenCalledWith(
-      { appId: "cli_abc", appSecret: "shh", domain: "lark" },
-      "246810",
-      expect.anything(),
-    );
-
-    link.resolve({ channelUserId: "ou_guardian" });
-    await rs.waitFor(() => expect(session.state.status).toBe("done"));
+    expect(afterCreds.state.status).toBe("done");
+    expect(deps.waitForGuardianLink).not.toHaveBeenCalled();
     expect(commit).toHaveBeenCalledTimes(1);
     const conferral = commit.mock.calls[0][0];
     // Terminal conferral: domain is duplicated into material (adapter build
@@ -88,7 +74,7 @@ describe("makeFeishuSetup (manual mode)", () => {
       expiresAt: "never",
     });
     expect(conferral.profile).toEqual({ appId: "cli_abc", domain: "lark", appType: "manual" });
-    expect(conferral.guardianChannelUserId).toBe("ou_guardian");
+    expect(conferral.guardianChannelUserId).toBeUndefined();
   });
 
   it("re-prompts the credential form with the error when the probe is refused", async () => {
@@ -109,7 +95,7 @@ describe("makeFeishuSetup (manual mode)", () => {
     }
 
     const accepted = await session.provideInput({ appId: "cli_ok", appSecret: "yes" });
-    expect(accepted.state.status).toBe("presenting");
+    expect(accepted.state.status).toBe("done");
   });
 
   it("skips the guardian-link step when the guardian is already mapped", async () => {
@@ -168,14 +154,8 @@ describe("makeFeishuSetup (agent-ready mode)", () => {
 
     // Scan completes: the SDK minted fresh credentials (tenant resolved lark).
     registration.resolve({ appId: "cli_minted", appSecret: "minted-secret", domain: "lark" });
-    await rs.waitFor(() => expect(deps.waitForGuardianLink).toHaveBeenCalled());
-    expect(deps.waitForGuardianLink).toHaveBeenCalledWith(
-      { appId: "cli_minted", appSecret: "minted-secret", domain: "lark" },
-      "246810",
-      expect.anything(),
-    );
-
     await rs.waitFor(() => expect(session.state.status).toBe("done"));
+    expect(deps.waitForGuardianLink).not.toHaveBeenCalled();
     const conferral = commit.mock.calls[0][0];
     expect(conferral.credential).toEqual({
       material: {
@@ -218,28 +198,6 @@ describe("makeFeishuSetup (agent-ready mode)", () => {
     expect(commit).not.toHaveBeenCalled();
     expect(deps.waitForGuardianLink).not.toHaveBeenCalled();
     expect(stepSignal?.aborted).toBe(true);
-  });
-
-  it("interrupts the guardian-link wait on cancel, running no commit", async () => {
-    let linkSignal: AbortSignal | undefined;
-    const waitForGuardianLink = rs.fn(
-      (_m: unknown, _code: string, signal: AbortSignal) =>
-        new Promise<{ channelUserId: string }>((_resolve, reject) => {
-          linkSignal = signal;
-          signal.addEventListener("abort", () => reject(new Error("aborted")), { once: true });
-        }),
-    );
-    const deps = makeDeps({ waitForGuardianLink });
-    const commit = rs.fn(async () => {});
-    const session = new SetupSession({ fn: makeFeishuSetup(deps), commit });
-    await session.started();
-    await session.provideInput({ mode: "agent-ready", domain: "lark" });
-    await rs.waitFor(() => expect(waitForGuardianLink).toHaveBeenCalled());
-
-    const state = await session.cancel();
-    expect(state).toEqual({ status: "cancelled" });
-    expect(commit).not.toHaveBeenCalled();
-    expect(linkSignal?.aborted).toBe(true);
   });
 
   it("fails with a guardian-readable reason when registerApp rejects", async () => {

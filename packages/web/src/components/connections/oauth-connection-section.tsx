@@ -195,7 +195,17 @@ export function OAuthConnectionSection({
             onSubmit={setup.submit}
             onCancel={setup.cancel}
             onRetry={() => beginConnect(true)}
-            labels={{ continue: t("common.connect") }}
+            labels={{
+              submit: t("common.connect"),
+              cancel: t("common.cancel"),
+              retry: t("page.retry"),
+              continue: t("common.connect"),
+              connected: t("connections.status.connected"),
+              failed: t("common.setupFailed"),
+              cancelled: t("common.cancelled"),
+              completed: t("common.completed"),
+              remaining: t("common.remaining"),
+            }}
           />
         ) : (
           <div>

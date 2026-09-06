@@ -130,6 +130,48 @@ describe("SetupRenderer standard renderers", () => {
     expect(onCancel).toHaveBeenCalled();
   });
 
+  it("shows a copyable code once before help and announces exact-value copy", async () => {
+    const writeText = rs.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    renderState({
+      status: "presenting",
+      view: {
+        title: "Enter this code",
+        code: {
+          label: "Pairing code",
+          value: "ABCD1234",
+          destination: "Enter it in WhatsApp.",
+          copyLabel: "Copy code",
+          copiedLabel: "Pairing code copied",
+        },
+        body: ["Open WhatsApp, then follow the steps."],
+        steps: [{ text: "Open Linked Devices", done: true }, { text: "Enter the code" }],
+      },
+    });
+    expect(screen.getAllByText("ABCD1234")).toHaveLength(1);
+    const code = screen.getByTestId("setup-code");
+    const help = screen.getByText("Open WhatsApp, then follow the steps.");
+    expect(code.compareDocumentPosition(help) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText("Completed:")).toBeTruthy();
+    expect(screen.getByText("Remaining:")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Copy code" }));
+    expect(writeText).toHaveBeenCalledWith("ABCD1234");
+    expect((await screen.findByRole("status")).textContent).toBe("Pairing code copied");
+  });
+
+  it("offers cancel while awaiting input or redirect", () => {
+    const input = renderState({
+      status: "awaiting-input",
+      form: { fields: [{ name: "token", label: "Token", secret: true }] },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(input.onCancel).toHaveBeenCalled();
+    cleanup();
+    const redirect = renderState({ status: "awaiting-redirect", url: "https://example.com" });
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(redirect.onCancel).toHaveBeenCalled();
+  });
+
   it("presenting renders a QR payload as an image (WeChat/WhatsApp QR conferral)", () => {
     renderState({
       status: "presenting",

@@ -259,6 +259,17 @@ export function ChannelConnectCard({ config, slot, role, onRefresh }: ChannelCon
           onCancel={setup.cancel}
           onRetry={() => setup.start(true)}
           registry={config.registry}
+          labels={{
+            submit: t("common.connect"),
+            cancel: t("common.cancel"),
+            retry: t("page.retry"),
+            continue: t("common.connect"),
+            connected: t("connections.status.connected"),
+            failed: t("common.setupFailed"),
+            cancelled: t("common.cancelled"),
+            completed: t("common.completed"),
+            remaining: t("common.remaining"),
+          }}
         />
       ) : (
         <div className="space-y-3">

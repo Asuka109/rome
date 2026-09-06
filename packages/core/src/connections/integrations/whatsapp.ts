@@ -181,11 +181,6 @@ function openWhatsAppPairingSocket(
   };
 }
 
-/** Group an 8-char pairing code as XXXX-XXXX for reading off the screen. */
-function formatPairingCode(code: string): string {
-  return code.length === 8 ? `${code.slice(0, 4)}-${code.slice(4)}` : code;
-}
-
 /**
  * Build the WhatsApp conferral setup. A linear coroutine:
  *   1. prompt the phone number (re-prompt on an invalid one, carrying the error),
@@ -226,7 +221,13 @@ export function makeWhatsAppSetup(deps: { openPairing: () => WhatsAppPairingHand
 
       interact.show({
         title: "Enter this code on your phone",
-        body: [formatPairingCode(code)],
+        code: {
+          label: "WhatsApp pairing code",
+          value: code,
+          destination: "Enter this exact code in WhatsApp on your phone.",
+          copyLabel: "Copy code",
+          copiedLabel: "WhatsApp pairing code copied",
+        },
         steps: [
           { text: "Open WhatsApp on your phone" },
           { text: "Go to Settings → Linked Devices → Link a Device" },

@@ -45,7 +45,11 @@
     "online": "在线",
     "offline": "离线",
     "remove": "移除",
-    "cancel": "取消"
+    "cancel": "取消",
+    "completed": "已完成",
+    "remaining": "待完成",
+    "setupFailed": "出现问题",
+    "cancelled": "已取消"
   },
   "connections": {
     "loading": "正在加载连接",
@@ -745,6 +749,22 @@
     "title": "哨兵设置",
     "intervalLabel": "审阅间隔（分钟）",
     "intervalHelp": "提醒守护者审阅哨兵日志条目的频率。"
+  },
+  "pairing": {
+    "title": "等待批准的账户",
+    "description": "只批准你认识的账户。未获批准的消息不会进入智能体流程。",
+    "approve": "批准",
+    "reject": "拒绝",
+    "approved": "账户已批准。",
+    "rejected": "请求已拒绝。",
+    "failed": "无法更新请求。",
+    "otherWays": "其他批准方式",
+    "openLink": "打开守护者配对链接",
+    "cli": "在 Rome 主机上运行以下命令之一：",
+    "pageTitle": "审核账户配对",
+    "pageDescription": "批准前，请确认这个消息账户属于你。",
+    "loading": "正在加载配对请求…",
+    "unavailable": "此配对请求不可用、已过期或已处理。"
   },
   "easterEgg": {
     "closeLabel": "关闭高级彩蛋",

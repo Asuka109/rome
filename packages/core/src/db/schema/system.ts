@@ -119,6 +119,35 @@ export const channelMappings = sqliteTable(
   ],
 );
 
+/** Unknown messaging accounts waiting for the guardian to decide whether the
+ * account is theirs. The partial unique index makes retries idempotent while a
+ * decision is pending, including when two copies of the same inbound message
+ * arrive concurrently. */
+export const channelPairingRequests = sqliteTable(
+  "channel_pairing_requests",
+  {
+    id: text("id").primaryKey(),
+    channel: text("channel").notNull(),
+    channelUserId: text("channel_user_id").notNull(),
+    displayName: text("display_name"),
+    token: text("token").notNull().unique(),
+    status: text("status", {
+      enum: ["pending", "approved", "rejected", "expired"],
+    })
+      .notNull()
+      .default("pending"),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+    resolvedAt: integer("resolved_at", { mode: "timestamp" }),
+  },
+  (table) => [
+    uniqueIndex("idx_channel_pairing_pending_identity")
+      .on(table.channel, table.channelUserId)
+      .where(sql`${table.status} = 'pending'`),
+    index("idx_channel_pairing_status_created").on(table.status, table.createdAt),
+  ],
+);
+
 // A durable mirror of the WhatsApp contact list, chats, and recent message
 // history, fed by Baileys' history sync (`messaging-history.set`) on connect
 // and kept current by the ongoing `contacts.*` / `chats.*` / `messages.upsert`

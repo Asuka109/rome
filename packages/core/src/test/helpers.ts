@@ -59,6 +59,7 @@ import { createAccountNames } from "../channels/account-names.js";
 import { channelList } from "../channels/channel-list.js";
 import { SentinelLogRepository } from "../db/repositories/sentinel-log.js";
 import { ApprovalsRepository } from "../db/repositories/approvals.js";
+import { ChannelPairingRepository } from "../db/repositories/channel-pairing.js";
 import { SettingsRepository } from "../db/repositories/settings.js";
 import { AppKeysRepository } from "../db/repositories/app-keys.js";
 import { AppKeyInjector } from "../app-keys/injector.js";
@@ -433,6 +434,7 @@ export async function buildTestDeps(
   const channels = channelList({ db, whatsAppAccounts, linkedInAccounts });
   const accountNames = createAccountNames({ channels, sentinelLogRepo });
   const approvalsRepo = new ApprovalsRepository(db);
+  const pairingRepo = new ChannelPairingRepository(db);
   const settingsRepo = new SettingsRepository(db);
   // A private env object per deps bag: route tests exercise apply/remove
   // without touching the real process.env of the test runner.
@@ -600,6 +602,8 @@ export async function buildTestDeps(
     accountNames,
     sentinelLogRepo,
     approvalsRepo,
+    pairingRepo,
+    pairingMethods: { instanceOrigin: null, cliOrigin: "http://127.0.0.1:4141" },
     approvalHandler,
     backendTurnRunner,
     settingsRepo,

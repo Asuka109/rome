@@ -30,8 +30,10 @@
  * To cover a new service or state, extend the fixtures/`SCENARIOS` below.
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ConnectionDetailBody } from "@/components/ConnectionDetail";
+import { PairingRequestCard } from "@/components/pairing-requests";
+import { SetupRenderer } from "@/components/setup/setup-renderer";
 import { ConnectionBrandBadge } from "@/components/brand-icons/connection-badges";
 import { StatusIndicator } from "@/lib/connection-status";
 import {
@@ -41,6 +43,8 @@ import {
 } from "@/lib/connection-cards";
 import type { ApiConnection, GrantDisplay, GrantState } from "@/lib/connections-api";
 import type { ComposioCliStatus } from "@/lib/provider-types";
+import type { PairingRequest } from "@/lib/pairing-api";
+import type { SetupState } from "@/lib/setup-api";
 
 const noop = () => {};
 
@@ -307,11 +311,140 @@ export default function ConnectionGalleryPrototypePage() {
           </p>
         </header>
 
+        <CeremonyStates />
+
         {SCENARIOS.map((scenario) => (
           <GallerySection key={scenario.title} scenario={scenario} />
         ))}
       </div>
     </div>
+  );
+}
+
+const SETUP_FIXTURES: Array<{ service: string; state: SetupState }> = [
+  {
+    service: "telegram",
+    state: {
+      status: "awaiting-input",
+      form: {
+        instructions: "Create a Telegram bot, then paste its token.",
+        steps: [{ text: "Open @BotFather", done: true }, { text: "Paste the bot token" }],
+        fields: [{ name: "token", label: "Telegram bot token", secret: true }],
+      },
+    },
+  },
+  {
+    service: "discord",
+    state: {
+      status: "awaiting-redirect",
+      url: "https://discord.com/developers/applications",
+    },
+  },
+  {
+    service: "feishu",
+    state: {
+      status: "presenting",
+      view: {
+        title: "Scan to create the agent app",
+        body: ["Scan this QR code in Feishu or Lark."],
+        qr: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect width='120' height='120' fill='white'/%3E%3Cpath d='M10 10h40v40H10zm60 0h40v40H70zM10 70h40v40H10zm60 10h10v10H70zm20-10h20v40H90z' fill='black'/%3E%3C/svg%3E",
+        progress: true,
+      },
+    },
+  },
+  {
+    service: "whatsapp",
+    state: {
+      status: "presenting",
+      view: {
+        title: "Enter this code on your phone",
+        code: {
+          label: "WhatsApp pairing code",
+          value: "ABCD1234",
+          destination: "Enter this exact code in WhatsApp on your phone.",
+          copyLabel: "Copy code",
+          copiedLabel: "WhatsApp pairing code copied",
+        },
+        body: ["The code expires when this setup is cancelled."],
+        steps: [
+          { text: "Open Linked Devices", done: true },
+          { text: "Choose Link with phone number instead" },
+        ],
+        progress: true,
+      },
+    },
+  },
+];
+
+function fixturePairing(id: string, displayName: string): PairingRequest {
+  return {
+    id,
+    channel: "telegram",
+    channelUserId: `user-${id}`,
+    displayName,
+    status: "pending",
+    createdAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 900_000).toISOString(),
+    pairingUrl: `https://rome.example/pairing/${id}#token=fixture`,
+    cli: {
+      approve: `curl -fsS -X POST http://127.0.0.1:4141/_internal/pairings/${id}/approve`,
+      reject: `curl -fsS -X POST http://127.0.0.1:4141/_internal/pairings/${id}/reject`,
+    },
+  };
+}
+
+function CeremonyStates() {
+  const [setupResult, setSetupResult] = useState("No setup action yet.");
+  return (
+    <section className="space-y-4">
+      <div>
+        <h2 className="text-section text-foreground">Setup and account-pairing states</h2>
+        <p className="text-body text-muted-foreground">
+          Interactive fixtures: copy, cancel, approve, and reject stay local to this page.
+        </p>
+      </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {SETUP_FIXTURES.map(({ service, state }) => (
+          <div key={service} className="rounded-12 border border-border bg-surface p-4">
+            <p className="mb-3 font-mono text-aux text-muted-foreground">{service}</p>
+            <SetupRenderer
+              service={service}
+              state={state}
+              busy={false}
+              error={null}
+              onSubmit={() => setSetupResult(`${service}: submitted`)}
+              onCancel={() => setSetupResult(`${service}: cancelled`)}
+              onRetry={() => setSetupResult(`${service}: retried`)}
+            />
+          </div>
+        ))}
+      </div>
+      <p role="status" className="text-aux text-muted-foreground">
+        {setupResult}
+      </p>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <PairingRequestCard
+          request={fixturePairing("approve", "Pending approval")}
+          onDecision={async () => {}}
+        />
+        <PairingRequestCard
+          request={fixturePairing("reject", "Pending rejection")}
+          onDecision={async () => {}}
+        />
+        <PairingRequestCard
+          request={fixturePairing("expired", "Expired request")}
+          onDecision={async () => {
+            throw new Error("This pairing request expired.");
+          }}
+        />
+        <PairingRequestCard
+          request={fixturePairing("replay", "Already resolved request")}
+          onDecision={async () => {
+            throw new Error("This pairing request was already resolved.");
+          }}
+        />
+      </div>
+    </section>
   );
 }
 

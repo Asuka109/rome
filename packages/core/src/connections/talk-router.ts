@@ -13,13 +13,19 @@ import { createLogger } from "../logger.js";
 
 const log = createLogger("talk-router");
 
+/** Return null to admit an inbound message, or guardian-facing copy to block it. */
+export type InboundAdmission = (service: string, message: InboundMessage) => Promise<string | null>;
+
 export class ConnectionTalkRouter implements TalkRouter {
   private readonly handlers = new Map<
     ConnectionId,
     Set<(message: InboundMessage) => Promise<void>>
   >();
 
-  constructor(private readonly registry: ConnectionRegistry) {
+  constructor(
+    private readonly registry: ConnectionRegistry,
+    private readonly admit?: InboundAdmission,
+  ) {
     registry.onUnlocked("talk", (connection) => this.attach(connection));
   }
 
@@ -34,8 +40,10 @@ export class ConnectionTalkRouter implements TalkRouter {
     const handlers = this.handlers.get(connectionId) ?? new Set();
     handlers.add(handler);
     this.handlers.set(connectionId, handlers);
-    const talk = this.registry.get(connectionId).talk;
-    const detach = talk?.subscribe(handler);
+    const connection = this.registry.get(connectionId);
+    const talk = connection.talk;
+    const guarded = this.guard(connection, handler);
+    const detach = talk?.subscribe(guarded);
     return () => {
       handlers.delete(handler);
       if (handlers.size === 0) this.handlers.delete(connectionId);
@@ -85,7 +93,33 @@ export class ConnectionTalkRouter implements TalkRouter {
   private attach(connection: Connection): void {
     const talk = connection.talk;
     if (!talk) return;
-    for (const handler of this.handlers.get(connection.id) ?? []) talk.subscribe(handler);
+    for (const handler of this.handlers.get(connection.id) ?? []) {
+      talk.subscribe(this.guard(connection, handler));
+    }
+  }
+
+  private guard(
+    connection: Connection,
+    handler: (message: InboundMessage) => Promise<void>,
+  ): (message: InboundMessage) => Promise<void> {
+    const admit = this.admit;
+    if (!admit) return handler;
+    return async (message) => {
+      let refusal: string | null;
+      try {
+        refusal = await admit(connection.service, message);
+      } catch (error) {
+        log.error("inbound_admission.failed", {
+          connectionId: connection.id,
+          service: connection.service,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        refusal =
+          "This account cannot be verified right now. Ask the guardian to review Rome Settings → Connections.";
+      }
+      if (refusal === null) return handler(message);
+      await this.requireTalk(connection.id).send(message.conversationId, { text: refusal });
+    };
   }
 
   private requireTalk(connectionId: string) {
@@ -96,6 +130,9 @@ export class ConnectionTalkRouter implements TalkRouter {
   }
 }
 
-export function createTalkRouter(registry: ConnectionRegistry): ConnectionTalkRouter {
-  return new ConnectionTalkRouter(registry);
+export function createTalkRouter(
+  registry: ConnectionRegistry,
+  admission?: InboundAdmission,
+): ConnectionTalkRouter {
+  return new ConnectionTalkRouter(registry, admission);
 }
