@@ -29,7 +29,9 @@
     "add": "Add",
     "newApps": "New apps available",
     "new": "New",
-    "appDisabled": "Disabled"
+    "appDisabled": "Disabled",
+    "search": "Search",
+    "searchShortcut": "Search ({{shortcut}})"
   },
   "recentChats": {
     "title": "Chats",
@@ -69,7 +71,6 @@
     "searchCloseHint": "Close",
     "projectActions": "Project actions",
     "pinned": "Pinned",
-    "sectionProjects": "Projects",
     "pin": "Pin",
     "unpin": "Unpin",
     "pinChat": "Pin chat",

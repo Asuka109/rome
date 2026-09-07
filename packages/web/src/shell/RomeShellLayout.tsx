@@ -1,5 +1,5 @@
 import { Cross1Icon, HamburgerMenuIcon } from "@radix-ui/react-icons";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
 import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -8,7 +8,7 @@ import { IconButton } from "../components/ui/icon-button";
 import { MobileBackdrop } from "../components/ui/mobile-backdrop";
 import { SlotOutlet } from "../components/slot";
 import { AppGrid } from "./AppGrid";
-import { ChatSearchDialog } from "./ChatSearchDialog";
+import { ChatSearchDialog, chatSearchShortcutForPlatform } from "./ChatSearchDialog";
 import { ProfileMenu } from "./ProfileMenu";
 import { RecentChats } from "./RecentChats";
 import { SUPPORTED_LANGUAGES } from "@/i18n";
@@ -187,6 +187,16 @@ export function RomeShellLayout() {
                   <div ref={setAppGridControlsHost} />
                   <IconButton
                     size="md"
+                    label={t("sidebar.search")}
+                    title={t("sidebar.searchShortcut", {
+                      shortcut: chatSearchShortcutForPlatform(),
+                    })}
+                    icon={<Search aria-hidden />}
+                    onClick={() => setChatSearchOpen(true)}
+                    className="text-subtle-foreground hover:text-foreground"
+                  />
+                  <IconButton
+                    size="md"
                     label={t("nav.collapseSidebar")}
                     title={t("nav.collapseSidebarShortcut", { shortcut: sidebarShortcut })}
                     icon={<PanelLeftClose aria-hidden />}
@@ -209,7 +219,7 @@ export function RomeShellLayout() {
               ) : (
                 <>
                   <AppGrid headerControlsHost={appGridControlsHost} />
-                  <RecentChats onSearch={() => setChatSearchOpen(true)} />
+                  <RecentChats />
                 </>
               )}
             </div>

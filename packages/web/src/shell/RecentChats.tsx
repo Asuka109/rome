@@ -9,10 +9,9 @@ import {
   Pencil,
   Pin,
   PinOff,
-  Search,
   Trash2,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -36,7 +35,6 @@ import {
   usePinSession,
   useSessionsChanged,
 } from "@/lib/session-events";
-import { chatSearchShortcutForPlatform } from "./ChatSearchDialog";
 
 interface ChatSession {
   id: string;
@@ -62,6 +60,86 @@ interface SessionGroup {
   items: ChatSession[];
   latest: number;
   projectPath: string;
+}
+
+type ConversationCollectionItem =
+  | { kind: "chat"; item: ChatSession; latest: number }
+  | { kind: "project"; item: SessionGroup; latest: number; pinned: boolean };
+
+function ConversationCollection({
+  items,
+  renderChat,
+  renderProject,
+}: {
+  items: ConversationCollectionItem[];
+  renderChat: (session: ChatSession) => ReactNode;
+  renderProject: (group: SessionGroup, pinned: boolean) => ReactNode;
+}) {
+  return (
+    <div className="space-y-1">
+      {items.map((entry) =>
+        entry.kind === "chat" ? renderChat(entry.item) : renderProject(entry.item, entry.pinned),
+      )}
+    </div>
+  );
+}
+
+function ConversationCollectionToggle({
+  title,
+  collapsed,
+  onToggle,
+  className = "",
+}: {
+  title: ReactNode;
+  collapsed: boolean;
+  onToggle: () => void;
+  className?: string;
+}) {
+  const chevronClassName = collapsed
+    ? "h-3.5 w-3.5"
+    : "touch-show h-3.5 w-3.5 opacity-0 transition-opacity group-hover/collection-toggle:opacity-100 group-focus-within/collection-toggle:opacity-100 motion-reduce:transition-none";
+
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={!collapsed}
+      className={`flex items-center gap-2 rounded-4 border border-transparent text-ui text-subtle-foreground transition outline-none hover:text-foreground focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring ${className}`}
+    >
+      <span>{title}</span>
+      {collapsed ? (
+        <ChevronRightIcon className={chevronClassName} aria-hidden />
+      ) : (
+        <ChevronDownIcon className={chevronClassName} aria-hidden />
+      )}
+    </button>
+  );
+}
+
+function ConversationCollectionHeader({
+  id,
+  title,
+  controls,
+  collapsed,
+  onToggle,
+}: {
+  id: string;
+  title: ReactNode;
+  controls?: ReactNode;
+  collapsed: boolean;
+  onToggle: () => void;
+}) {
+  const controlsClassName =
+    "touch-show flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 has-[[data-state=open]]:opacity-100 motion-reduce:transition-none";
+
+  return (
+    <div className="group group/collection-toggle flex items-center justify-between px-5 pt-4">
+      <h2 id={id}>
+        <ConversationCollectionToggle title={title} collapsed={collapsed} onToggle={onToggle} />
+      </h2>
+      {controls ? <div className={controlsClassName}>{controls}</div> : null}
+    </div>
+  );
 }
 
 const GROUP_MODE_STORAGE_KEY = "rome-recent-chats-group-mode";
@@ -187,7 +265,7 @@ function ChatRowLink({ id, name, nested }: { id: string; name: string; nested: b
           onPointerEnter={syncNameClipped}
           onFocus={syncNameClipped}
           className={`flex h-full min-w-0 flex-1 items-center rounded-8 border border-transparent pr-1 outline-none focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring ${
-            nested ? "pl-4" : "pl-2"
+            nested ? "pl-8" : "pl-2"
           }`}
         >
           <span ref={nameRef} className="truncate">
@@ -202,11 +280,7 @@ function ChatRowLink({ id, name, nested }: { id: string; name: string; nested: b
   );
 }
 
-export interface RecentChatsProps {
-  onSearch: () => void;
-}
-
-export function RecentChats({ onSearch }: RecentChatsProps) {
+export function RecentChats() {
   const { t } = useTranslation("common");
   const navigate = useNavigate();
   const location = useLocation();
@@ -226,7 +300,6 @@ export function RecentChats({ onSearch }: RecentChatsProps) {
   const renameInputRef = useRef<HTMLInputElement | null>(null);
   const renamingRef = useRef(false);
   const activeSessionId = activeSessionFromPath(location.pathname);
-  const searchShortcut = chatSearchShortcutForPlatform();
 
   const loadSessions = useCallback(async () => {
     try {
@@ -301,6 +374,29 @@ export function RecentChats({ onSearch }: RecentChatsProps) {
     }));
   }, [pinnedProjectPaths, sessions]);
 
+  const pinnedItems: ConversationCollectionItem[] = [
+    ...pinnedChats.map((item) => ({
+      kind: "chat" as const,
+      item,
+      latest: sessionActivityTime(item),
+    })),
+    ...pinnedProjects.map(({ projectPath, name, items }) => {
+      const latest = items[0] ? sessionActivityTime(items[0]) : 0;
+      return {
+        kind: "project" as const,
+        item: {
+          key: `pinned-project:${projectPath}`,
+          label: name,
+          items,
+          latest,
+          projectPath,
+        },
+        latest,
+        pinned: true,
+      };
+    }),
+  ].sort((a, b) => b.latest - a.latest);
+
   const regularSessions = useMemo(
     () =>
       sessions
@@ -345,6 +441,20 @@ export function RecentChats({ onSearch }: RecentChatsProps) {
       }))
       .sort((a, b) => b.latest - a.latest);
   }, [regularSessions]);
+
+  const projectModeItems: ConversationCollectionItem[] = [
+    ...standaloneSessions.map((item) => ({
+      kind: "chat" as const,
+      item,
+      latest: sessionActivityTime(item),
+    })),
+    ...projectGroups.map((item) => ({
+      kind: "project" as const,
+      item,
+      latest: item.latest,
+      pinned: false,
+    })),
+  ].sort((a, b) => b.latest - a.latest);
 
   const dateGroups = useMemo<SessionGroup[]>(() => {
     const now = Date.now();
@@ -523,9 +633,7 @@ export function RecentChats({ onSearch }: RecentChatsProps) {
       <div
         key={session.id}
         data-chat-row
-        className={`group flex h-8 items-center gap-1 rounded-8 text-ui transition ${
-          session.archived ? "text-subtle-foreground" : "text-foreground"
-        } ${
+        className={`group flex h-8 items-center gap-1 rounded-8 text-ui text-foreground transition ${
           isActive
             ? "bg-surface shadow-1 dark:bg-surface-hover"
             : "hover:bg-surface-hover dark:hover:bg-surface"
@@ -550,7 +658,7 @@ export function RecentChats({ onSearch }: RecentChatsProps) {
               }
             }}
             className={`my-1 h-[var(--control-h-sm)] min-w-0 flex-1 rounded-4 border border-foreground/20 bg-background px-1 py-1 text-ui text-foreground outline-none focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring ${
-              nested ? "ml-4" : "ml-2"
+              nested ? "ml-8" : "ml-2"
             }`}
           />
         ) : (
@@ -669,9 +777,9 @@ export function RecentChats({ onSearch }: RecentChatsProps) {
     const projectLabel = (
       <>
         {collapsed ? (
-          <Folder className="h-4 w-4 shrink-0 text-subtle-foreground" aria-hidden />
+          <Folder className="h-4 w-4 shrink-0" aria-hidden />
         ) : (
-          <FolderOpen className="h-4 w-4 shrink-0 text-subtle-foreground" aria-hidden />
+          <FolderOpen className="h-4 w-4 shrink-0" aria-hidden />
         )}
         <span className="truncate">{label}</span>
       </>
@@ -748,8 +856,77 @@ export function RecentChats({ onSearch }: RecentChatsProps) {
     );
   };
 
+  const renderProjectListItem = (group: SessionGroup, pinned: boolean) =>
+    renderProjectGroup({
+      key: group.key,
+      label: group.label,
+      items: group.items,
+      projectPath: group.projectPath,
+      pinned,
+    });
+
   const hasPinned = pinnedChats.length > 0 || pinnedProjects.length > 0;
   const pinnedCollapsed = collapsedGroups.has("section:pinned");
+  const chatsCollapsed = collapsedGroups.has("section:chats");
+  const renderListMenu = () => (
+    <div className="flex items-center gap-1">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <IconButton
+            size="sm"
+            label={t("recentChats.settings")}
+            icon={<Ellipsis aria-hidden />}
+            className="touch-target text-subtle-foreground hover:text-foreground"
+          />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent side="bottom" align="end" className="min-w-[180px]">
+          <div className="px-2 pb-1 pt-1 text-aux text-subtle-foreground">
+            {t("recentChats.groupBy")}
+          </div>
+          {[
+            { mode: "date" as const, label: t("recentChats.groupByDate") },
+            { mode: "project" as const, label: t("recentChats.groupByProjects") },
+          ].map(({ mode, label }) => {
+            const selected = groupMode === mode;
+            return (
+              <DropdownMenuItem
+                key={mode}
+                onSelect={() => setGroupMode(mode)}
+                className={selected ? "text-ui text-foreground" : "text-ui text-foreground/85"}
+              >
+                <span>{label}</span>
+                {selected ? (
+                  <Check className="ml-auto h-3.5 w-3.5 text-subtle-foreground" aria-hidden />
+                ) : null}
+              </DropdownMenuItem>
+            );
+          })}
+          <div className="px-2 pb-1 pt-2 text-aux text-subtle-foreground">
+            {t("recentChats.status")}
+          </div>
+          {[
+            { value: "all" as const, label: t("recentChats.statusAll") },
+            { value: "active" as const, label: t("recentChats.statusActive") },
+            { value: "archived" as const, label: t("recentChats.statusArchived") },
+          ].map(({ value, label }) => {
+            const selected = statusFilter === value;
+            return (
+              <DropdownMenuItem
+                key={value}
+                onSelect={() => setStatusFilter(value)}
+                className={selected ? "text-ui text-foreground" : "text-ui text-foreground/85"}
+              >
+                <span>{label}</span>
+                {selected ? (
+                  <Check className="ml-auto h-3.5 w-3.5 text-subtle-foreground" aria-hidden />
+                ) : null}
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
 
   return (
     // skipDelayDuration 0 makes every row wait out the delay on its own:
@@ -757,214 +934,95 @@ export function RecentChats({ onSearch }: RecentChatsProps) {
     // once one has opened, strobing the list as the pointer runs down it.
     <TooltipProvider delayDuration={300} skipDelayDuration={0}>
       <div className="flex flex-col">
-        <div className="flex items-center justify-between px-5 pt-4">
-          <span className="text-body text-foreground">{t("recentChats.title")}</span>
-          <div className="flex items-center gap-1">
-            <IconButton
-              size="sm"
-              label={t("recentChats.search")}
-              title={t("recentChats.searchShortcut", { shortcut: searchShortcut })}
-              onClick={onSearch}
-              icon={<Search aria-hidden />}
-              className="text-subtle-foreground hover:text-foreground"
+        {hasPinned ? (
+          <section aria-labelledby="recent-chats-pinned-heading" data-pinned-section>
+            <ConversationCollectionHeader
+              id="recent-chats-pinned-heading"
+              title={t("recentChats.pinned")}
+              collapsed={pinnedCollapsed}
+              onToggle={() => toggleGroup("section:pinned")}
             />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <IconButton
-                  size="sm"
-                  label={t("recentChats.settings")}
-                  icon={<Ellipsis aria-hidden />}
-                  className="text-subtle-foreground hover:text-foreground"
-                />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent side="bottom" align="end" className="min-w-[180px]">
-                <div className="px-2 pb-1 pt-1 text-aux text-subtle-foreground">
-                  {t("recentChats.groupBy")}
-                </div>
-                {[
-                  { mode: "date" as const, label: t("recentChats.groupByDate") },
-                  { mode: "project" as const, label: t("recentChats.groupByProjects") },
-                ].map(({ mode, label }) => {
-                  const selected = groupMode === mode;
-                  return (
-                    <DropdownMenuItem
-                      key={mode}
-                      onSelect={() => setGroupMode(mode)}
-                      className={
-                        selected ? "text-ui text-foreground" : "text-ui text-foreground/85"
-                      }
-                    >
-                      <span>{label}</span>
-                      {selected ? (
-                        <Check className="ml-auto h-3.5 w-3.5 text-subtle-foreground" aria-hidden />
-                      ) : null}
-                    </DropdownMenuItem>
-                  );
-                })}
-                <div className="px-2 pb-1 pt-2 text-aux text-subtle-foreground">
-                  {t("recentChats.status")}
-                </div>
-                {[
-                  { value: "all" as const, label: t("recentChats.statusAll") },
-                  { value: "active" as const, label: t("recentChats.statusActive") },
-                  { value: "archived" as const, label: t("recentChats.statusArchived") },
-                ].map(({ value, label }) => {
-                  const selected = statusFilter === value;
-                  return (
-                    <DropdownMenuItem
-                      key={value}
-                      onSelect={() => setStatusFilter(value)}
-                      className={
-                        selected ? "text-ui text-foreground" : "text-ui text-foreground/85"
-                      }
-                    >
-                      <span>{label}</span>
-                      {selected ? (
-                        <Check className="ml-auto h-3.5 w-3.5 text-subtle-foreground" aria-hidden />
-                      ) : null}
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-        <div className="px-3 pt-2 pb-3">
-          {hasPinned ? (
-            <section
-              aria-labelledby="recent-chats-pinned-heading"
-              className="mb-4"
-              data-pinned-section
-            >
-              <button
-                type="button"
-                id="recent-chats-pinned-heading"
-                onClick={() => toggleGroup("section:pinned")}
-                aria-expanded={!pinnedCollapsed}
-                className="flex items-center gap-2 rounded-4 border border-transparent px-2 pb-1 pt-3 text-aux text-subtle-foreground transition outline-none hover:text-foreground focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring"
-              >
-                {t("recentChats.pinned")}
-                {pinnedCollapsed ? (
-                  <ChevronRightIcon className="h-3.5 w-3.5" aria-hidden />
-                ) : (
-                  <ChevronDownIcon className="h-3.5 w-3.5" aria-hidden />
-                )}
-              </button>
+            <div className="px-3 pt-2">
               {pinnedCollapsed ? null : (
-                <div className="space-y-1">
-                  {pinnedChats.map((session) => renderChatRow(session))}
-                  {pinnedProjects.map(({ projectPath, name, items }) =>
-                    renderProjectGroup({
-                      key: `pinned-project:${projectPath}`,
-                      label: name,
-                      items,
-                      projectPath,
-                      pinned: true,
-                    }),
-                  )}
-                </div>
+                <ConversationCollection
+                  items={pinnedItems}
+                  renderChat={renderChatRow}
+                  renderProject={renderProjectListItem}
+                />
               )}
-            </section>
-          ) : null}
-          {phase === "loading" ? (
-            <div className="space-y-1 px-2 py-2" aria-hidden>
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-4/5" />
-              <Skeleton className="h-8 w-3/5" />
             </div>
-          ) : !hasPinned && regularSessions.length === 0 ? (
-            // Only reachable with nothing to show: a refetch that fails while the
-            // list already has rows keeps the rows rather than blanking them.
-            phase === "error" ? (
-              <div className="px-3 py-8 text-center" role="alert">
-                <p className="text-aux text-subtle-foreground">
-                  {t("recentChats.searchLoadError")}
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="mt-3"
-                  onClick={() => void loadSessions()}
-                >
-                  {t("recentChats.searchRetry")}
-                </Button>
+          </section>
+        ) : null}
+        <ConversationCollectionHeader
+          id="recent-chats-heading"
+          title={t("recentChats.title")}
+          controls={renderListMenu()}
+          collapsed={chatsCollapsed}
+          onToggle={() => toggleGroup("section:chats")}
+        />
+        {chatsCollapsed ? null : (
+          <div className="px-3 pt-2 pb-3">
+            {phase === "loading" ? (
+              <div className="space-y-1 px-2 py-2" aria-hidden>
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-4/5" />
+                <Skeleton className="h-8 w-3/5" />
               </div>
-            ) : (
-              <div className="px-3 py-8 text-center text-aux text-subtle-foreground">
-                {t("recentChats.empty")}
-              </div>
-            )
-          ) : groupMode === "project" ? (
-            <>
-              {standaloneSessions.length > 0 ? (
-                <section aria-label={t("recentChats.title")} className="space-y-1">
-                  {standaloneSessions.map((session) => renderChatRow(session))}
-                </section>
-              ) : null}
-              {projectGroups.length > 0 ? (
-                <section
-                  aria-label={
-                    hasPinned || standaloneSessions.length > 0
-                      ? undefined
-                      : t("recentChats.sectionProjects")
-                  }
-                  aria-labelledby={
-                    hasPinned || standaloneSessions.length > 0
-                      ? "recent-chats-projects-heading"
-                      : undefined
-                  }
-                >
-                  {hasPinned || standaloneSessions.length > 0 ? (
-                    <h2
-                      id="recent-chats-projects-heading"
-                      className="px-2 pb-1 pt-3 text-aux text-subtle-foreground"
-                    >
-                      {t("recentChats.sectionProjects")}
-                    </h2>
-                  ) : null}
-                  <div className="space-y-1">
-                    {projectGroups.map(({ key, label, items, projectPath }) =>
-                      renderProjectGroup({
-                        key,
-                        label,
-                        items,
-                        projectPath,
-                        pinned: false,
-                      }),
-                    )}
-                  </div>
-                </section>
-              ) : null}
-            </>
-          ) : (
-            dateGroups.map(({ key, label, items }) => {
-              const collapsed = collapsedGroups.has(key);
-              return (
-                <section key={key} className="mb-4 last:mb-0">
-                  <button
+            ) : !hasPinned && regularSessions.length === 0 ? (
+              // Only reachable with nothing to show: a refetch that fails while the
+              // list already has rows keeps the rows rather than blanking them.
+              phase === "error" ? (
+                <div className="px-3 py-8 text-center" role="alert">
+                  <p className="text-aux text-subtle-foreground">
+                    {t("recentChats.searchLoadError")}
+                  </p>
+                  <Button
                     type="button"
-                    onClick={() => toggleGroup(key)}
-                    aria-expanded={!collapsed}
-                    className="flex items-center gap-2 rounded-4 border border-transparent px-2 pb-1 pt-3 text-aux text-subtle-foreground transition outline-none hover:text-foreground focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring"
+                    variant="outline"
+                    size="sm"
+                    className="mt-3"
+                    onClick={() => void loadSessions()}
                   >
-                    <span>{label}</span>
-                    {collapsed ? (
-                      <ChevronRightIcon className="h-3.5 w-3.5" aria-hidden />
-                    ) : (
-                      <ChevronDownIcon className="h-3.5 w-3.5" aria-hidden />
+                    {t("recentChats.searchRetry")}
+                  </Button>
+                </div>
+              ) : (
+                <div className="px-3 py-8 text-center text-aux text-subtle-foreground">
+                  {t("recentChats.empty")}
+                </div>
+              )
+            ) : groupMode === "project" ? (
+              <section aria-labelledby="recent-chats-heading">
+                <ConversationCollection
+                  items={projectModeItems}
+                  renderChat={renderChatRow}
+                  renderProject={renderProjectListItem}
+                />
+              </section>
+            ) : (
+              dateGroups.map(({ key, label, items }) => {
+                const collapsed = collapsedGroups.has(key);
+                return (
+                  <section key={key} className="group/collection-toggle mb-4 last:mb-0">
+                    <h3>
+                      <ConversationCollectionToggle
+                        title={label}
+                        collapsed={collapsed}
+                        onToggle={() => toggleGroup(key)}
+                        className="px-2 pb-1 pt-3"
+                      />
+                    </h3>
+                    {collapsed ? null : (
+                      <div className="space-y-1">
+                        {items.map((session) => renderChatRow(session))}
+                      </div>
                     )}
-                  </button>
-                  {collapsed ? null : (
-                    <div className="space-y-1">
-                      {items.map((session) => renderChatRow(session))}
-                    </div>
-                  )}
-                </section>
-              );
-            })
-          )}
-        </div>
+                  </section>
+                );
+              })
+            )}
+          </div>
+        )}
         <RomeConfirmDialog
           open={pendingDeleteId !== null}
           destructive

@@ -90,10 +90,10 @@ function mockSessions(sessions: MockSession[]) {
   return spy;
 }
 
-function renderRecentChats(initialEntry = "/chat", onSearch = () => {}) {
+function renderRecentChats(initialEntry = "/chat") {
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
-      <RecentChats onSearch={onSearch} />
+      <RecentChats />
       <LocationProbe />
     </MemoryRouter>,
   );
@@ -109,21 +109,16 @@ function textIndex(container: HTMLElement, text: string): number {
 }
 
 describe("RecentChats", () => {
-  it("keeps search and list settings visible together", async () => {
+  it("keeps list settings on the Chats section", async () => {
     mockSessions([]);
-    const onSearch = rs.fn();
-    const user = userEvent.setup();
-
-    renderRecentChats("/chat", onSearch);
+    renderRecentChats();
 
     await screen.findByText("No chats yet");
-    const searchButton = screen.getByRole("button", { name: "Search chats" });
-    expect(searchButton).toBeTruthy();
-    expect(searchButton.getAttribute("title")).toMatch(/^Search chats \((⌘K|Ctrl K)\)$/);
     expect(screen.getByRole("button", { name: "List settings" })).toBeTruthy();
-
-    await user.click(searchButton);
-    expect(onSearch).toHaveBeenCalledOnce();
+    const chatsToggle = screen.getByRole("button", { name: "Chats" });
+    await userEvent.click(chatsToggle);
+    expect(screen.queryByText("No chats yet")).toBeNull();
+    expect(chatsToggle.getAttribute("aria-expanded")).toBe("false");
   });
 
   it("offers a retry instead of claiming the guardian has no chats when the fetch fails", async () => {
@@ -230,7 +225,7 @@ describe("RecentChats", () => {
     expect(container.querySelectorAll(".bg-info")).toHaveLength(1);
   });
 
-  it("hides the Projects heading when nothing is pinned", async () => {
+  it("keeps project groups inside the Chats section", async () => {
     mockSessions([
       {
         id: "regular-chat",
@@ -246,9 +241,9 @@ describe("RecentChats", () => {
 
     renderRecentChats();
 
-    const projectsSection = await screen.findByRole("region", { name: "Projects" });
-    expect(screen.queryByRole("heading", { name: "Projects" })).toBeNull();
-    expect(within(projectsSection).getByRole("link", { name: "Regular chat" })).toBeTruthy();
+    const chatsSection = await screen.findByRole("region", { name: "Chats" });
+    expect(screen.getByRole("heading", { name: "Chats" })).toBeTruthy();
+    expect(within(chatsSection).getByRole("link", { name: "Regular chat" })).toBeTruthy();
   });
 
   it("groups by date using activity time instead of created time", async () => {
@@ -273,8 +268,15 @@ describe("RecentChats", () => {
     await act(async () => {
       await rs.advanceTimersByTimeAsync(0);
     });
-    expect(screen.getByText("Today")).toBeTruthy();
+    const dateHeading = screen.getByRole("button", { name: "Today" });
+    expect(dateHeading?.classList.contains("text-ui")).toBe(true);
+    expect(dateHeading?.classList.contains("text-aux")).toBe(false);
+    expect(dateHeading.querySelector("svg")?.classList.contains("opacity-0")).toBe(true);
     expect(screen.getByText("Today activity")).toBeTruthy();
+    act(() => dateHeading.click());
+    expect(screen.queryByText("Today activity")).toBeNull();
+    expect(dateHeading.getAttribute("aria-expanded")).toBe("false");
+    expect(dateHeading.querySelector("svg")?.classList.contains("opacity-0")).toBe(false);
   });
 
   it("shows pinned projects in a shared Pinned section without pin status icons", async () => {
@@ -307,7 +309,7 @@ describe("RecentChats", () => {
     await user.click(unpinItem);
     await waitFor(() => expect(screen.queryByRole("region", { name: "Pinned" })).toBeNull());
     expect(
-      within(screen.getByRole("region", { name: "Projects" })).getByRole("link", {
+      within(screen.getByRole("region", { name: "Chats" })).getByRole("link", {
         name: "Project chat",
       }),
     ).toBeTruthy();
@@ -317,14 +319,14 @@ describe("RecentChats", () => {
     localStorage.setItem("rome-recent-chats-pinned-projects", JSON.stringify(["alpha"]));
     mockSessions([
       {
-        id: "pinned-chat",
+        id: "6f8c5f4e-6b2f-4f8e-9b55-63f3283e138e",
         name: "Pinned standalone chat",
         createdAt: "2026-07-04T00:00:00.000Z",
         activityAt: "2026-07-09T12:00:00.000Z",
         lastSeenActivityAt: null,
         unread: false,
-        projectName: "default",
-        projectPath: "default",
+        projectName: "6f8c5f4e-6b2f-4f8e-9b55-63f3283e138e",
+        projectPath: "chats/6f8c5f4e-6b2f-4f8e-9b55-63f3283e138e",
         pinnedAt: "2026-07-09T13:00:00.000Z",
       },
       {
@@ -336,6 +338,17 @@ describe("RecentChats", () => {
         unread: false,
         projectName: "Alpha project",
         projectPath: "alpha",
+      },
+      {
+        id: "pinned-child-chat",
+        name: "Pinned child chat",
+        createdAt: "2026-07-03T00:00:00.000Z",
+        activityAt: "2026-07-09T10:30:00.000Z",
+        lastSeenActivityAt: null,
+        unread: false,
+        projectName: "Beta project",
+        projectPath: "beta",
+        pinnedAt: "2026-07-09T14:00:00.000Z",
       },
       {
         id: "standalone-chat",
@@ -363,7 +376,12 @@ describe("RecentChats", () => {
     renderRecentChats();
 
     const pinnedSection = await screen.findByRole("region", { name: "Pinned" });
-    const projectsSection = screen.getByRole("region", { name: "Projects" });
+    const chatsSection = screen.getByRole("region", { name: "Chats" });
+    const pinnedHeading = within(pinnedSection).getByRole("heading", { name: "Pinned" });
+    const chatsHeading = screen.getByRole("heading", { name: "Chats" });
+    expect(pinnedHeading.parentElement?.className).toBe(chatsHeading.parentElement?.className);
+    expect(within(pinnedHeading).getByRole("button", { name: "Pinned" })).toBeTruthy();
+    expect(within(chatsHeading).getByRole("button", { name: "Chats" })).toBeTruthy();
 
     expect(
       within(pinnedSection).getByRole("link", { name: "Pinned standalone chat" }),
@@ -375,21 +393,30 @@ describe("RecentChats", () => {
     const pinnedProjectChat = within(pinnedSection).getByRole("link", {
       name: "Pinned project child",
     });
-    expect(pinnedProjectChat.classList.contains("pl-4")).toBe(true);
+    expect(pinnedProjectChat.classList.contains("pl-8")).toBe(true);
     expect(pinnedProjectChat.classList.contains("pl-12")).toBe(false);
+    expect(textIndex(pinnedSection, "Pinned standalone chat")).toBeLessThan(
+      textIndex(pinnedSection, "Alpha project"),
+    );
+    expect(textIndex(pinnedSection, "Alpha project")).toBeLessThan(
+      textIndex(pinnedSection, "Pinned child chat"),
+    );
+    expect(textIndex(document.body, "Pinned")).toBeLessThan(textIndex(document.body, "Chats"));
     expect(
       within(pinnedSection).getByRole("button", { name: "New chat in this project" }),
     ).toBeTruthy();
-    expect(screen.queryByRole("region", { name: "Chats" })).toBeNull();
-    const defaultProjectButton = within(projectsSection).getByRole("button", {
+    const defaultProjectButton = within(chatsSection).getByRole("button", {
       name: "default",
     });
     expect(defaultProjectButton.querySelector(".lucide-folder-open")).toBeTruthy();
-    expect(within(projectsSection).getByRole("link", { name: "Standalone chat" })).toBeTruthy();
-    expect(within(projectsSection).getByRole("button", { name: "Beta project" })).toBeTruthy();
     expect(
-      within(projectsSection).getByRole("link", { name: "Regular project child" }),
-    ).toBeTruthy();
+      defaultProjectButton
+        .querySelector(".lucide-folder-open")
+        ?.classList.contains("text-subtle-foreground"),
+    ).toBe(false);
+    expect(within(chatsSection).getByRole("link", { name: "Standalone chat" })).toBeTruthy();
+    expect(within(chatsSection).getByRole("button", { name: "Beta project" })).toBeTruthy();
+    expect(within(chatsSection).getByRole("link", { name: "Regular project child" })).toBeTruthy();
     expect(screen.getAllByText("Alpha project")).toHaveLength(1);
 
     await user.click(pinnedProjectButton);
@@ -401,12 +428,14 @@ describe("RecentChats", () => {
     expect(within(pinnedSection).getByText("Pinned project child")).toBeTruthy();
     expect(pinnedProjectButton.querySelector(".lucide-folder-open")).toBeTruthy();
 
-    await user.click(within(pinnedSection).getByRole("button", { name: "Pinned" }));
+    const pinnedToggle = within(pinnedSection).getByRole("button", { name: "Pinned" });
+    await user.click(pinnedToggle);
     expect(within(pinnedSection).queryByText("Pinned standalone chat")).toBeNull();
     expect(within(pinnedSection).queryByText("Pinned project child")).toBeNull();
+    expect(pinnedToggle.getAttribute("aria-expanded")).toBe("false");
   });
 
-  it("keeps implicit standalone chats navigable outside project groups", async () => {
+  it("mixes implicit standalone chats with project groups by activity", async () => {
     const id = "4e4c34b7-4c2a-4563-a3e8-709154afbdff";
     mockSessions([
       {
@@ -431,13 +460,19 @@ describe("RecentChats", () => {
       },
     ]);
 
-    renderRecentChats();
+    const { container } = renderRecentChats();
 
     const chatsSection = await screen.findByRole("region", { name: "Chats" });
-    expect(within(chatsSection).getByRole("link", { name: "Isolated chat" })).toBeTruthy();
-    const projectsSection = screen.getByRole("region", { name: "Projects" });
-    expect(within(projectsSection).getByRole("button", { name: "Alpha" })).toBeTruthy();
-    expect(within(projectsSection).queryByText("Isolated chat")).toBeNull();
+    const chatLink = within(chatsSection).getByRole("link", { name: "Isolated chat" });
+    const projectButton = within(chatsSection).getByRole("button", { name: "Alpha" });
+    expect(textIndex(container, "Isolated chat")).toBeLessThan(textIndex(container, "Alpha"));
+    expect(projectButton.parentElement?.classList.contains("text-ui")).toBe(true);
+    expect(projectButton.parentElement?.classList.contains("text-foreground")).toBe(true);
+    expect(chatLink.closest("[data-chat-row]")?.classList.contains("text-ui")).toBe(true);
+    const nestedChatLink = within(chatsSection).getByRole("link", { name: "Shared chat" });
+    expect(nestedChatLink.classList.contains("pl-8")).toBe(true);
+
+    expect(screen.getAllByRole("button", { name: "List settings" })).toHaveLength(1);
   });
 
   it("does not render unread dots for the active session", async () => {
@@ -702,7 +737,7 @@ describe("RecentChats", () => {
     );
   });
 
-  it("grays out archived chat rows", async () => {
+  it("keeps archived chat labels at the same emphasis as active chats", async () => {
     localStorage.setItem("rome-recent-chats-status-filter", "all");
     mockSessions([activeSession(), archivedSession()]);
 
@@ -710,8 +745,7 @@ describe("RecentChats", () => {
 
     const archivedRow = (await screen.findByText("Archived chat")).closest("[data-chat-row]");
     const activeRow = screen.getByText("Active chat").closest("[data-chat-row]");
-    expect(archivedRow?.classList.contains("text-subtle-foreground")).toBe(true);
-    expect(archivedRow?.classList.contains("text-foreground")).toBe(false);
+    expect(archivedRow?.classList.contains("text-foreground")).toBe(true);
     expect(activeRow?.classList.contains("text-foreground")).toBe(true);
   });
 

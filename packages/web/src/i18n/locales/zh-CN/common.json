@@ -29,10 +29,12 @@
     "add": "添加",
     "newApps": "有新应用可用",
     "new": "新",
-    "appDisabled": "已停用"
+    "appDisabled": "已停用",
+    "search": "搜索",
+    "searchShortcut": "搜索 ({{shortcut}})"
   },
   "recentChats": {
-    "title": "最近对话",
+    "title": "对话",
     "newChat": "新对话",
     "empty": "还没有对话",
     "unread": "未读",
@@ -69,7 +71,6 @@
     "searchCloseHint": "关闭",
     "projectActions": "项目操作",
     "pinned": "已置顶",
-    "sectionProjects": "项目",
     "pin": "置顶",
     "unpin": "取消置顶",
     "pinChat": "置顶对话",
