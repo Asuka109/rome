@@ -630,6 +630,58 @@ describe("Webchat API", () => {
       });
     });
 
+    it("rejects explicit projects in the standalone workspace namespace", async () => {
+      const app = createWebchatRuntime(deps).routes;
+      const path = "chats/4e4c34b7-4c2a-4563-a3e8-709154afbdff";
+
+      for (const request of [
+        app.request("/chat/projects", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: path }),
+        }),
+        app.request("/chat/sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: "Explicit", projectPath: path }),
+        }),
+      ]) {
+        const response = await request;
+        expect(response.status).toBe(400);
+        await expect(response.json()).resolves.toMatchObject({
+          error: `Project "${path}" is reserved`,
+        });
+      }
+
+      await expect(deps.webchatRepo.getProjectByPath(path)).resolves.toBeNull();
+      expect(existsSync(join(projectsRoot, path))).toBe(false);
+
+      await deps.webchatRepo.createProject("chats", "chats");
+      const catalog = (await (await app.request("/chat/projects")).json()) as {
+        projects: Array<{ name: string }>;
+      };
+      expect(catalog.projects.map((project) => project.name)).not.toContain("chats");
+    });
+
+    it("validates the requested agent before creating a standalone workspace", async () => {
+      const app = createWebchatRuntime(deps).routes;
+      const projectPathsBefore = (await deps.webchatRepo.listProjects()).map(
+        (project) => project.path,
+      );
+
+      const response = await app.request("/chat/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentName: "missing:agent" }),
+      });
+
+      expect(response.status).toBe(400);
+      expect((await deps.webchatRepo.listProjects()).map((project) => project.path)).toEqual(
+        projectPathsBefore,
+      );
+      expect(existsSync(join(projectsRoot, "chats"))).toBe(false);
+    });
+
     it("creates and binds an implicit project before returning a standalone session", async () => {
       const app = createWebchatRuntime(deps).routes;
 

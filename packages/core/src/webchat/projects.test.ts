@@ -9,6 +9,7 @@ import {
   ensureWebchatProjectExists,
   getStandaloneWebchatProjectPath,
   getWebchatProjectDisplayName,
+  isReservedWebchatProjectPath,
   isStandaloneWebchatProjectPath,
   listWebchatProjects,
   normalizeSelectedWebchatProjectPath,
@@ -96,6 +97,9 @@ describe("webchat project helpers", () => {
     const sessionId = "4e4c34b7-4c2a-4563-a3e8-709154afbdff";
 
     expect(getStandaloneWebchatProjectPath(sessionId)).toBe(`chats/${sessionId}`);
+    expect(isReservedWebchatProjectPath("chats")).toBe(true);
+    expect(isReservedWebchatProjectPath(`chats/${sessionId}`)).toBe(true);
+    expect(isReservedWebchatProjectPath("chat-showcase")).toBe(false);
     expect(isStandaloneWebchatProjectPath(`chats/${sessionId}`)).toBe(true);
     expect(isStandaloneWebchatProjectPath("chats/not-a-session-id")).toBe(false);
   });

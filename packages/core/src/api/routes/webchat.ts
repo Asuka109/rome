@@ -35,7 +35,7 @@ import {
   getStandaloneWebchatProjectPath,
   getWebchatProjectDisplayName,
   getWebchatProjectsRoot,
-  isStandaloneWebchatProjectPath,
+  isReservedWebchatProjectPath,
   normalizeWebchatProjectPath,
   normalizeSelectedWebchatProjectPath,
   resolveWebchatProjectPath,
@@ -1967,7 +1967,7 @@ export function createWebchatRuntime(deps: ApiDeps): { routes: Hono; runtime: We
       },
     );
     const projects = (await deps.webchatRepo.listProjects()).filter(
-      (project) => !isStandaloneWebchatProjectPath(project.path),
+      (project) => !isReservedWebchatProjectPath(project.path),
     );
     await Promise.all(
       projects.map((project) => ensureWebchatProjectWorkspace(project.path, rootPath)),
@@ -1980,8 +1980,11 @@ export function createWebchatRuntime(deps: ApiDeps): { routes: Hono; runtime: We
     const body = await c.req.json<{ name?: string }>().catch(() => ({}) as { name?: string });
     try {
       const projectPath = normalizeWebchatProjectPath(body.name ?? "");
-      if (projectPath === DEFAULT_WEBCHAT_PROJECT_NAME) {
-        throw new Error(`Project "${DEFAULT_WEBCHAT_PROJECT_NAME}" is reserved`);
+      if (
+        projectPath === DEFAULT_WEBCHAT_PROJECT_NAME ||
+        isReservedWebchatProjectPath(projectPath)
+      ) {
+        throw new Error(`Project "${projectPath}" is reserved`);
       }
       const projectName = getWebchatProjectDisplayName(projectPath);
       const existingProject = await deps.webchatRepo.getProjectRecordByPath(projectPath);
@@ -2027,18 +2030,6 @@ export function createWebchatRuntime(deps: ApiDeps): { routes: Hono; runtime: We
       );
     const id = randomUUID();
     const name = body.name || "New Chat";
-    let project;
-    try {
-      const selectedProjectPath = body.projectPath ?? body.projectName;
-      project = await ensureStoredProjectSelection(
-        selectedProjectPath?.trim()
-          ? normalizeSelectedWebchatProjectPath(selectedProjectPath)
-          : getStandaloneWebchatProjectPath(id),
-      );
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Internal error";
-      return c.json({ error: message }, getWebchatProjectErrorStatus(message));
-    }
     const modelSelection = await resolveRequestedInitialModelSelection(body.largeModelSelection);
     const personaId = await resolveRequestedPersonaId(body.personaId);
 
@@ -2055,6 +2046,24 @@ export function createWebchatRuntime(deps: ApiDeps): { routes: Hono; runtime: We
       requestedAgentName && !isCoreMainAgentId(requestedAgentName)
         ? deps.agentLoader.getCanonicalName(requestedAgentName)
         : null;
+
+    let project;
+    try {
+      const selectedProjectPath = body.projectPath ?? body.projectName;
+      const explicitProjectPath =
+        typeof selectedProjectPath === "string" && selectedProjectPath.trim()
+          ? normalizeSelectedWebchatProjectPath(selectedProjectPath)
+          : null;
+      if (explicitProjectPath && isReservedWebchatProjectPath(explicitProjectPath)) {
+        throw new Error(`Project "${explicitProjectPath}" is reserved`);
+      }
+      project = await ensureStoredProjectSelection(
+        explicitProjectPath ?? getStandaloneWebchatProjectPath(id),
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Internal error";
+      return c.json({ error: message }, getWebchatProjectErrorStatus(message));
+    }
 
     await deps.webchatRepo.createSession(
       id,
@@ -2099,6 +2108,9 @@ export function createWebchatRuntime(deps: ApiDeps): { routes: Hono; runtime: We
       const requestedProjectPath = normalizeSelectedWebchatProjectPath(
         body.projectPath ?? body.projectName,
       );
+      if (isReservedWebchatProjectPath(requestedProjectPath)) {
+        throw new Error(`Project "${requestedProjectPath}" is reserved`);
+      }
       const currentProjectPath = normalizeSelectedWebchatProjectPath(
         session.projectPath ?? session.projectName,
       );

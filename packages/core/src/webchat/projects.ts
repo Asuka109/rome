@@ -139,6 +139,14 @@ export function getStandaloneWebchatProjectPath(sessionId: string): string {
   return `${STANDALONE_WEBCHAT_PROJECT_PREFIX}/${sessionId}`;
 }
 
+export function isReservedWebchatProjectPath(projectPath: string): boolean {
+  const normalizedPath = normalizeWebchatProjectPath(projectPath);
+  return (
+    normalizedPath === STANDALONE_WEBCHAT_PROJECT_PREFIX ||
+    normalizedPath.startsWith(`${STANDALONE_WEBCHAT_PROJECT_PREFIX}/`)
+  );
+}
+
 export function isStandaloneWebchatProjectPath(projectPath: string): boolean {
   return /^chats\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     projectPath,

@@ -1371,6 +1371,42 @@ describe("Projects files API", () => {
       expect(existsSync(join(projectsRoot, "demo"))).toBe(false);
     });
 
+    it("does not delete the shared standalone chats workspace root", async () => {
+      const sessionId = "4e4c34b7-4c2a-4563-a3e8-709154afbdff";
+      const projectPath = `chats/${sessionId}`;
+      mkdirSync(join(projectsRoot, projectPath), { recursive: true });
+      await webchatRepo.createSession(
+        sessionId,
+        "Standalone",
+        undefined,
+        sessionId,
+        null,
+        projectPath,
+      );
+
+      const res = await buildApp().request("/projects/file?path=projects/chats", {
+        method: "DELETE",
+      });
+
+      expect(res.status).toBe(400);
+      expect(existsSync(join(projectsRoot, projectPath))).toBe(true);
+      await expect(webchatRepo.getSession(sessionId)).resolves.toMatchObject({ id: sessionId });
+
+      const rootTree = (await (
+        await buildApp().request("/projects/tree?path=projects")
+      ).json()) as Array<{ name: string }>;
+      expect(rootTree.some((entry) => entry.name === "chats")).toBe(false);
+
+      const workspaceTree = await buildApp().request(`/projects/tree?path=projects/${projectPath}`);
+      expect(workspaceTree.status).toBe(200);
+
+      const dashboard = (await (
+        await buildApp().request("/projects/dashboard?path=projects")
+      ).json()) as { availableProjectPaths: string[] };
+      expect(dashboard.availableProjectPaths).not.toContain("chats");
+      expect(dashboard.availableProjectPaths).not.toContain(projectPath);
+    });
+
     it("removes deleted project folder metadata after cleanup", async () => {
       mkdirSync(join(projectsRoot, "demo", "nested"), { recursive: true });
       mkdirSync(join(projectsRoot, "demo-other"), { recursive: true });

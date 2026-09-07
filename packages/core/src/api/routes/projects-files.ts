@@ -29,6 +29,8 @@ import { ensureProjectsRootInitialized } from "../../paths.js";
 import { parseTimeZone } from "../../lib/timezone.js";
 import { resolveWebchatLargeModelSelection } from "../../core/model-selector.js";
 import type { ApiDeps } from "../deps.js";
+import { STANDALONE_WEBCHAT_PROJECT_PREFIX } from "../../webchat/constants.js";
+import { isReservedWebchatProjectPath } from "../../webchat/projects.js";
 
 const PROJECTS_IGNORED_NAMES = [".next", ".turbo", "build", "coverage", "dist", "node_modules"];
 const PROJECT_DASHBOARD_DAYS = 14;
@@ -258,12 +260,13 @@ async function listAvailableProjectPaths(
   const projectPaths = new Set<string>();
 
   for (const projectPath of listTopLevelShadowProjectPaths(rootDir)) {
+    if (isReservedWebchatProjectPath(projectPath)) continue;
     projectPaths.add(projectPath);
   }
 
   for (const projectPath of await webchatRepo.listProjectPaths()) {
     const normalizedProjectPath = normalizeProjectCandidatePath(projectPath);
-    if (!normalizedProjectPath) continue;
+    if (!normalizedProjectPath || isReservedWebchatProjectPath(normalizedProjectPath)) continue;
 
     const resolvedProjectPath = resolve(rootDir, normalizedProjectPath);
     if (isWithinDirectory(resolvedProjectPath, rootDir)) {
@@ -704,6 +707,10 @@ export function projectsFilesRoutes(deps: ProjectsRouteDeps): Hono {
     logicalRoot: "projects",
     rootDir: projectsRoot,
   };
+  const treeScope: FileBrowserScope = {
+    ...baseScope,
+    ignoredNames: [...PROJECTS_IGNORED_NAMES, STANDALONE_WEBCHAT_PROJECT_PREFIX],
+  };
 
   const fileScope: FileBrowserScope = {
     ...baseScope,
@@ -729,13 +736,20 @@ export function projectsFilesRoutes(deps: ProjectsRouteDeps): Hono {
   };
 
   app.get("/projects/events", createFileWatchEventsHandler(baseScope));
-  app.get("/projects/tree", createTreeHandler(baseScope));
+  app.get("/projects/tree", createTreeHandler(treeScope));
   app.get("/projects/resolve", createResolveHandler(baseScope));
   app.get("/projects/file", createFileGetHandler(fileScope));
   app.post("/projects/file", createFilePostHandler(fileScope));
   app.put("/projects/file", createFilePutHandler(fileScope));
   app.patch("/projects/file", createFileRenameHandler(fileScope));
-  app.delete("/projects/file", createFileDeleteHandler(fileScope));
+  const deleteProjectFile = createFileDeleteHandler(fileScope);
+  app.delete("/projects/file", (c) => {
+    const projectPath = normalizeProjectCandidatePath(c.req.query("path") ?? "");
+    if (projectPath === STANDALONE_WEBCHAT_PROJECT_PREFIX) {
+      return c.json({ error: "Cannot delete the standalone chats workspace root" }, 400);
+    }
+    return deleteProjectFile(c);
+  });
   app.get("/projects/asset", createAssetHandler(baseScope));
   app.get("/projects/asset/:fileName", createAssetHandler(baseScope));
   app.get("/projects/download", createDownloadHandler(baseScope));
