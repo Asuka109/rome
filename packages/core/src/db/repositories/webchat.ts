@@ -11,6 +11,8 @@ import {
   isNotNull,
   isNull,
   like,
+  ne,
+  not,
   or,
   sql,
 } from "drizzle-orm";
@@ -24,7 +26,10 @@ import {
   webchatWorkspaceLayouts,
 } from "../schema.js";
 import type { DrizzleDb } from "../index.js";
-import { DEFAULT_WEBCHAT_PROJECT_NAME } from "../../webchat/constants.js";
+import {
+  DEFAULT_WEBCHAT_PROJECT_NAME,
+  STANDALONE_WEBCHAT_PROJECT_PREFIX,
+} from "../../webchat/constants.js";
 import type { TurnFeedbackRating } from "@rome/api-types/trace-segments";
 import type { RomeSessionType } from "@rome-os/app-runtime";
 import type { MessagePart } from "../../types.js";
@@ -721,7 +726,13 @@ export class WebChatRepository {
     return this.db
       .select()
       .from(webchatProjects)
-      .where(isNull(webchatProjects.archivedAt))
+      .where(
+        and(
+          isNull(webchatProjects.archivedAt),
+          ne(webchatProjects.path, STANDALONE_WEBCHAT_PROJECT_PREFIX),
+          not(sql`${webchatProjects.path} GLOB ${`${STANDALONE_WEBCHAT_PROJECT_PREFIX}/*`}`),
+        ),
+      )
       .orderBy(
         sql`CASE WHEN ${webchatProjects.path} = ${DEFAULT_WEBCHAT_PROJECT_NAME} THEN 0 ELSE 1 END`,
         asc(webchatProjects.path),

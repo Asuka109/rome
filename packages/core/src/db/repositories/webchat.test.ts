@@ -645,6 +645,14 @@ describe("WebChatRepository", () => {
       "alpha/nested",
     );
     await repo.createSession("sess-alpha-2", "Chat Alpha 2", undefined, "alpha", null, "alpha");
+    await repo.createSession(
+      "sess-standalone",
+      "Standalone",
+      undefined,
+      "Standalone",
+      null,
+      "chats/standalone",
+    );
     await repo.createSession("sess-legacy", "Chat Legacy", undefined, "legacy", null, null);
 
     await expect(repo.listProjectPaths()).resolves.toEqual(["default", "alpha", "alpha/nested"]);

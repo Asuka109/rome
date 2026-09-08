@@ -682,6 +682,20 @@ describe("Webchat API", () => {
       expect(existsSync(join(projectsRoot, "chats"))).toBe(false);
     });
 
+    it("rejects a non-string project path instead of creating a standalone session", async () => {
+      const app = createWebchatRuntime(deps).routes;
+
+      const response = await app.request("/chat/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectPath: 42 }),
+      });
+
+      expect(response.status).toBe(400);
+      await expect(response.json()).resolves.toEqual({ error: "Project path must be a string" });
+      expect(existsSync(join(projectsRoot, "chats"))).toBe(false);
+    });
+
     it("creates and binds an implicit project before returning a standalone session", async () => {
       const app = createWebchatRuntime(deps).routes;
 
@@ -924,6 +938,29 @@ describe("Webchat API", () => {
       await expect(deps.webchatRepo.getProjectByPath("default/test")).resolves.toMatchObject({
         name: "test",
         path: "default/test",
+      });
+    });
+
+    it("rejects an empty project update without rebinding a standalone session", async () => {
+      const app = createWebchatRuntime(deps).routes;
+      const created = (await (
+        await app.request("/chat/sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: "Draft" }),
+        })
+      ).json()) as { id: string; projectPath: string };
+
+      const response = await app.request(`/chat/sessions/${created.id}/project`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+
+      expect(response.status).toBe(400);
+      await expect(response.json()).resolves.toEqual({ error: "Project path is required" });
+      await expect(deps.webchatRepo.getSession(created.id)).resolves.toMatchObject({
+        projectPath: created.projectPath,
       });
     });
 
