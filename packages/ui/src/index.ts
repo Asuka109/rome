@@ -106,12 +106,15 @@ export {
 export { IconButton, type IconButtonProps } from "./icon-button.js";
 export { Input } from "./input.js";
 export {
-  ListCollection,
-  ListFooter,
-  ListGrid,
-  ListLayout,
-  ListToolbar,
-} from "./layout-list.js";
+  FormRow,
+  FormRowControl,
+  FormRowDescription,
+  FormRowHeading,
+  FormRowIcon,
+  FormRowLabel,
+  FormRows,
+} from "./layout-form.js";
+export { ListCollection, ListFooter, ListGrid, ListToolbar } from "./layout-list.js";
 export {
   List,
   ListRow,
@@ -125,11 +128,14 @@ export {
   Measure,
   Page,
   PageActions,
-  PageBody,
   PageDescription,
   PageHeader,
   PageHeaderNav,
   PageHeading,
+  PageNav,
+  type PageNavProps,
+  PageNavLink,
+  type PageNavLinkProps,
   PageTitle,
   Section,
   SectionActions,

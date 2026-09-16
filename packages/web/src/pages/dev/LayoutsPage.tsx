@@ -1,8 +1,18 @@
 import { type ReactNode, useState } from "react";
-import { Plus } from "lucide-react";
-import { ListCollection, ListFooter, ListLayout, ListToolbar } from "@rome-os/ui/layout-list";
+import { Bell, Languages, Plus } from "lucide-react";
+import {
+  FormRow,
+  FormRowControl,
+  FormRowDescription,
+  FormRowHeading,
+  FormRowIcon,
+  FormRowLabel,
+  FormRows,
+} from "@rome-os/ui/layout-form";
+import { ListCollection, ListFooter, ListToolbar } from "@rome-os/ui/layout-list";
 import {
   Measure,
+  Page,
   PageActions,
   PageDescription,
   PageHeader,
@@ -21,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -57,7 +68,7 @@ const APPS = [
 
 function ListSpecimen() {
   return (
-    <ListLayout>
+    <Page>
       <PageHeader>
         <PageHeading>
           <PageTitle>Apps</PageTitle>
@@ -128,7 +139,66 @@ function ListSpecimen() {
           Show more
         </Button>
       </ListFooter>
-    </ListLayout>
+    </Page>
+  );
+}
+
+function FormSpecimen() {
+  const [sounds, setSounds] = useState(true);
+
+  return (
+    <Page>
+      <PageHeader>
+        <PageHeading>
+          <PageTitle>Settings</PageTitle>
+          <PageDescription>Applies to every device you sign in on.</PageDescription>
+        </PageHeading>
+      </PageHeader>
+      <FormRows>
+        <FormRow>
+          <FormRowIcon>
+            <Languages />
+          </FormRowIcon>
+          <FormRowHeading>
+            <FormRowLabel htmlFor="specimen-language">Language</FormRowLabel>
+          </FormRowHeading>
+          <FormRowControl>
+            <Select defaultValue="en">
+              <SelectTrigger id="specimen-language">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="zh">中文</SelectItem>
+              </SelectContent>
+            </Select>
+          </FormRowControl>
+        </FormRow>
+        <FormRow>
+          <FormRowIcon>
+            <Bell />
+          </FormRowIcon>
+          <FormRowHeading>
+            <FormRowLabel htmlFor="specimen-sounds">Sounds</FormRowLabel>
+            <FormRowDescription>Plays when a routine finishes.</FormRowDescription>
+          </FormRowHeading>
+          <FormRowControl>
+            <Switch id="specimen-sounds" checked={sounds} onCheckedChange={setSounds} />
+          </FormRowControl>
+        </FormRow>
+        <FormRow>
+          <FormRowHeading>
+            <FormRowLabel>Sign out everywhere</FormRowLabel>
+            <FormRowDescription>Ends every session but this one.</FormRowDescription>
+          </FormRowHeading>
+          <FormRowControl>
+            <Button size="sm" variant="ghost">
+              Sign out
+            </Button>
+          </FormRowControl>
+        </FormRow>
+      </FormRows>
+    </Page>
   );
 }
 
@@ -149,6 +219,14 @@ const SPECIMENS: Specimen[] = [
       "Used for a collection the reader scans or searches to find one item and then leaves. Not used when the reader processes items one by one while keeping the list in view.",
     hint: "Tab to the toolbar, then move between its controls with the arrow keys.",
     render: () => <ListSpecimen />,
+  },
+  {
+    id: "form",
+    label: "Form",
+    usage:
+      "Used for changing settings and seeing the change took: one column at the reading measure, with save state shown where the change was made. Not used for a one-shot linear flow.",
+    hint: "Narrow the window: the rows keep their line, and the label wraps rather than pushing its control down.",
+    render: () => <FormSpecimen />,
   },
 ];
 

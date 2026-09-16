@@ -4,11 +4,12 @@ import {
   Measure,
   Page,
   PageActions,
-  PageBody,
   PageDescription,
   PageHeader,
   PageHeaderNav,
   PageHeading,
+  PageNav,
+  PageNavLink,
   PageTitle,
   Section,
   SectionActions,
@@ -33,32 +34,31 @@ function ExamplePage() {
           <button type="button">New routine</button>
         </PageActions>
       </PageHeader>
-      <PageBody>
-        <Section>
-          <SectionHeader>
-            <SectionHeading>
-              <SectionTitle>Daily</SectionTitle>
-              <SectionDescription>Runs every morning.</SectionDescription>
-            </SectionHeading>
-            <SectionActions>
-              <button type="button">Pause</button>
-            </SectionActions>
-          </SectionHeader>
-          <Measure data-testid="measure">Body</Measure>
-        </Section>
-      </PageBody>
+      <Section>
+        <SectionHeader>
+          <SectionHeading>
+            <SectionTitle>Daily</SectionTitle>
+            <SectionDescription>Runs every morning.</SectionDescription>
+          </SectionHeading>
+          <SectionActions>
+            <button type="button">Pause</button>
+          </SectionActions>
+        </SectionHeader>
+        <Measure data-testid="measure">Body</Measure>
+      </Section>
     </Page>
   );
 }
 
 describe("Page", () => {
-  it("owns the shared page padding and centers nothing", () => {
+  it("owns the shared padding and the 24px rhythm, and centers nothing", () => {
     render(<ExamplePage />);
 
     const page = screen.getByTestId("page");
     expect([...page.classList]).toEqual(
-      expect.arrayContaining(["w-full", "p-4", "sm:p-6", "lg:p-8"]),
+      expect.arrayContaining(["w-full", "p-4", "sm:p-6", "lg:p-8", "flex", "flex-col", "gap-6"]),
     );
+    expect([...page.classList]).not.toContain("mx-auto");
   });
 
   it("renders no main landmark, which the shell owns", () => {
@@ -79,7 +79,7 @@ describe("Page", () => {
     expect([...sectionTitle.classList]).toContain("text-section");
   });
 
-  it("places the header slots inside the header and the rest inside the body", () => {
+  it("places the header slots inside the header and the body straight under it", () => {
     const { container } = render(<ExamplePage />);
 
     const header = container.querySelector('[data-slot="page-header"]');
@@ -88,7 +88,7 @@ describe("Page", () => {
       expect(header?.querySelector(`[data-slot="${slot}"]`)).not.toBeNull();
     }
 
-    const section = container.querySelector('[data-slot="page-body"] [data-slot="section"]');
+    const section = container.querySelector('[data-slot="page"] > [data-slot="section"]');
     expect(section?.tagName).toBe("SECTION");
     expect(section?.querySelector('[data-slot="section-actions"]')).not.toBeNull();
   });
@@ -131,5 +131,52 @@ describe("Page", () => {
     render(<ExamplePage />);
 
     expect([...screen.getByTestId("measure").classList]).toContain("max-w-2xl");
+  });
+});
+
+function ExampleNav() {
+  return (
+    <PageNav aria-label="Settings" data-testid="nav">
+      <PageNavLink asChild active>
+        <a href="/settings/appearance">Appearance</a>
+      </PageNavLink>
+      <PageNavLink asChild>
+        <a href="/settings/connections">Connections</a>
+      </PageNavLink>
+    </PageNav>
+  );
+}
+
+describe("PageNav", () => {
+  it("names the strip and renders it as a list of links, not a tablist", () => {
+    const { container } = render(<ExampleNav />);
+
+    const nav = screen.getByRole("navigation", { name: "Settings" });
+    expect(nav.tagName).toBe("NAV");
+    expect(container.querySelectorAll('[role="tab"]')).toHaveLength(0);
+    expect(container.querySelectorAll('[data-slot="page-nav-item"]')).toHaveLength(2);
+    expect(nav.querySelector("ul > li > a")).not.toBeNull();
+  });
+
+  it("marks the current entry for a reader as well as for the eye", () => {
+    render(<ExampleNav />);
+
+    const current = screen.getByRole("link", { name: "Appearance" });
+    expect(current.getAttribute("aria-current")).toBe("page");
+    expect([...current.classList]).toContain("after:opacity-100");
+
+    const other = screen.getByRole("link", { name: "Connections" });
+    expect(other.getAttribute("aria-current")).toBeNull();
+    expect([...other.classList]).not.toContain("after:opacity-100");
+  });
+
+  it("scrolls the row sideways rather than wrapping it onto a second line", () => {
+    const { container } = render(<ExampleNav />);
+
+    const list = container.querySelector('[data-slot="page-nav"] > ul');
+    expect([...(list?.classList ?? [])]).toEqual(
+      expect.arrayContaining(["flex", "overflow-x-auto", "border-b"]),
+    );
+    expect([...(list?.classList ?? [])]).not.toContain("flex-wrap");
   });
 });

@@ -38,6 +38,14 @@ import {
   WalletCards,
   X,
 } from "lucide-react";
+import {
+  FormRow,
+  FormRowControl,
+  FormRowHeading,
+  FormRowIcon,
+  FormRowLabel,
+  FormRows,
+} from "@rome-os/ui/layout-form";
 import { Spinner } from "@rome-os/ui/spinner";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -55,7 +63,6 @@ import {
 import { Field, FieldLabel } from "@/components/ui/field";
 import { IconButton } from "@/components/ui/icon-button";
 import { Input } from "@/components/ui/input";
-import { List, ListRow, ListRowContent, ListRowTitle } from "@/components/ui/list-row";
 import { Dialog, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
@@ -102,7 +109,7 @@ import {
   type SessionHandoffPayload,
 } from "@/lib/access-control-client";
 import type { ComposioCliStatus } from "@/lib/provider-types";
-import { PageShell, PageBody, PageHeader } from "@/shell/PageShell";
+import { Page, PageHeader, PageHeading, PageNav, PageNavLink, PageTitle } from "@rome-os/ui/page";
 import {
   CONNECTIONS_REFRESH_INTERVAL_MS,
   fetchConnections,
@@ -351,123 +358,92 @@ export default function SettingsPage() {
   const tabNeedsSettings = SETTINGS_BACKED_TABS.has(activeTab);
 
   return (
-    <PageShell>
-      <PageBody>
-        <PageHeader title={t("page.title")} />
+    <Page>
+      <PageHeader>
+        <PageHeading>
+          <PageTitle>{t("page.title")}</PageTitle>
+        </PageHeading>
+      </PageHeader>
 
-        {/* Navigation, not a tablist: each entry is a route change, and the
-          section it reveals renders outside this element rather than in a
-          `TabsContent`. Using `Tabs` here would emit `role="tab"` with
-          `aria-controls` pointing at tabpanel ids that don't exist. Styled as
-          the same underline bar; `aria-current="page"` marks the active route. */}
-        <nav aria-label={t("page.title")}>
-          <ul className="flex w-full justify-start gap-6 overflow-x-auto overflow-y-hidden border-b border-border">
-            {VISIBLE_TABS.map((tab) => {
-              const slug = tabToSlug(tab);
-              const isActive = tab === activeTab;
-              return (
-                <li key={tab}>
-                  <Link
-                    to={`/settings/${slug}`}
-                    aria-current={isActive ? "page" : undefined}
-                    className={cn(
-                      "relative inline-flex items-center whitespace-nowrap px-2 py-1 text-ui transition-colors",
-                      // A 2px border on a zero-content pseudo-element, not a
-                      // sized box, so it authors no off-scale edge length.
-                      "after:absolute after:inset-x-0 after:bottom-[-1px] after:border-b-2 after:border-foreground after:opacity-0 after:transition-opacity",
-                      isActive
-                        ? "text-foreground after:opacity-100"
-                        : "text-foreground/60 hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground",
-                    )}
-                  >
-                    {t(`tabs.${tab}` as const)}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
+      <PageNav aria-label={t("page.title")}>
+        {VISIBLE_TABS.map((tab) => (
+          <PageNavLink asChild key={tab} active={tab === activeTab}>
+            <Link to={`/settings/${tabToSlug(tab)}`}>{t(`tabs.${tab}` as const)}</Link>
+          </PageNavLink>
+        ))}
+      </PageNav>
 
-        {/* Tab content. Settings rows are label/control pairs, so this column
-          keeps a reading measure while the frame above stays full-bleed — the
-          h1 and the nav land at the same x as on every other route, and only
-          the form narrows. Loading and failure swap this column only, and only
-          for the tabs that read the settings payload, so a dead /api/settings
-          still leaves Connections, Channels, Favors and Appearance usable. */}
-        <div className="max-w-3xl">
-          {tabNeedsSettings && loading ? (
-            <p className="text-ui text-muted-foreground">{t("page.loading")}</p>
-          ) : tabNeedsSettings && loadError ? (
-            <Card>
-              <CardContent className="flex flex-col items-start gap-3">
-                <p className="text-ui text-destructive">{loadError}</p>
-                <Button type="button" size="sm" onClick={() => void loadAll()}>
-                  <RefreshCw />
-                  {t("page.retry")}
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <>
-              {activeTab === "Appearance" && <AppearanceSection />}
-              {activeTab === "Connections" && (
-                <ConnectionsSection
-                  connections={connections}
-                  composio={composio}
-                  loading={connectionsLoading}
-                  error={connectionsError}
-                  onRetry={loadConnections}
-                  onRefresh={loadConnections}
-                  onFlash={(message) => toast.error(message)}
-                />
-              )}
-              {activeTab === "Channels" && <ChannelsSettingsPage />}
-              {activeTab === "Favors" && <FavorsSection />}
-              {activeTab === "AI Tools" && (
-                <AiToolsPanel showUsage={settings.showAiToolUsage ?? false} />
-              )}
-              {activeTab === "Advanced" && (
-                <AdvancedSection
-                  settings={settings}
-                  onSave={saveSettings}
-                  saving={saving}
-                  tailscale={tailscale}
-                  onRefresh={loadAll}
-                />
-              )}
-            </>
-          )}
-        </div>
-      </PageBody>
-    </PageShell>
-  );
-}
-
-function AppearanceRow({
-  icon,
-  title,
-  control,
-}: {
-  icon: ReactNode;
-  title: string;
-  control: ReactNode;
-}) {
-  return (
-    <ListRow>
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-8 bg-surface-muted text-muted-foreground [&_svg]:size-4.5">
-        {icon}
+      {/* Tab content. Settings rows are label/control pairs, so this column
+        keeps a reading measure while the frame above stays full-bleed — the
+        h1 and the nav land at the same x as on every other route, and only
+        the form narrows. Appearance is the exception: it renders the kit's
+        Form rows, which carry the measure themselves, so the column around
+        them holds none. Each further tab drops out of this width as it moves
+        onto its own layout. Loading and failure swap this column only, and
+        only for the tabs that read the settings payload, so a dead
+        /api/settings still leaves Connections, Channels, Favors and
+        Appearance usable. */}
+      <div className={cn(activeTab !== "Appearance" && "max-w-3xl")}>
+        {tabNeedsSettings && loading ? (
+          <p className="text-ui text-muted-foreground">{t("page.loading")}</p>
+        ) : tabNeedsSettings && loadError ? (
+          <Card>
+            <CardContent className="flex flex-col items-start gap-3">
+              <p className="text-ui text-destructive">{loadError}</p>
+              <Button type="button" size="sm" onClick={() => void loadAll()}>
+                <RefreshCw />
+                {t("page.retry")}
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {activeTab === "Appearance" && <AppearanceSection />}
+            {activeTab === "Connections" && (
+              <ConnectionsSection
+                connections={connections}
+                composio={composio}
+                loading={connectionsLoading}
+                error={connectionsError}
+                onRetry={loadConnections}
+                onRefresh={loadConnections}
+                onFlash={(message) => toast.error(message)}
+              />
+            )}
+            {activeTab === "Channels" && <ChannelsSettingsPage />}
+            {activeTab === "Favors" && <FavorsSection />}
+            {activeTab === "AI Tools" && (
+              <AiToolsPanel showUsage={settings.showAiToolUsage ?? false} />
+            )}
+            {activeTab === "Advanced" && (
+              <AdvancedSection
+                settings={settings}
+                onSave={saveSettings}
+                saving={saving}
+                tailscale={tailscale}
+                onRefresh={loadAll}
+              />
+            )}
+          </>
+        )}
       </div>
-      <ListRowContent>
-        <ListRowTitle>{title}</ListRowTitle>
-      </ListRowContent>
-      <div className="shrink-0">{control}</div>
-    </ListRow>
+    </Page>
   );
 }
 
+/**
+ * The Appearance tab, on the kit's Form layout. The tab's body fills Form's
+ * rows slot — `FormRows` caps the reading measure and each `FormRow` carries
+ * one setting, label left and control right — while the Settings title and tab
+ * strip above stay the shared frame all six tabs render into.
+ *
+ * Rows rather than stacked fields, because a guardian returns here to change
+ * one setting at a time, and every row saves itself the moment it changes.
+ */
 function AppearanceSection() {
   const { t, i18n } = useTranslation("settings");
   const { theme, setTheme, themes, preference, setPreference } = useTheme();
+  const uid = useId();
 
   const currentLang: SupportedLanguage = (SUPPORTED_LANGUAGES as readonly string[]).includes(
     i18n.resolvedLanguage ?? "",
@@ -479,83 +455,93 @@ function AppearanceSection() {
     preference === "dark" ? <Moon /> : preference === "light" ? <Sun /> : <Monitor />;
 
   return (
-    <div className="space-y-6">
-      <div className="overflow-hidden rounded-8 border border-border bg-surface">
-        <List>
-          <AppearanceRow
-            icon={<Languages />}
-            title={t("appearance.language.title")}
-            control={
-              <Select
-                value={currentLang}
-                onValueChange={(next) => {
-                  void i18n.changeLanguage(next);
-                }}
-              >
-                <SelectTrigger className="w-44" aria-label={t("appearance.language.title")}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent position="popper" align="end">
-                  {SUPPORTED_LANGUAGES.map((lang) => (
-                    <SelectItem key={lang} value={lang}>
-                      {LANGUAGE_LABELS[lang]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            }
-          />
+    <FormRows>
+      <FormRow>
+        <FormRowIcon>
+          <Languages />
+        </FormRowIcon>
+        <FormRowHeading>
+          <FormRowLabel htmlFor={`${uid}-language`}>{t("appearance.language.title")}</FormRowLabel>
+        </FormRowHeading>
+        <FormRowControl>
+          <Select
+            value={currentLang}
+            onValueChange={(next) => {
+              void i18n.changeLanguage(next);
+            }}
+          >
+            {/* `aria-label` alongside the label element: a Radix trigger is a
+              `button`, and a button takes its accessible name from its own
+              content, so the visible label would leave the name reading as the
+              selected value. */}
+            <SelectTrigger id={`${uid}-language`} aria-label={t("appearance.language.title")}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent position="popper" align="end">
+              {SUPPORTED_LANGUAGES.map((lang) => (
+                <SelectItem key={lang} value={lang}>
+                  {LANGUAGE_LABELS[lang]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FormRowControl>
+      </FormRow>
 
-          <AppearanceRow
-            icon={<Palette />}
-            title={t("appearance.theme.title")}
-            control={
-              <Select value={theme} onValueChange={(next) => setTheme(next)}>
-                <SelectTrigger className="w-44" aria-label={t("appearance.theme.title")}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent position="popper" align="end">
-                  {themes.map((entry) => (
-                    <SelectItem key={entry.id} value={entry.id}>
-                      {entry.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            }
-          />
+      <FormRow>
+        <FormRowIcon>
+          <Palette />
+        </FormRowIcon>
+        <FormRowHeading>
+          <FormRowLabel htmlFor={`${uid}-theme`}>{t("appearance.theme.title")}</FormRowLabel>
+        </FormRowHeading>
+        <FormRowControl>
+          <Select value={theme} onValueChange={(next) => setTheme(next)}>
+            <SelectTrigger id={`${uid}-theme`} aria-label={t("appearance.theme.title")}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent position="popper" align="end">
+              {themes.map((entry) => (
+                <SelectItem key={entry.id} value={entry.id}>
+                  {entry.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FormRowControl>
+      </FormRow>
 
-          <AppearanceRow
-            icon={modeIcon}
-            title={t("appearance.mode.title")}
-            control={
-              <Select
-                value={preference}
-                onValueChange={(next) => setPreference(next as ThemePreference)}
-              >
-                <SelectTrigger className="w-44" aria-label={t("appearance.mode.title")}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent position="popper" align="end">
-                  <SelectItem value="system">
-                    <Monitor />
-                    {t("appearance.mode.system")}
-                  </SelectItem>
-                  <SelectItem value="light">
-                    <Sun />
-                    {t("appearance.mode.light")}
-                  </SelectItem>
-                  <SelectItem value="dark">
-                    <Moon />
-                    {t("appearance.mode.dark")}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            }
-          />
-        </List>
-      </div>
-    </div>
+      <FormRow>
+        <FormRowIcon>{modeIcon}</FormRowIcon>
+        <FormRowHeading>
+          <FormRowLabel htmlFor={`${uid}-mode`}>{t("appearance.mode.title")}</FormRowLabel>
+        </FormRowHeading>
+        <FormRowControl>
+          <Select
+            value={preference}
+            onValueChange={(next) => setPreference(next as ThemePreference)}
+          >
+            <SelectTrigger id={`${uid}-mode`} aria-label={t("appearance.mode.title")}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent position="popper" align="end">
+              <SelectItem value="system">
+                <Monitor />
+                {t("appearance.mode.system")}
+              </SelectItem>
+              <SelectItem value="light">
+                <Sun />
+                {t("appearance.mode.light")}
+              </SelectItem>
+              <SelectItem value="dark">
+                <Moon />
+                {t("appearance.mode.dark")}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </FormRowControl>
+      </FormRow>
+    </FormRows>
   );
 }
 
