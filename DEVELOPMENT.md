@@ -91,6 +91,31 @@ Chrome's CDP listener stays available for login tabs and URL opening in either m
 - Validate [configuration with Zod](packages/core/src/config.ts). Log through [`createLogger(component)`](packages/core/src/logger.ts).
 - Use [DnD](packages/web/src/components/ui/sortable.tsx), [Motion](packages/web/src/pages/free/FreeGrid.tsx), [Monaco](packages/web/src/components/monaco-file-editor.tsx), and [Recharts](packages/web/src/pages/SessionsTrendChart.tsx) only when a feature needs them. They are not default abstractions.
 
+## shadcn lint
+
+Run `pnpm lint:shadcn` after changes to dashboard, shared UI, desktop-base-web, web-content, Rome apps, or example-app sources.
+The command uses [the advisory configuration](.oxlintrc.shadcn.json) and leaves Biome and the existing Tailwind policy checks unchanged.
+Use `pnpm --silent lint:shadcn:report` for JSON diagnostics with source paths, lines, and columns.
+Tests, stories, declarations, dependencies, and build output are excluded. Mobile and app-template sources are outside this scan.
+
+CI runs the independent `shadcn lint (advisory)` job on the workflow's push and pull request events.
+The job does not block other jobs or make the workflow fail, including when setup or scanning fails.
+Keep this advisory job out of required branch-protection checks.
+Warnings produce a GitHub annotation and a per-rule table in the job summary.
+The job logs contain grouped JSON diagnostics and stderr, subject to the repository's normal Actions log retention.
+CI does not upload diagnostic artifacts or local reports from `reports/`.
+
+Agents must inspect this job even when CI is green.
+Use `gh run view <run-id> --job <job-id> --log` for its summary and all findings.
+Report actionable findings in changed files, accepted exceptions, and coverage limits in the handoff.
+A failed or unavailable scan is not a clean result. A warning-only run can exit with code 0.
+
+The plugin can mistake named typography and shadow tokens for colors, and token references for arbitrary values.
+Review suggestions against [DESIGN.md](DESIGN.md) and the [design system](docs/design-system.md).
+Do not add color tokens for `text-ui` or `shadow-1`, or recolor brand artwork solely to silence a warning.
+Container spacing and dynamic styles need case-by-case review. `no-unknown-classes` is not enabled.
+Apply approved shared-component changes to `packages/ui/src`, even if a diagnostic points into `packages/ui/dist`.
+
 ## Test environment
 
 Package test scripts run through `scripts/test-env.sh`, which starts the test

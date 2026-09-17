@@ -124,6 +124,32 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm typecheck:lint-agents
 
+  shadcn-lint:
+    name: shadcn lint (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Scan design-system usage
+        id: scan
+        continue-on-error: true
+        run: |
+          pnpm --silent lint:shadcn:report > "$RUNNER_TEMP/shadcn-lint.json" 2> "$RUNNER_TEMP/shadcn-lint.stderr.txt"
+      - name: Summarize advisory findings
+        if: ${{ !cancelled() }}
+        env:
+          SCAN_OUTCOME: ${{ steps.scan.outcome }}
+        run: node scripts/report-shadcn-lint.mjs "$RUNNER_TEMP/shadcn-lint.json" "$RUNNER_TEMP/shadcn-lint.stderr.txt" "$SCAN_OUTCOME"
+
   # ──────────────────────────────────────────
   # Job 1b: DB schema drift — committed migrations must match the schema files
   # ──────────────────────────────────────────
