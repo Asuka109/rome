@@ -32,6 +32,30 @@ test("a clean scan and an unavailable scan have different outcomes", () => {
   }
 });
 
+test("advice and future severity names do not hide other findings", () => {
+  const diagnostics = ["warning", "error", "advice", "future-severity"].map((severity) => ({
+    code: "shadcn(no-restyle)",
+    filename: "page.tsx",
+    severity,
+  }));
+  const result = summarizeReport(report(diagnostics), "", "success");
+  assert.equal(result.incomplete, false);
+  assert.match(result.annotation, /4 advisory diagnostics across 1 files/);
+  assert.match(result.summary, /shadcn\(no-restyle\) \| 4/);
+});
+
+test("missing, blank, and non-string severities remain invalid", () => {
+  for (const severity of [undefined, null, "", " \t\n", 1, false, {}, []]) {
+    const result = summarizeReport(
+      report([{ code: "shadcn(no-restyle)", filename: "page.tsx", severity }]),
+      "",
+      "success",
+    );
+    assert.equal(result.incomplete, true);
+    assert.match(result.summary, /Do not interpret this as zero findings/);
+  }
+});
+
 test("discovery warnings remain visible without rule diagnostics", () => {
   const result = summarizeReport(report(), "Theme resolution failed", "success");
   assert.ok(result.annotation);

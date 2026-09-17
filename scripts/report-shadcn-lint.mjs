@@ -27,7 +27,8 @@ export function summarizeReport(reportText, stderr, outcome) {
       (diagnostic) =>
         typeof diagnostic?.code === "string" &&
         typeof diagnostic.filename === "string" &&
-        ["warning", "error"].includes(diagnostic.severity),
+        typeof diagnostic.severity === "string" &&
+        diagnostic.severity.trim().length > 0,
     );
   if (outcome !== "success" || !valid) {
     return {
