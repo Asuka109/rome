@@ -1,3 +1,10 @@
+import { traceDiscordRequest } from "./diagnostics/discord-trace.js";
+import { partBoundary } from "../connections/delivery/parts.js";
+import { plainTextCodec } from "../connections/delivery/transport.js";
+import type { TextCodec } from "../connections/delivery/transport.js";
+
+import { physicalOperation } from "../connections/delivery/physical-operation.js";
+import { DeliveryFailure } from "../connections/delivery/transport.js";
 import {
   Client,
   GatewayIntentBits,
@@ -52,6 +59,11 @@ import {
   DISCORD_BROKER_RESPONSE_LIMIT_BYTES,
   normalizeDiscordEndpoint,
 } from "@rome/api-types/discord-broker";
+
+export const discordPlainTextCodec: TextCodec = {
+  render: (source) => source.replace(/([\\*_~`|>])/gu, "\\$1"),
+  length: (rendered) => rendered.length,
+};
 
 interface DiscordRestMessage {
   id: string;
@@ -350,20 +362,26 @@ export class DiscordAdapter implements ProviderAdapter {
   /** Broker requests that must not survive this credential-owning epoch. */
   private readonly activeApiRequestControllers = new Set<AbortController>();
 
-  constructor(config: {
-    botToken: string;
-    connectionId?: string;
-    conversationSettings?: ConversationSettingsControl & {
-      observe?(descriptor: ConversationDescriptor): void;
-    };
-    maxMessagesPerChannel?: number;
-    listAgents?: () => string[];
-    resolveDiscordPerson?: (
-      channelUserId: string,
-    ) => Promise<Pick<PersonRecord, "id" | "bondLevel"> | null>;
-    chatStop?: ChatStopHandler;
-    onGatewayFault?: (fault: { kind: "credential" | "transport"; cause: unknown }) => void;
-  }) {
+  constructor(
+    config: {
+      botToken: string;
+      connectionId?: string;
+      conversationSettings?: ConversationSettingsControl & {
+        observe?(descriptor: ConversationDescriptor): void;
+      };
+      maxMessagesPerChannel?: number;
+      listAgents?: () => string[];
+      resolveDiscordPerson?: (
+        channelUserId: string,
+      ) => Promise<Pick<PersonRecord, "id" | "bondLevel"> | null>;
+      chatStop?: ChatStopHandler;
+      onGatewayFault?: (fault: { kind: "credential" | "transport"; cause: unknown }) => void;
+    },
+    transport: {
+      createClient?: (options: ConstructorParameters<typeof Client>[0]) => Client;
+      createRest?: (options: ConstructorParameters<typeof REST>[0]) => REST;
+    } = {},
+  ) {
     this.connectionId = config.connectionId;
     this.conversationSettings = config.conversationSettings;
     this.maxMessagesPerChannel = config.maxMessagesPerChannel ?? 100;
@@ -371,7 +389,7 @@ export class DiscordAdapter implements ProviderAdapter {
     this.resolveDiscordPerson = config.resolveDiscordPerson;
     this.chatStop = config.chatStop;
     this.onGatewayFault = config.onGatewayFault;
-    this.client = new Client({
+    this.client = (transport.createClient ?? ((options) => new Client(options)))({
       intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
@@ -380,12 +398,20 @@ export class DiscordAdapter implements ProviderAdapter {
         GatewayIntentBits.DirectMessageReactions,
       ],
       partials: [Partials.Channel, Partials.Message],
+      // A transport error after a create may already have delivered the message.
+      // Keep Discord's explicit 429 handling, but do not replay ambiguous mutations.
+      rest: { retries: 0 },
     });
     this._botToken = config.botToken;
-    this.rest = new REST({
+    this.rest = (transport.createRest ?? ((options) => new REST(options)))({
       version: DISCORD_API_VERSION,
       userAgentAppendix: "Rome Discord broker/1",
+      retries: 0,
     }).setToken(config.botToken);
+    this.client.rest.options.makeRequest = traceDiscordRequest(
+      this.client.rest.options.makeRequest,
+    );
+    this.rest.options.makeRequest = traceDiscordRequest(this.rest.options.makeRequest);
   }
 
   private _botToken: string;
@@ -1343,6 +1369,7 @@ export class DiscordAdapter implements ProviderAdapter {
       targetChannel = channel as SendableChannel;
     }
 
+    const parts: Array<{ messageId: string; kind: string }> = [];
     try {
       let messageId: string | undefined;
       if (message.text) {
@@ -1350,24 +1377,72 @@ export class DiscordAdapter implements ProviderAdapter {
         // Discord has a 2000 character limit per message
         const chunks = splitMessage(message.text);
         for (const chunk of chunks) {
-          const sent = await targetChannel.send({ content: chunk });
+          const sent = await physicalOperation(
+            targetChannel.id,
+            "create",
+            async () => await targetChannel.send({ content: chunk }),
+          );
           messageId ??= sent.id;
+          parts.push({ messageId: sent.id, kind: "text" });
         }
       }
 
       for (const att of message.attachments ?? []) {
         const attachmentMessageId = await this.sendAttachment(targetChannel, att);
         messageId ??= attachmentMessageId;
+        parts.push({ messageId: attachmentMessageId, kind: att.type });
       }
 
       log.info("message sent", { threadId, targetChannelId: targetChannel.id });
-      return { messageId, threadId: targetChannel.id };
+      return { messageId, threadId: targetChannel.id, parts };
     } catch (err) {
       log.error("failed to send message", {
         threadId,
         error: err instanceof Error ? err.message : String(err),
       });
+      if (parts.length) {
+        const failure = discordDeliveryFailure(err);
+        throw new DeliveryFailure(failure.kind, failure.message, [
+          {
+            conversationId: targetChannel.id as import("@rome-os/app-runtime").ConversationId,
+            messageId: parts[0].messageId,
+            parts,
+          },
+        ]);
+      }
       throw err;
+    }
+  }
+
+  async createText(threadId: string, text: string) {
+    try {
+      const channel = await this.client.channels.fetch(threadId);
+      if (!channel || !("send" in channel))
+        throw new DeliveryFailure("failed", "Message target is unavailable");
+      const sent = await physicalOperation(
+        threadId,
+        "create",
+        async () =>
+          await (channel as SendableChannel).send({
+            content: text,
+            allowedMentions: { parse: [] },
+          }),
+      );
+      return { messageId: sent.id, threadId: channel.id };
+    } catch (error) {
+      throw discordDeliveryFailure(error);
+    }
+  }
+
+  async updateText(threadId: string, messageId: string, text: string): Promise<void> {
+    try {
+      await physicalOperation(threadId, "update", () =>
+        this.rest.patch(Routes.channelMessage(threadId, messageId), {
+          body: { content: text, allowed_mentions: { parse: [] } },
+        }),
+      );
+    } catch (error) {
+      throw discordDeliveryFailure(error);
     }
   }
 
@@ -1547,12 +1622,36 @@ export class DiscordAdapter implements ProviderAdapter {
       ? new AttachmentBuilder(att.source, { name: basename(att.source) })
       : new AttachmentBuilder(createReadStream(att.source), { name: basename(att.source) });
 
-    const sent = await channel.send({
-      content: att.caption,
-      files: [file],
-    });
+    const sent = await physicalOperation(
+      channel.id,
+      "create",
+      async () =>
+        await channel.send({
+          content: att.caption,
+          files: [file],
+        }),
+    );
     return sent.id;
   }
+}
+
+function discordDeliveryFailure(error: unknown): DeliveryFailure {
+  if (error instanceof DeliveryFailure) return error;
+  const status = error && typeof error === "object" && "status" in error ? error.status : undefined;
+  const message = error instanceof Error ? error.message : String(error);
+  if (status === 401 || status === 403) return new DeliveryFailure("authorization", message);
+  if (status === 429) {
+    const seconds =
+      error && typeof error === "object" && "retry_after" in error ? Number(error.retry_after) : 1;
+    return new DeliveryFailure(
+      "rate-limit",
+      message,
+      [],
+      Number.isFinite(seconds) ? seconds * 1000 : 1000,
+    );
+  }
+  if (status === 400 || status === 404) return new DeliveryFailure("failed", message);
+  return new DeliveryFailure("unknown", message);
 }
 
 /** Breaks at newlines where possible. */
@@ -1563,10 +1662,9 @@ function splitMessage(text: string, maxLength = 2000): string[] {
   let remaining = text;
 
   while (remaining.length > maxLength) {
-    let splitAt = remaining.lastIndexOf("\n", maxLength);
-    if (splitAt <= 0) splitAt = maxLength;
+    const splitAt = partBoundary(remaining, maxLength, plainTextCodec);
     chunks.push(remaining.slice(0, splitAt));
-    remaining = remaining.slice(splitAt).trimStart();
+    remaining = remaining.slice(splitAt);
   }
 
   if (remaining) chunks.push(remaining);

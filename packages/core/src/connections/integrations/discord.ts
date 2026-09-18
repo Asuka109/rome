@@ -1,3 +1,6 @@
+import { createHash } from "node:crypto";
+import { discordDeliveryProfile } from "./delivery-profiles.js";
+import { textDeliveryFeature } from "./text-delivery-feature.js";
 // Discord connection integration. Channel contract: docs/architecture/channels.md.
 //
 // Discord is a Talker with a single `bot` grant (a pasted bot token). The
@@ -24,7 +27,7 @@ import type {
   TalkHistory,
   TalkInboundMedia,
 } from "@rome-os/app-runtime";
-import { DiscordAdapter } from "../../channels/discord.js";
+import { DiscordAdapter, discordPlainTextCodec } from "../../channels/discord.js";
 import type { PersonMappingRepository } from "../../db/repositories/person-mapping.js";
 import type { ConversationSettingsService } from "../../conversation-settings/service.js";
 import type { SetupFn } from "../setup/types.js";
@@ -116,6 +119,7 @@ export function isDiscordAuthError(err: unknown): boolean {
  * validation + autocomplete).
  */
 export interface DiscordDeps {
+  transport?: ConstructorParameters<typeof DiscordAdapter>[1];
   conversationSettings: ConversationSettingsService;
   chatStop?: ChatStopHandler;
   personMappingRepo: PersonMappingRepository;
@@ -256,24 +260,27 @@ export function makeDiscordDescriptor(deps: DiscordDeps): ConnectionDescriptor {
           const token = creds.bot.material as { token: string };
           let faultSink: ((err: CredentialRejected | Disconnected) => void) | null = null;
 
-          const adapter = new DiscordAdapter({
-            botToken: token.token,
-            connectionId: kit.connectionId,
-            conversationSettings: deps.conversationSettings,
-            chatStop: deps.chatStop,
-            listAgents: deps.listAgents,
-            resolveDiscordPerson: (channelUserId) =>
-              deps.personMappingRepo.findByChannelUser("discord", channelUserId),
-            // Live gateway faults (post-login) route through here; the descriptor
-            // maps the adapter's kind onto grant state vs. transport.
-            onGatewayFault: ({ kind, cause }) => {
-              faultSink?.(
-                kind === "credential"
-                  ? new CredentialRejected({ grant: "bot", cause })
-                  : new Disconnected(cause),
-              );
+          const adapter = new DiscordAdapter(
+            {
+              botToken: token.token,
+              connectionId: kit.connectionId,
+              conversationSettings: deps.conversationSettings,
+              chatStop: deps.chatStop,
+              listAgents: deps.listAgents,
+              resolveDiscordPerson: (channelUserId) =>
+                deps.personMappingRepo.findByChannelUser("discord", channelUserId),
+              // Live gateway faults (post-login) route through here; the descriptor
+              // maps the adapter's kind onto grant state vs. transport.
+              onGatewayFault: ({ kind, cause }) => {
+                faultSink?.(
+                  kind === "credential"
+                    ? new CredentialRejected({ grant: "bot", cause })
+                    : new Disconnected(cause),
+                );
+              },
             },
-          });
+            deps.transport,
+          );
 
           const routeStartFault = (err: unknown): void => {
             faultSink?.(
@@ -379,6 +386,13 @@ export function makeDiscordDescriptor(deps: DiscordDeps): ConnectionDescriptor {
                       userId,
                     )) as import("@rome-os/app-runtime").ConversationId,
                 },
+                textDelivery: textDeliveryFeature(
+                  discordDeliveryProfile(
+                    "discord:" + createHash("sha256").update(token.token).digest("hex"),
+                  ),
+                  adapter,
+                  discordPlainTextCodec,
+                ),
                 history,
                 inboundMedia,
                 activity,
@@ -393,7 +407,7 @@ export function makeDiscordDescriptor(deps: DiscordDeps): ConnectionDescriptor {
         needs: ["bot"] as const,
         build(creds) {
           const token = creds.bot.material as { token: string };
-          const adapter = new DiscordAdapter({ botToken: token.token });
+          const adapter = new DiscordAdapter({ botToken: token.token }, deps.transport);
           return {
             operations: () => [
               {

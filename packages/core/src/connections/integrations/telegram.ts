@@ -1,3 +1,6 @@
+import { createHash } from "node:crypto";
+import { telegramDeliveryProfile } from "./delivery-profiles.js";
+import { textDeliveryFeature } from "./text-delivery-feature.js";
 // Telegram connection integration. Channel contract: docs/architecture/channels.md.
 //
 // Telegram is a Talker with a single `bot` grant (a pasted bot token). The
@@ -11,10 +14,14 @@
 //   - any other terminal transport failure → Disconnected → runtime backs off
 //     and rebuilds.
 
-import { Bot, GrammyError } from "grammy";
+import { type Bot, GrammyError } from "grammy";
 import { z } from "zod";
 import type { TalkFeatureMap, TalkFeatureName } from "@rome-os/app-runtime";
-import { TelegramAdapter, type CreateTelegramBot } from "../../channels/telegram.js";
+import {
+  TelegramAdapter,
+  createTracedTelegramBot,
+  type CreateTelegramBot,
+} from "../../channels/telegram.js";
 import { CredentialRejected, Disconnected } from "../errors.js";
 import { tokenPaste } from "../schemes.js";
 import type { SetupFn } from "../setup/types.js";
@@ -195,7 +202,7 @@ export function makeTelegramSetup(deps: {
  * seams default to the real getMe probe.
  */
 export function makeTelegramDescriptor(deps: TelegramDescriptorDeps = {}): ConnectionDescriptor {
-  const createBot: CreateTelegramBot = deps.createBot ?? ((token) => new Bot(token));
+  const createBot: CreateTelegramBot = deps.createBot ?? createTracedTelegramBot;
   const probeBotIdentity =
     deps.probeBotIdentity ?? ((token, signal) => pingTelegramIdentity(createBot, token, signal));
   const botScheme = tokenPaste({
@@ -265,6 +272,12 @@ export function makeTelegramDescriptor(deps: TelegramDescriptorDeps = {}): Conne
             },
             feature<K extends TalkFeatureName>(name: K): TalkFeatureMap[K] | null {
               const features: Partial<TalkFeatureMap> = {
+                textDelivery: textDeliveryFeature(
+                  telegramDeliveryProfile(
+                    "telegram:" + createHash("sha256").update(token.token).digest("hex"),
+                  ),
+                  adapter,
+                ),
                 inboundMedia: inboundMediaFeature(adapter),
                 // A Telegram private chat carries the user's own id as its chat
                 // id, so the address is already the conversation.

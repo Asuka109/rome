@@ -1,3 +1,6 @@
+import { traceImFetch } from "./diagnostics/api-trace.js";
+import { DeliveryFailure } from "../connections/delivery/transport.js";
+import { physicalOperation } from "../connections/delivery/physical-operation.js";
 import crypto from "node:crypto";
 import { chmod, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
@@ -323,19 +326,49 @@ async function apiFetch(params: {
   body: string;
   token?: string;
   timeoutMs: number;
+  request?: typeof fetch;
+  signal?: AbortSignal;
 }): Promise<string> {
   const url = new URL(params.endpoint, normalizeBaseUrl(params.baseUrl)).toString();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), params.timeoutMs);
   try {
-    const res = await fetch(url, {
+    const res = await (params.request ?? fetch)(url, {
       method: "POST",
       headers: buildHeaders(params.token, params.body),
       body: params.body,
-      signal: controller.signal,
+      signal: params.signal
+        ? AbortSignal.any([params.signal, controller.signal])
+        : controller.signal,
     });
     const text = await res.text();
+    if (res.status === 429) {
+      const delay = Number(res.headers.get("retry-after"));
+      throw new DeliveryFailure(
+        "rate-limit",
+        "WeChat rate limit",
+        [],
+        Number.isFinite(delay) && delay > 0 ? delay * 1000 : 1000,
+      );
+    }
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${text}`);
+    if (params.endpoint === "ilink/bot/sendmessage") {
+      let response: { ret?: number; errcode?: number; errmsg?: string };
+      try {
+        response = JSON.parse(text);
+      } catch {
+        throw new DeliveryFailure("unknown", "WeChat returned an unreadable send outcome");
+      }
+      if (
+        (response.ret !== undefined && response.ret !== 0) ||
+        (response.errcode !== undefined && response.errcode !== 0)
+      ) {
+        throw new DeliveryFailure(
+          "failed",
+          response.errmsg ?? `WeChat rejected the message (${response.errcode ?? response.ret})`,
+        );
+      }
+    }
     return text;
   } finally {
     clearTimeout(timer);
@@ -443,9 +476,13 @@ async function getUpdates(
   baseUrl: string,
   token: string,
   getUpdatesBuf: string,
+  request: typeof fetch = fetch,
+  signal?: AbortSignal,
 ): Promise<GetUpdatesResp> {
   try {
     const raw = await apiFetch({
+      request,
+      signal,
       baseUrl,
       endpoint: "ilink/bot/getupdates",
       body: JSON.stringify({
@@ -469,9 +506,11 @@ async function getTypingTicket(
   token: string,
   toUserId: string,
   contextToken: string,
+  request: typeof fetch = fetch,
 ): Promise<string | null> {
   try {
     const raw = await apiFetch({
+      request,
       baseUrl,
       endpoint: "ilink/bot/getconfig",
       body: JSON.stringify({
@@ -494,8 +533,10 @@ async function sendTyping(
   token: string,
   toUserId: string,
   typingTicket: string,
+  request: typeof fetch = fetch,
 ): Promise<void> {
   await apiFetch({
+    request,
     baseUrl,
     endpoint: "ilink/bot/sendtyping",
     body: JSON.stringify({
@@ -519,8 +560,10 @@ async function sendTextMessage(
   to: string,
   text: string,
   contextToken: string,
+  request: typeof fetch = fetch,
 ): Promise<void> {
   await apiFetch({
+    request,
     baseUrl,
     endpoint: "ilink/bot/sendmessage",
     body: JSON.stringify({
@@ -557,10 +600,12 @@ async function getUploadUrl(
   rawData: Buffer,
   encryptedSize: number,
   aesKeyHex: string,
+  request: typeof fetch = fetch,
 ): Promise<UploadUrlResp> {
   const filekey = crypto.randomBytes(16).toString("hex");
   const rawMd5 = crypto.createHash("md5").update(rawData).digest("hex");
   const raw = await apiFetch({
+    request,
     baseUrl,
     endpoint: "ilink/bot/getuploadurl",
     body: JSON.stringify({
@@ -587,13 +632,17 @@ class CdnClientError extends Error {
   }
 }
 
-async function uploadToCdn(uploadUrl: string, encryptedData: Buffer): Promise<string> {
+async function uploadToCdn(
+  uploadUrl: string,
+  encryptedData: Buffer,
+  request: typeof fetch = fetch,
+): Promise<string> {
   let encryptQueryParam: string | undefined;
   let lastError: unknown;
 
   for (let attempt = 1; attempt <= UPLOAD_MAX_RETRIES; attempt++) {
     try {
-      const res = await fetch(uploadUrl, {
+      const res = await request(uploadUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/octet-stream",
@@ -681,6 +730,7 @@ async function sendMediaMessage(
   contextToken: string,
   msgItemType: number,
   fileName?: string,
+  request: typeof fetch = fetch,
 ): Promise<void> {
   const aesKey = crypto.randomBytes(16);
   const encrypted = encryptAesEcb(data, aesKey);
@@ -694,6 +744,7 @@ async function sendMediaMessage(
     data,
     encrypted.length,
     encodeAesKeyHex(aesKey),
+    request,
   );
 
   const uploadUrl =
@@ -706,8 +757,9 @@ async function sendMediaMessage(
     throw new Error(`getuploadurl returned no upload URL: ${JSON.stringify(uploadResp)}`);
   }
 
-  const encryptQueryParam = await uploadToCdn(uploadUrl, encrypted);
+  const encryptQueryParam = await uploadToCdn(uploadUrl, encrypted, request);
   await apiFetch({
+    request,
     baseUrl,
     endpoint: "ilink/bot/sendmessage",
     body: JSON.stringify({
@@ -967,6 +1019,7 @@ function stripWechatMedia(attachment: Attachment): Attachment {
 async function downloadWechatAttachmentPayload(
   sourceAttachment: Attachment,
   savedAttachment: Attachment,
+  request: typeof fetch = fetch,
 ): Promise<IncomingAttachmentPayload | null> {
   const media = (sourceAttachment as WechatAttachment).wechatMedia;
   const downloadUrl = media ? buildWechatDownloadUrl(media) : sourceAttachment.url;
@@ -977,7 +1030,7 @@ async function downloadWechatAttachmentPayload(
       throw new Error("blocked attachment URL host");
     }
 
-    const response = await fetch(downloadUrl, { signal: AbortSignal.timeout(60_000) });
+    const response = await request(downloadUrl, { signal: AbortSignal.timeout(60_000) });
     if (!response.ok) {
       throw new Error(`download failed with ${response.status}`);
     }
@@ -1110,6 +1163,7 @@ export class WechatAuthService {
 }
 
 export class WechatAdapter implements ProviderAdapter {
+  private pollAbort = new AbortController();
   readonly channelName = "wechat";
   private handler?: (msg: NormalizedMessage) => Promise<void>;
   private stopped = true;
@@ -1124,13 +1178,18 @@ export class WechatAdapter implements ProviderAdapter {
 
   private readonly onFault?: (err: unknown) => void;
 
-  constructor(private config: WechatAdapterConfig) {
+  constructor(
+    private config: WechatAdapterConfig,
+    private readonly request: typeof fetch = fetch,
+  ) {
+    this.request = traceImFetch("wechat", this.request);
     this.onFault = config.onFault;
   }
 
   async start(): Promise<void> {
     this.cancelPollDelay();
     this.stopped = false;
+    this.pollAbort = new AbortController();
     if (this.getRemainingSessionPauseMs() > 0) {
       this.connectionStatus = "error";
     } else {
@@ -1152,6 +1211,7 @@ export class WechatAdapter implements ProviderAdapter {
 
   async stop(): Promise<void> {
     this.stopped = true;
+    this.pollAbort.abort();
     this.pollGeneration += 1;
     this.cancelPollDelay();
     this.connectionStatus = "disconnected";
@@ -1166,12 +1226,15 @@ export class WechatAdapter implements ProviderAdapter {
     const target = this.resolveSendTarget(channelUserId, threadId);
 
     if (message.text) {
-      await sendTextMessage(
-        this.config.baseUrl,
-        this.config.token,
-        target.to,
-        message.text,
-        target.contextToken,
+      await physicalOperation(target.to, "create", () =>
+        sendTextMessage(
+          this.config.baseUrl,
+          this.config.token,
+          target.to,
+          message.text!,
+          target.contextToken,
+          this.request,
+        ),
       );
     }
 
@@ -1189,14 +1252,29 @@ export class WechatAdapter implements ProviderAdapter {
         attachment.type === "document" || attachment.type === "audio"
           ? basename(attachment.source)
           : undefined;
-      await sendMediaMessage(
-        this.config.baseUrl,
-        this.config.token,
-        target.to,
-        data,
-        target.contextToken,
-        mediaType,
-        fileName,
+      await physicalOperation(target.to, "create", () =>
+        sendMediaMessage(
+          this.config.baseUrl,
+          this.config.token,
+          target.to,
+          data,
+          target.contextToken,
+          mediaType,
+          fileName,
+          this.request,
+        ),
+      );
+    }
+  }
+
+  async createText(threadId: string, text: string): Promise<void> {
+    try {
+      await this.sendMessage(threadId, threadId, { text });
+    } catch (error) {
+      if (error instanceof DeliveryFailure) throw error;
+      throw new DeliveryFailure(
+        isWechatAuthError(error) ? "authorization" : "unknown",
+        error instanceof Error ? error.message : String(error),
       );
     }
   }
@@ -1210,7 +1288,11 @@ export class WechatAdapter implements ProviderAdapter {
     const payloads: IncomingAttachmentPayload[] = [];
 
     for (const [index, sourceAttachment] of message.attachments.entries()) {
-      const payload = await downloadWechatAttachmentPayload(sourceAttachment, attachments[index]);
+      const payload = await downloadWechatAttachmentPayload(
+        sourceAttachment,
+        attachments[index],
+        this.request,
+      );
       if (payload) payloads.push(payload);
     }
 
@@ -1228,9 +1310,10 @@ export class WechatAdapter implements ProviderAdapter {
       this.config.token,
       target,
       contextToken,
+      this.request,
     );
     if (!ticket) return;
-    await sendTyping(this.config.baseUrl, this.config.token, target, ticket);
+    await sendTyping(this.config.baseUrl, this.config.token, target, ticket, this.request);
   }
 
   getConnectionState(): {
@@ -1276,7 +1359,14 @@ export class WechatAdapter implements ProviderAdapter {
       }
 
       try {
-        const resp = await getUpdates(this.config.baseUrl, this.config.token, getUpdatesBuf);
+        const resp = await getUpdates(
+          this.config.baseUrl,
+          this.config.token,
+          getUpdatesBuf,
+          this.request,
+          this.pollAbort.signal,
+        );
+        if (this.stopped || generation !== this.pollGeneration) return;
         const isError =
           (resp.ret !== undefined && resp.ret !== 0) ||
           (resp.errcode !== undefined && resp.errcode !== 0);
